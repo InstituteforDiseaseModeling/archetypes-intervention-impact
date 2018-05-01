@@ -1,23 +1,30 @@
 import os
+import re
 
-import pdb
+import geopandas as gpd
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
+import rasterio
+import seaborn as sns
+import shapely.geometry
+from sklearn.cluster import KMeans
 
 from spatial import run_all_clipping, plot_all_shapes, make_shapefile, plot_shape, extract_latlongs
 
 rasters_to_clip = {
-    "synoptic_temp": {"input_path": "Z:/mastergrids/Other_Global_Covariates/WorldClim_Temperature/1k/",
-                      "input_pattern": "WorldClim_Max_Temp_[0-9]{2}_1k\.tif$",
-                      "unit": "month"},
+    "baseline_prevalence": {"input_path": "Z:/cubes/Pf_results/MODEL_43/output_rasters/PfPR/Outputs/Summaries/",
+                            "input_pattern": "MODEL43\.2015.*\.PR\.ALL\.rmean\.tif$"},
+    "population": {"input_path": "Z:/cubes/5km/AfriPop/",
+                                "input_pattern": "2015\.total\.population\.tif$"},
     # "baseline_incidence": {"input_path": "Z:/cubes/Pf_results/MODEL_43/output_rasters/incidence/ALL/",
     #                             "input_pattern": "MODEL43\.2015\.[0-9]{1}\.inc\.rate\.PR\.ALL\.tif$"}
 }
 
-main_path = "C:/Users/abertozzivilla/Dropbox (IDM)/Malaria Team Folder/projects/Mozambique/"
-out_path = os.path.join(main_path, "incidence_calibration/")
+main_path = "C:/Users/abertozzivilla/Dropbox (IDM)/Malaria Team Folder/projects/zambia_gridded_sims/"
+out_path = os.path.join(main_path, "MAP_values/")
 shapefile_name = "bbox"
-data_path = "C:/Users/abertozzivilla/Dropbox (IDM)/Malaria Team Folder/data/Mozambique/Magude"
-grid_path = os.path.join(main_path, "gridded_simulation_input/grid_lookup_friction.csv")
+grid_path = os.path.join(main_path, "grid_lookup.csv")
 concave_alpha = 10
 
 print("loading and cleaning point data")
@@ -32,7 +39,7 @@ for input_name, input_vals in rasters_to_clip.items():
     run_all_clipping(input_vals["input_path"], out_path, shapefile_name, grid_data,
                      raster_pattern=input_vals["input_pattern"], overwrite=True,
                      raster_folder=input_name, alpha=concave_alpha, out_name="{name}_all".format(name=input_name),
-                     write_shp=True, unit=input_vals["unit"])
+                     write_shp=True, unit="year")
 
     clip_catchments = False
     if clip_catchments:
