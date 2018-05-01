@@ -304,7 +304,7 @@ def run_all_clipping(in_raster_path, out_path, shapefile_name,
     out_names = []
 
     if unit=="month":
-        pattern = '.*\.([0-9]{2})\.'
+        pattern = '.*([0-9]{2})'
     elif unit=="year":
         pattern = '.*([0-9]{4})'
     elif unit=="sample":

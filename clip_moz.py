@@ -1,20 +1,14 @@
 import os
-import re
 
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import numpy as np
+import pdb
 import pandas as pd
-import rasterio
-import seaborn as sns
-import shapely.geometry
-from sklearn.cluster import KMeans
 
 from spatial import run_all_clipping, plot_all_shapes, make_shapefile, plot_shape, extract_latlongs
 
 rasters_to_clip = {
-    "baseline_prevalence": {"input_path": "Z:/cubes/Pf_results/MODEL_43/output_rasters/PfPR/Outputs/",
-                            "input_pattern": "MODEL43\.2015.*\.PR\.ALL.tif$"},
+    "synoptic_temp": {"input_path": "Z:/mastergrids/Other_Global_Covariates/WorldClim_Temperature/1k/",
+                      "input_pattern": "WorldClim_Max_Temp_[0-9]{2}_1k\.tif$",
+                      "unit": "month"},
     # "baseline_incidence": {"input_path": "Z:/cubes/Pf_results/MODEL_43/output_rasters/incidence/ALL/",
     #                             "input_pattern": "MODEL43\.2015\.[0-9]{1}\.inc\.rate\.PR\.ALL\.tif$"}
 }
@@ -38,7 +32,7 @@ for input_name, input_vals in rasters_to_clip.items():
     run_all_clipping(input_vals["input_path"], out_path, shapefile_name, grid_data,
                      raster_pattern=input_vals["input_pattern"], overwrite=True,
                      raster_folder=input_name, alpha=concave_alpha, out_name="{name}_all".format(name=input_name),
-                     write_shp=True, unit="sample")
+                     write_shp=True, unit=input_vals["unit"])
 
     clip_catchments = False
     if clip_catchments:
