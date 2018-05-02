@@ -56,9 +56,9 @@ catchments[hf %in% c("Caputine", "Panjane"), hf:="Caputine-Panjane"]
 ## Distance: 
 # read in gridded input file (with distance-based catchment areas)
 orig.grid.points <- fread(paste0(grid.dir, "older_scripts/grid_lookup.csv"))
+orig.grid.points[catchment %in% c("Magude-Sede", "Facazissa"), catchment:="Magude-Sede-Facazissa"]
+orig.grid.points[catchment %in% c("Caputine", "Panjane"), catchment:="Caputine-Panjane"]
 grid.points <- copy(orig.grid.points)
-grid.points[catchment %in% c("Magude-Sede", "Facazissa"), catchment:="Magude-Sede-Facazissa"]
-grid.points[catchment %in% c("Caputine", "Panjane"), catchment:="Caputine-Panjane"]
 setnames(grid.points, "catchment", "Distance")
 
 
@@ -78,6 +78,8 @@ hh.catch <- hh.catch[order(grid_cell, -grid_hf_count)]
 # after sorting, the first HF per grid cell is the most-utilized. Keep only this.
 hh.catch <- hh.catch[, .SD[1], by=list(grid_cell)] 
 
+write.csv(hh.catch, file=paste0(out.dir, "survey_catchments.csv"), row.names=F)
+
 # note: household survey apparently failed to capture a large swath of the southeast
 png(paste0(out.dir, "survey_to_grid.png"))
 ggplot(orig.grid.points, aes(x=mid_x, y=mid_y)) +
@@ -94,7 +96,7 @@ graphics.off()
 
 ## Friction:
 #  Define the spatial template
-fs1 <- raster(friction.surface.filename) 
+fs1 <- raster(friction.surface.filename)
 
 # Make the graph and the geocorrected version of the graph (or read in the latter).
 if (transition.matrix.exists.flag) {
@@ -104,7 +106,7 @@ if (transition.matrix.exists.flag) {
   # Make and geocorrect the transition matrix (i.e., the graph)
   T <- transition(fs1, function(x) 1/mean(x), 8) # RAM intensive, can be very slow for large areas
   saveRDS(T, T.filename)
-  T.GC <- geoCorrection(T)                    
+  T.GC <- geoCorrection(T)
   saveRDS(T.GC, T.GC.filename)
 }
 
@@ -114,17 +116,17 @@ friction <- grid.points[, list(grid_cell, mid_x, mid_y)]
 for (facility in unique(catchments$hf)){
   print(facility)
   this.point <- as.matrix(catchments[hf==facility, list(X_COORD=lng, Y_COORD=lat)])
-  
+
   # Run the accumulated cost algorithm to make the accessibility map
   temp.raster <- accCost(T.GC, this.point)
   grid.indices <- cellFromXY(temp.raster, friction[, list(mid_x, mid_y)])
   friction[[facility]] <- temp.raster[grid.indices]
-  
+
   # convert raster to data table for plotting
   raster.dt <- as.data.table(as.data.frame(temp.raster, xy=T))
   raster.dt$id <- rownames(raster.dt)
   raster.dt$hf <- facility
-  
+
   # plot full raster
   if (plot.raster){
     RasterMap(raster.dt, id="id", xcol="x", ycol="y", variable="layer", map_colors = wpal("sky"),
@@ -136,7 +138,7 @@ for (facility in unique(catchments$hf)){
 
 
 # find minimum travel times
-friction <- melt(friction[!is.na(Moine)], id.vars=c("grid_cell", "mid_x", "mid_y"), 
+friction <- melt(friction[!is.na(Moine)], id.vars=c("grid_cell", "mid_x", "mid_y"),
                  variable.name = "hf", value.name="time_to_hf")
 
 friction[, min_time:=min(time_to_hf), by=list(grid_cell)]
@@ -190,8 +192,9 @@ setcolorder(grid.healthseek, c("grid_cell", "event", "fulldate", "duration",
 grid.lookup <- merge(orig.grid.points, friction.mins[, list(grid_cell, Friction=hf)], by="grid_cell", all=T)
 grid.lookup <- grid.lookup[, list(grid_cell, mid_x, mid_y, catchment=ifelse(is.na(Friction), catchment, as.character(Friction)))]
 
+
 # save new gridded inputs
-write.csv(grid.healthseek, file=paste0(grid.dir, "grid_all_healthseek_events_friction.csv"), row.names = F)
-write.csv(grid.lookup, file=paste0(grid.dir, "grid_lookup_friction.csv"), row.names=F)
+# write.csv(grid.healthseek, file=paste0(grid.dir, "grid_all_healthseek_events_friction.csv"), row.names = F)
+# write.csv(grid.lookup, file=paste0(grid.dir, "grid_lookup_friction.csv"), row.names=F)
 
 
