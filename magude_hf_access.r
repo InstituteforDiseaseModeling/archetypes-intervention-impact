@@ -194,7 +194,7 @@ grid.lookup <- grid.lookup[, list(grid_cell, mid_x, mid_y, catchment=ifelse(is.n
 
 
 # save new gridded inputs
-# write.csv(grid.healthseek, file=paste0(grid.dir, "grid_all_healthseek_events_friction.csv"), row.names = F)
-# write.csv(grid.lookup, file=paste0(grid.dir, "grid_lookup_friction.csv"), row.names=F)
+write.csv(grid.healthseek, file=paste0(grid.dir, "grid_all_healthseek_events_friction.csv"), row.names = F)
+write.csv(grid.lookup, file=paste0(grid.dir, "grid_lookup_friction.csv"), row.names=F)
 
 
