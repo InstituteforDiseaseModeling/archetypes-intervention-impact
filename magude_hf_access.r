@@ -62,6 +62,18 @@ grid.points <- copy(orig.grid.points)
 setnames(grid.points, "catchment", "Distance")
 
 
+# test facebook
+fb.surface.filename <- paste0(raster.dir,"facebook_pop/facebook_pop_all.tif")
+fb_pop = raster(fb.surface.filename)
+agg_fb = aggregate(fb_pop, fact=33, fun=sum)
+
+fb_pop_df = copy(orig.grid.points)
+grid.indices <- cellFromXY(agg_fb, grid.points[, list(mid_x, mid_y)])
+fb_pop_df$fb_pop <- agg_fb[grid.indices]
+write.csv(fb_pop_df, file= paste0(raster.dir, "../transmission_population_comparison/fb_pop.csv"), row.names=F)
+
+
+
 ## Survey:
 # read in household health facility preferences, assign grid points to preferred hf's
 hhs <- fread(paste0(main.dir, "data/Mozambique/Magude/HHs/hh_by_health_facility.csv"))
@@ -81,7 +93,7 @@ hh.catch <- hh.catch[, .SD[1], by=list(grid_cell)]
 write.csv(hh.catch, file=paste0(out.dir, "survey_catchments.csv"), row.names=F)
 
 # note: household survey apparently failed to capture a large swath of the southeast
-png(paste0(out.dir, "survey_to_grid.png"))
+#png(paste0(out.dir, "survey_to_grid.png"))
 ggplot(orig.grid.points, aes(x=mid_x, y=mid_y)) +
   geom_tile(fill="darkturquoise") +
   geom_point(data=hhs, aes(x=lng_r2, y=lat_r2)) +
@@ -91,7 +103,7 @@ ggplot(orig.grid.points, aes(x=mid_x, y=mid_y)) +
   labs(title="Simulation Grid Cells vs. Household Locations, \n Census Round 2",
        x="",
        y="")
-graphics.off()
+#graphics.off()
 
 
 ## Friction:

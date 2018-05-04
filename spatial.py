@@ -309,6 +309,8 @@ def run_all_clipping(in_raster_path, out_path, shapefile_name,
         pattern = '.*([0-9]{4})'
     elif unit=="sample":
         pattern = '.*\.([0-9]{1,3})\.'
+    elif unit=="none":
+        pattern = "(.*\.)"
     else:
         raise ValueError("no such unit!: {unit}".format(unit=unit))
 
@@ -318,7 +320,10 @@ def run_all_clipping(in_raster_path, out_path, shapefile_name,
         print(fname)
 
         unit_name = re.match(pattern, fname).groups()[0]
-        out_tif_name = '{out_name}.{unit}.{unit_name}.tif'.format(out_name=out_name, unit=unit,  unit_name=unit_name)
+        if unit!="none":
+            out_tif_name = '{out_name}.{unit}.{unit_name}.tif'.format(out_name=out_name, unit=unit,  unit_name=unit_name)
+        else:
+            out_tif_name = '{out_name}.tif'.format(out_name=out_name)
         out_names.append(out_tif_name)
         out_fname = os.path.join(raster_path, out_tif_name)
         if os.path.isfile(out_fname) and not overwrite:

@@ -7,9 +7,12 @@ import shapely
 from spatial import run_all_clipping, plot_all_shapes, make_shapefile, plot_shape, extract_latlongs
 
 rasters_to_clip = {
-    "synoptic_temp": {"input_path": "Z:/mastergrids/Other_Global_Covariates/WorldClim_Temperature/1k/",
-                      "input_pattern": "WorldClim_Max_Temp_[0-9]{2}_1k\.tif$",
-                      "unit": "month"},
+    # "synoptic_temp": {"input_path": "Z:/mastergrids/Other_Global_Covariates/WorldClim_Temperature/1k/",
+    #                   "input_pattern": "WorldClim_Max_Temp_[0-9]{2}_1k\.tif$",
+    #                   "unit": "month"},
+    "facebook_pop": {"input_path": "C:/Users/abertozzivilla/Dropbox (IDM)/Malaria Team Folder/data/Mozambique/facebook_population_rasters/",
+                     "input_pattern": "hrsl_moz_pop\.tif$",
+                     "unit": "none"}
     # "baseline_incidence": {"input_path": "Z:/cubes/Pf_results/MODEL_43/output_rasters/incidence/ALL/",
     #                             "input_pattern": "MODEL43\.2015\.[0-9]{1}\.inc\.rate\.PR\.ALL\.tif$"}
 }
@@ -20,7 +23,7 @@ shapefile_name = "bbox"
 data_path = "C:/Users/abertozzivilla/Dropbox (IDM)/Malaria Team Folder/data/Mozambique/Magude"
 grid_path = os.path.join(main_path, "gridded_simulation_input/grid_lookup_friction.csv")
 concave_alpha = 10
-extract_points = True
+extract_points = False
 
 print("loading and cleaning point data")
 grid_data = pd.read_csv(grid_path)
@@ -31,11 +34,10 @@ for input_name, input_vals in rasters_to_clip.items():
     print("extracting for " + input_name)
     raster_dir = os.path.join(out_path, "rasters", input_name)
 
-    # plot_all_shapes(hh_data, alphas=[1, 5, 10])
-    # run_all_clipping(input_vals["input_path"], out_path, shapefile_name, grid_data,
-    #                  raster_pattern=input_vals["input_pattern"], overwrite=True,
-    #                  raster_folder=input_name, alpha=concave_alpha, out_name="{name}_all".format(name=input_name),
-    #                  write_shp=True, unit=input_vals["unit"])
+    run_all_clipping(input_vals["input_path"], out_path, shapefile_name, grid_data,
+                     raster_pattern=input_vals["input_pattern"], overwrite=True,
+                     raster_folder=input_name, alpha=concave_alpha, out_name="{name}_all".format(name=input_name),
+                     write_shp=True, unit=input_vals["unit"])
 
     clip_catchments = False
     if clip_catchments:
@@ -65,8 +67,9 @@ for input_name, input_vals in rasters_to_clip.items():
             print(tif)
             this_df = grid_data.copy()
             this_df[input_name] = extract_latlongs(os.path.join(raster_dir, tif), shapes)
-            meta = tif.split(".")
-            this_df[meta[1]] = meta[2]
+            if input_vals["unit"]!="none":
+                meta = tif.split(".")
+                this_df[meta[1]] = int(meta[2])
 
             raster_list.append(this_df)
 
