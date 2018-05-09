@@ -26,7 +26,7 @@ print("loading MAP rasters")
 inc_dir = os.path.join(raster_dir, "incidence/incidence_all.year.2015.tif")
 pop_dir = os.path.join(raster_dir, "pop_5k/pop_5k_all.year.2015.tif")
 inc_raster_dir = os.path.join(raster_dir, "baseline_incidence")
-prev_raster_dir = os.path.join(raster_dir, "baseline_prevalence")
+prev_raster_dir = os.path.join(raster_dir, "prevalence")
 
 # shared dataset
 pop_data = pd.read_csv(os.path.join(main_dir, 'gridded_simulation_input/grid_population.csv'))
@@ -137,9 +137,11 @@ prev_data['prev'] = prev_data['sum']/prev_data['count']
 prev_data = pd.merge(prev_data.reset_index(), pop_data)
 
 print("extracting MAP rasters")
-extracted_dir = os.path.join(prev_raster_dir, "all_prev_samples.csv")
+extracted_dir = os.path.join(prev_raster_dir, "grid_vals.csv")
 if os.path.isfile(extracted_dir):
     map_prev_df = pd.read_csv(extracted_dir)
+    map_prev_df.rename(columns={"prevalence":"map_prev_2015"}, inplace=True)
+    map_prev_df = map_prev_df.query('grid_cell!=1')
 else:
     prev_files = os.listdir(prev_raster_dir)
     pattern = re.compile("baseline_prevalence_all.*\.tif$")
@@ -162,11 +164,11 @@ else:
 
     map_prev_df.to_csv(extracted_dir, index=False)
 
-ranges = map_prev_df.groupby('sample').agg({'map_prev_2015': ['min', 'max']})['map_prev_2015'].reset_index()
-ranges.sort_values(by=['min', 'max'], inplace=True)
+ranges = map_prev_df.groupby('sample').agg({'map_prev_2015': ['min', 'max']})['map_prev_2015'].sort_values(by=['min', 'max']).reset_index()
+ranges['order'] = list(range(len(ranges)))
 
 fig, axes=plt.subplots(figsize=(10, 10))
-axes.vlines(ranges['sample'], ymin=ranges['min'], ymax=ranges['max'])
+axes.vlines(ranges['order'], ymin=ranges['min'], ymax=ranges['max'])
 axes.axhline(prev_data.query('prev<1')['prev'].max(), c="red")
 axes.axhline(0, c="red")
 axes.set_title("Range of All MAP Prevalence Samples (Black) vs Range of Data (Red), \n Magude 2015")
