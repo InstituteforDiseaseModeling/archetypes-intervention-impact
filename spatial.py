@@ -309,8 +309,8 @@ def run_all_clipping(in_raster_path, out_path, shapefile_name,
         pattern = '.*([0-9]{4})'
     elif unit=="sample":
         pattern = '.*\.([0-9]{1,3})\.'
-    elif unit=="none":
-        pattern = "(.*\.)"
+    elif unit=="type":
+        pattern = raster_pattern
     else:
         raise ValueError("no such unit!: {unit}".format(unit=unit))
 
