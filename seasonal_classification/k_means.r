@@ -7,14 +7,34 @@ library(gridExtra)
 
 rm(list=ls())
 
-main_dir <- file.path(Sys.getenv("USERPROFILE"), "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/tsi_classification")
+base_dir <- file.path(Sys.getenv("USERPROFILE"), "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 
-rotation <- fread(file.path(main_dir, "svd_rotations.csv"))
+# number of singular vectors to use, from visual inspection of svd plots
+nvec_list <- list(africa=2, asia=3, americas=2)
 
-all_tsi <- fread(file.path(main_dir, "tsi_vals.csv"))
+continent <- "africa"
+this_cov <- "tsi"
+palette <- "Paired"
+main_dir <- file.path(base_dir, continent)
 
-nclust <- 10
-palette = "Paired"
+# rotate matrix, if needed
+rotation_fname <- file.path(main_dir, paste0("svd_rotations_", this_cov, ".csv"))
+if (file.exists(rotation_fname)){
+  rotation <- fread(rotation_fname)
+}else{
+  print("finding matrix rotations")
+  nvecs <- nvec_list[[continent]]
+  svd_out <- load(file.path(main_dir, paste0("svd_out_", this_cov, ".rdata")))
+  sing_vecs <- svd_out$u[, 1:nvecs]
+  
+  ## multiply by original matrix to get rotations
+  rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,2:ncol(for_svd)])))
+  rotation$id <- as.integer(rownames(rotation))
+  rotation <- data.table(rotation)
+  write.csv(rotation, rotation_fname, row.names=F)
+}
+
+all_vals <- fread(file.path(main_dir, paste0(this_cov, "_vals.csv")))
 
 for (nclust in 3:10){
   print(paste("finding clusters for k of", nclust))
