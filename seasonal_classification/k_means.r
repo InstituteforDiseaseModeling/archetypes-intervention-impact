@@ -14,7 +14,7 @@ palette <- "Paired"
 
 # number of singular vectors to use, from visual inspection of svd plots
 nvec_list <- list(africa=2, asia=3, americas=2)
-# nvec_list <- list(africa_orig=2)
+nvec_list <- list(asia=3)
 cov_list <- c("tsi")
 
 for (this_cov in cov_list){
@@ -25,12 +25,13 @@ for (this_cov in cov_list){
     
     # rotate matrix, if needed
     rotation_fname <- file.path(main_dir, paste0("svd_rotations_", this_cov, ".csv"))
+    nvecs <- nvec_list[[continent]]
     
     if (file.exists(rotation_fname)){
+      print("loading matrix rotations")
       rotation <- fread(rotation_fname)
     }else{
       print("finding matrix rotations")
-      nvecs <- nvec_list[[continent]]
       rotation <- rotate_matrix(nvecs, main_dir, this_cov)
       write.csv(rotation, rotation_fname, row.names=F)
     }
@@ -38,29 +39,54 @@ for (this_cov in cov_list){
     all_vals <- fread(file.path(main_dir, paste0(this_cov, "_vals.csv")))
     setnames(all_vals, this_cov, "cov_val")
     
-    # Plotting
+    # k-means and plotting
     pdf(file.path(main_dir, paste0("k_means_", this_cov, ".pdf")), width=9, height=6)
-    for (nclust in 3:10){
-      print(paste("finding clusters for k of", nclust))
-      k_out <- kmeans(rotation[, 1:2], centers=nclust, algorithm = "MacQueen", iter.max=100)
-      rotation[, cluster:= k_out$cluster]
+    for (nclust in 3:7){
       
       cov_label <- ifelse(nchar(this_cov)==3, toupper(this_cov), capitalize(this_cov))
       
+      # if k-means has already been run, just load outputs
+      
+      k_out_fname <- file.path(main_dir, "k_means", paste0("k_out_", nclust, ".tif"))
+      cluster_raster_fname <- file.path(main_dir, "k_means", paste0("clusters_", nclust, ".tif"))
+      time_series_fname <- file.path(main_dir, "k_means", paste0("time_series_", nclust, ".csv"))
+      
+      if (file.exists(k_out_fname)){
+        print("k-means already run, loading outputs")
+        cluster_raster <- raster(cluster_raster_fname)
+        time_series <- fread(time_series_fname)
+        
+      }else{
+        print(paste("finding clusters for k of", nclust))
+        k_out <- kmeans(rotation[, 1:nvecs], centers=nclust, algorithm = "MacQueen", iter.max=100)
+        rotation[, cluster:= k_out$cluster]
+        
+        print("creating new raster")
+        # load mask raster to get dimensions & extent
+        mask_raster <- raster(file.path(main_dir, "rasters/mask.tif"))
+        cluster_raster <- matrix(nrow=mask_raster@nrows, ncol=mask_raster@ncols)
+        cluster_raster[rotation$id] <- rotation$cluster
+        cluster_raster <- ratify(raster(cluster_raster), template=mask_raster)
+        writeRaster(cluster_raster, cluster_raster_fname, overwrite=T)
+        
+        print("finding mean time series")
+        all_vals <- merge(all_vals, rotation[, list(id, cluster)], by="id", all=T)
+        
+        time_series <- all_vals[, list(cov_val=mean(cov_val)), by=list(cluster, month)]
+        time_series[, nclust:=nclust]
+        write.csv(time_series, time_series_fname, row.names=F)
+        all_vals[, cluster:=NULL]
+        
+        save(k_out, file=k_out_fname) # save last to ensure other outputs have been saved if this exists
+        
+      }
+      
       print("making map")
-      new <- matrix(nrow=1609, ncol=1945)
-      new[rotation$id] <- rotation$cluster
-      new <- ratify(raster(new))
-      map_plot <- levelplot(new, att="ID", col.regions=brewer.pal(nclust, palette),
+      map_plot <- levelplot(cluster_raster, att="ID", col.regions=brewer.pal(nclust, palette),
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
-                            main = paste("Mapped", cov_label, "Clusters"), colorkey=F)
+                            main = paste("Mapped", cov_label, "Clusters"), colorkey=F, margin=F)
       
-      print("finding mean time series")
-      all_vals <- merge(all_vals, rotation[, list(id, cluster)], by="id", all=T)
-      summary_vals <- all_vals[, list(cov_val=mean(cov_val)), by=list(cluster, month)]
-      all_vals[, cluster:=NULL]
-      
-      lines <- ggplot(summary_vals, aes(x=month, y=cov_val)) +
+      lines <- ggplot(time_series, aes(x=month, y=cov_val)) +
         geom_line(aes(color=factor(cluster)), size=2) +
         facet_grid(cluster~.) +
         scale_color_brewer(type="qual", palette=palette) +
@@ -81,7 +107,6 @@ for (this_cov in cov_list){
       
     }
     graphics.off()
-    
   }
 }
 
