@@ -9,6 +9,8 @@ base_dir <- file.path(Sys.getenv("USERPROFILE"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
 cov_dirs <- list(tsi="Z:/mastergrids/Other_Global_Covariates/TemperatureSuitability/TSI_Pf_Dynamic/5km/Synoptic/")
+continents <- c("africa", "asia", "americas")
+continents <- c("asia")
 
 source("classify_functions.r")
 
@@ -16,7 +18,7 @@ for (idx in 1:length(cov_dirs)){
   
   this_cov <- cov_dirs[idx]
   
-  for(continent in c("africa", "asia", "americas")){
+  for(continent in continents){
     
     print(paste("running extraction and svd  for", names(this_cov), "in", continent))
     

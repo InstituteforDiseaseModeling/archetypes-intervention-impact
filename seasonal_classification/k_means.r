@@ -14,7 +14,7 @@ palette <- "Paired"
 
 # number of singular vectors to use, from visual inspection of svd plots
 nvec_list <- list(africa=2, asia=3, americas=2)
-nvec_list <- list(asia=3)
+nvec_list <- list(africa=2, americas=2)
 cov_list <- c("tsi")
 
 for (this_cov in cov_list){
@@ -53,7 +53,16 @@ for (this_cov in cov_list){
       
       if (file.exists(k_out_fname)){
         print("k-means already run, loading outputs")
-        cluster_raster <- raster(cluster_raster_fname)
+        print("creating new raster")
+        # load mask raster to get dimensions & extent
+        load(k_out_fname)
+        rotation[, cluster:=k_out$cluster]
+        mask_raster <- raster(file.path(main_dir, "rasters/mask.tif"))
+        cluster_raster <- matrix(nrow=mask_raster@nrows, ncol=mask_raster@ncols)
+        cluster_raster[rotation$id] <- rotation$cluster
+        cluster_raster <- raster(cluster_raster, template=mask_raster)
+        writeRaster(cluster_raster, cluster_raster_fname, overwrite=T)
+        # cluster_raster <- raster(cluster_raster_fname)
         time_series <- fread(time_series_fname)
         
       }else{
@@ -66,7 +75,7 @@ for (this_cov in cov_list){
         mask_raster <- raster(file.path(main_dir, "rasters/mask.tif"))
         cluster_raster <- matrix(nrow=mask_raster@nrows, ncol=mask_raster@ncols)
         cluster_raster[rotation$id] <- rotation$cluster
-        cluster_raster <- ratify(raster(cluster_raster), template=mask_raster)
+        cluster_raster <- raster(cluster_raster, template=mask_raster)
         writeRaster(cluster_raster, cluster_raster_fname, overwrite=T)
         
         print("finding mean time series")
@@ -82,6 +91,7 @@ for (this_cov in cov_list){
       }
       
       print("making map")
+      cluster_raster <- ratify(cluster_raster)
       map_plot <- levelplot(cluster_raster, att="ID", col.regions=brewer.pal(nclust, palette),
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
                             main = paste("Mapped", cov_label, "Clusters"), colorkey=F, margin=F)
