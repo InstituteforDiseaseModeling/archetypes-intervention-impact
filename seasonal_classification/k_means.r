@@ -13,9 +13,10 @@ base_dir <- file.path(Sys.getenv("USERPROFILE"), "Dropbox (IDM)/Malaria Team Fol
 palette <- "Paired"
 
 # number of singular vectors to use, from visual inspection of svd plots
-nvec_list <- list(africa=2, asia=3, americas=2)
-nvec_list <- list(africa=2, americas=2)
-cov_list <- c("tsi")
+nvec_list <- list(africa=2, asia=3, americas=2) # tsi
+
+cov_list <- c("rainfall")
+nvec_list <- list(asia=3) # rainfall
 
 for (this_cov in cov_list){
   for (continent in names(nvec_list)){
@@ -47,22 +48,27 @@ for (this_cov in cov_list){
       
       # if k-means has already been run, just load outputs
       
-      k_out_fname <- file.path(main_dir, "k_means", paste0("k_out_", nclust, ".tif"))
-      cluster_raster_fname <- file.path(main_dir, "k_means", paste0("clusters_", nclust, ".tif"))
-      time_series_fname <- file.path(main_dir, "k_means", paste0("time_series_", nclust, ".csv"))
+      k_out_fname <- file.path(main_dir, "k_means", paste0("k_out_", this_cov, "_", nclust, ".tif"))
+      cluster_raster_fname <- file.path(main_dir, "k_means", paste0("clusters_", this_cov, "_", nclust, ".tif"))
+      time_series_fname <- file.path(main_dir, "k_means", paste0("time_series_", this_cov, "_", nclust, ".csv"))
       
       if (file.exists(k_out_fname)){
         print("k-means already run, loading outputs")
+        
+        ##todelete---------------
+        load(k_out_fname)
+        rotation[, cluster:= k_out$cluster]
+        
         print("creating new raster")
         # load mask raster to get dimensions & extent
-        load(k_out_fname)
-        rotation[, cluster:=k_out$cluster]
-        mask_raster <- raster(file.path(main_dir, "rasters/mask.tif"))
-        cluster_raster <- matrix(nrow=mask_raster@nrows, ncol=mask_raster@ncols)
+        temp_raster <- raster(file.path(main_dir, "rasters", paste0(this_cov, "_month_1.tif")))
+        cluster_raster <- matrix(nrow=temp_raster@nrows, ncol=temp_raster@ncols)
         cluster_raster[rotation$id] <- rotation$cluster
-        cluster_raster <- raster(cluster_raster, template=mask_raster)
+        cluster_raster <- raster(cluster_raster, template=temp_raster)
         writeRaster(cluster_raster, cluster_raster_fname, overwrite=T)
-        # cluster_raster <- raster(cluster_raster_fname)
+        ## ------------------------------------
+        
+        cluster_raster <- raster(cluster_raster_fname)
         time_series <- fread(time_series_fname)
         
       }else{
@@ -72,10 +78,10 @@ for (this_cov in cov_list){
         
         print("creating new raster")
         # load mask raster to get dimensions & extent
-        mask_raster <- raster(file.path(main_dir, "rasters/mask.tif"))
-        cluster_raster <- matrix(nrow=mask_raster@nrows, ncol=mask_raster@ncols)
+        temp_raster <- raster(file.path(main_dir, "rasters", paste0(this_cov, "_month_1.tif")))
+        cluster_raster <- matrix(nrow=temp_raster@nrows, ncol=temp_raster@ncols)
         cluster_raster[rotation$id] <- rotation$cluster
-        cluster_raster <- raster(cluster_raster, template=mask_raster)
+        cluster_raster <- raster(cluster_raster, template=temp_raster)
         writeRaster(cluster_raster, cluster_raster_fname, overwrite=T)
         
         print("finding mean time series")
