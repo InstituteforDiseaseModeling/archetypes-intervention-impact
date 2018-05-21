@@ -29,8 +29,13 @@ extract_month <- function(month, main_dir, cov, mask_raster){
   pattern <- paste0(".*\\.", monthval, "\\..*.tif$")
   fname_idx <- which(str_detect(files, pattern))
   in_fname <- files[fname_idx]
-  if (length(fname_idx)>1){
-    stop(paste("multiple potential input rasters: ", in_fname))
+  if (length(in_fname)>1){
+    # try extracting mean value
+    in_fname <- in_fname[in_fname %like% "mean"]
+    
+    if (length(in_fname)!=1){ # break if there are further issues
+      stop(paste("multiple potential input rasters: ", in_fname))
+    }
   }
   
   out_fname = file.path(main_dir, "rasters", paste0(names(cov), "_month_", month, ".tif"))
@@ -41,6 +46,7 @@ extract_month <- function(month, main_dir, cov, mask_raster){
     print("clipping global raster")
     full <- raster(file.path(cov[[1]], in_fname))
     vals <- crop(full, mask_raster)
+    mask_raster <- crop(mask_raster, vals) # ensure that extents of two rasters are the same
     vals <- mask(vals, mask_raster, maskvalue=FALSE)
     writeRaster(vals, out_fname)
   }
