@@ -1,3 +1,18 @@
+## -----------------------------------------------------------------------------------------------------------------
+# Seasonality Classification
+# extract_and_svd.r
+# 
+# Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
+# May 2018
+# 
+# For a given covariate and continent of interest, this script extracts covariate-specific (currently: presumed monthly)
+# data from global rasters, transforms it into a panel dataset, and runs SVD on this dataset for further clustering analyses.  
+# 
+# For a detailed project write-up see
+# https://paper.dropbox.com/doc/Cluster-MAP-pixels-by-seasonality-zga4UM1DnBx8pc11rStOS
+## -----------------------------------------------------------------------------------------------------------------------
+
+
 library(gdistance)
 library(data.table)
 library(stringr)
@@ -5,13 +20,13 @@ library(stats)
 
 rm(list=ls())
 
+source("classify_functions.r")
 base_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
-cov_dirs <- list(tsi="Z:/mastergrids/Other_Global_Covariates/TemperatureSuitability/TSI_Pf_Dynamic/5km/Synoptic/")
-cov_dirs <- list(rainfall="Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic")
+cov_dirs <- list(tsi="Z:/mastergrids/Other_Global_Covariates/TemperatureSuitability/TSI_Pf_Dynamic/5km/Synoptic/",
+                 rainfall="Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic")
 continents <- c("africa", "asia", "americas")
-source("classify_functions.r")
 
 
 for (idx in 1:length(cov_dirs)){
