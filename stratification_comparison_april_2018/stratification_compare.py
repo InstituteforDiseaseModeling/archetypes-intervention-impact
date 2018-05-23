@@ -1,16 +1,18 @@
+## -------------------------------------------------------------------------------------------------------------------
+# Stratification Comparison
+# stratification_compare.py
+#
+# Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
+# April 2018
+#
+# Generate comparative dataset ultimately used by Jaline for model comparison in May 2018 Gates Review.
+## --------------------------------------------------------------------------------------------------------------------
+
 import pandas as pd
 import os
-import json
-import re
 import shapely
-import rasterio
-import pdb
-import numpy as np
-import matplotlib as mpl
-import matplotlib.pyplot as plt
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import seaborn as sns
 
 from spatial import make_shapefile, extract_latlongs, mask_raster
 

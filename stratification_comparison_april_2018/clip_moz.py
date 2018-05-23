@@ -1,6 +1,16 @@
+## -----------------------------------------------------------------------------------------------------------------
+# Stratification Comparison
+# clip_moz.py
+#
+# Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
+# April 2018
+#
+# Script to clip a raster  based on the bounding box of certain data points (here, Magude Mozambique).
+# Used in a stratification/model comparison exercise for the May 2018 Gates Review.
+## -----------------------------------------------------------------------------------------------------------------------
+
 import os
 import re
-import pdb
 import pandas as pd
 import shapely
 
