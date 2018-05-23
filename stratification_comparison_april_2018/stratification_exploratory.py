@@ -1,19 +1,23 @@
+## -------------------------------------------------------------------------------------------------------------------
+# Stratification Comparison
+# stratification_exploration.py
+#
+# Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
+# April 2018
+#
+# Preliminary/exploratory analyses for stratification project. Final results generated in stratification_compare.py
+## --------------------------------------------------------------------------------------------------------------------
+
 import pandas as pd
 import os
-import json
 import re
 import shapely
-import rasterio
-import pdb
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
-import seaborn as sns
 
 from spatial import make_shapefile, extract_latlongs, mask_raster
-
 
 print("extracting and plotting IDM grid locations and populations")
 main_dir = "C:/Users/abertozzivilla/Dropbox (IDM)/Malaria Team Folder/projects/Mozambique/"
