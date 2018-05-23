@@ -1,3 +1,16 @@
+## -----------------------------------------------------------------------------------------------------------------
+# Seasonality Classification
+# classify_functions.r
+# 
+# Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
+# May 2018
+# 
+# Collection of functions for covariate extraction and matrix manipulation. 
+# 
+# For a detailed project write-up see
+# https://paper.dropbox.com/doc/Cluster-MAP-pixels-by-seasonality-zga4UM1DnBx8pc11rStOS
+## -----------------------------------------------------------------------------------------------------------------------
+
 library(raster)
 library(data.table)
 library(stringr)
