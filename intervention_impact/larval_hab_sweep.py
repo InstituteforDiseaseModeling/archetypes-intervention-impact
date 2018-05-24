@@ -86,7 +86,7 @@ builder = ModBuilder.from_list([[
     ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', x
           )
     ]
-    for i, x in enumerate([1, 10, 100])
+    for i, x in enumerate([5, 10, 50, 100, 500, 1000])
 ])
 
 run_sim_args = {'config_builder': cb,
