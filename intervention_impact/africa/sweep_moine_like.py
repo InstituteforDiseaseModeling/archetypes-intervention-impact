@@ -24,17 +24,17 @@ exp_name = 'Intervention_Burnin_Test'  # change this to something unique every t
 years = 50
 species = 'gambiae'
 
-main_dir = os.path.join(os.path.expanduser("~"), "Dropbox (IDM)/Malaria Team Folder/projects/Mozambique/")
-hf_dir = os.path.join(main_dir, "gridded_simulation_input")
-surface_dir = os.path.join(main_dir, "incidence_calibration/surface_calib/")
-
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Simulation_Duration=int(365*years),
                                     Config_Name=exp_name,
-                                    Demographics_Filenames=['single_node_demographics.json'],
+                                    Demographics_Filenames=['demo_moine.json'],
                                     Birth_Rate_Dependence='FIXED_BIRTH_RATE',
                                     Vector_Species_Names=[species],
                                     Num_Cores=1,
+
+                                    # interventions
+                                    Valid_Intervention_States= [],  # apparently a necessary parameter
+                                    Listed_Events= ['Bednet_Discarded', 'Bednet_Got_New_One', 'Bednet_Using'],
 
                                     ## ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
