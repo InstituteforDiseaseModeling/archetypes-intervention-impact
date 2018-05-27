@@ -9,6 +9,7 @@ import shutil
 from dtk.vector.species import set_species_param, set_larval_habitat, set_params_by_species
 from simtools.SetupParser import SetupParser
 from dtk.interventions.health_seeking import add_health_seeking
+from dtk.interventions.itn_age_season import add_ITN_age_season
 from dtk.generic.climate import set_climate_constant
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
 from simtools.ModBuilder import ModBuilder, ModFn
@@ -20,9 +21,15 @@ from malaria.reports.MalariaReport import add_event_counter_report
 # setup
 location = 'HPC'
 SetupParser.default_block = location
-exp_name = 'Intervention_Burnin_Test'  # change this to something unique every time
+exp_name = 'Intervention_Burnin_Pop_3000'  # change this to something unique every time
 years = 50
 species = 'minimus'
+
+# Serialization
+serialize = True  # If true, save serialized files
+pull_from_serialization = False  # requires serialization date and experiment id
+serialization_date = 50*365
+serialization_exp_id = "95c9bd38-72ae-e711-9414-f0921c16b9e5"
 
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Simulation_Duration=int(365*years),
@@ -49,6 +56,14 @@ cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
 
                                     )
 
+if serialize:
+    cb.update_params({'Serialization_Time_Steps': [365*years]})
+
+if pull_from_serialization:
+    cb.update_params({'Serialized_Population_Filenames':
+                              ['state-%05d.dtk' % serialization_date]
+                              })
+
 ## larval habitat
 set_climate_constant(cb)
 
@@ -70,13 +85,29 @@ hab = {species : {
 
 set_larval_habitat(cb, hab)
 
-builder = ModBuilder.from_list([[
-    ModFn(DTKConfigBuilder.set_param, 'Run_Number', i),
-    ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', x
-          )
-    ]
-    for i, x in enumerate([5, 10, 50, 100, 500, 1000])
-])
+if pull_from_serialization:
+    COMPS_login("https://comps.idmod.org")
+    expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
+
+    df = pd.DataFrame([x.tags for x in expt.simulations])
+    df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
+
+    builder = ModBuilder.from_list([[
+        ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', '{path}/output'.format(path=df['outpath'][x])),
+        ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
+        ModFn(add_ITN_age_season, coverage_all=y)
+
+                                    ]
+        for x in df.index for y in range(0,105, 5)
+    ])
+else:
+    builder = ModBuilder.from_list([[
+        # ModFn(DTKConfigBuilder.set_param, 'Run_Number', i),
+        ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', x
+              )
+        ]
+        for i, x in enumerate([5, 10, 50, 100, 500, 1000])
+    ])
 
 run_sim_args = {'config_builder': cb,
                 'exp_name': exp_name,
