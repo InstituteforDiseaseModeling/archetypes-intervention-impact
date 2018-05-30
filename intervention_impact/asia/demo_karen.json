@@ -49,10 +49,10 @@
                     "ResultUnits": "annual deaths per 1000 individuals", 
                     "ResultValues": [
                         [
-                            23
+                            45
                         ], 
                         [
-                            23
+                            45
                         ]
                     ]
                 }, 
@@ -69,7 +69,7 @@
                 "Altitude": 0, 
                 "BirthRate":0.38478809,
                 "Birth_Rate_Dependence": "FIXED_BIRTH_RATE",
-                "InitialPopulation": 1500,
+                "InitialPopulation": 3121,
                 "Latitude": 17.4065733582,
                 "Longitude": 97.8086475914,
                 "Region": 1, 
