@@ -16,20 +16,20 @@ from simtools.ModBuilder import ModBuilder, ModFn
 from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
 
-from malaria.reports.MalariaReport import add_event_counter_report
+from malaria.reports.MalariaReport import add_summary_report
 
 # setup
 location = 'HPC'
 SetupParser.default_block = location
-exp_name = 'Test_Serialization_Pull_Zero_Coverage'  # change this to something unique every time
-years = 2
+exp_name = 'Karen_50yr_Burnin_Statpop'  # change this to something unique every time
+years = 50
 species = 'minimus'
 
 # Serialization
 serialize = True  # If true, save serialized files
-pull_from_serialization =  True # requires serialization date and experiment id
+pull_from_serialization =  False # requires serialization date and experiment id
 serialization_date = 50*365
-serialization_exp_id = "2b52039e-8961-e811-a2c0-c4346bcb7275"
+serialization_exp_id = "48e3e912-1664-e811-a2c0-c4346bcb7275"
 
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Simulation_Duration=int(365*years),
@@ -63,6 +63,9 @@ if pull_from_serialization:
     cb.update_params({'Serialized_Population_Filenames':
                               ['state-%05d.dtk' % serialization_date]
                               })
+# reporting
+add_summary_report(cb)
+
 
 ## larval habitat
 set_climate_constant(cb)
@@ -100,12 +103,12 @@ if pull_from_serialization:
 
     builder = ModBuilder.from_list([[
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', '{path}/output'.format(path=df['outpath'][x])),
-        ModFn(DTKConfigBuilder.set_param, 'Run_Number', z),
+       #  ModFn(DTKConfigBuilder.set_param, 'Run_Number', y),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        ModFn(add_ITN_age_season, coverage_all=y/100)
+       #  ModFn(add_ITN_age_season, coverage_all=z/100)
 
                                     ]
-        for x in df.index for y in range(0,105, 5) for z in range(50)
+        for x in df.index  # for y in range(10) # for z in range(0,105, 5)
     ])
 else:
     builder = ModBuilder.from_list([[
