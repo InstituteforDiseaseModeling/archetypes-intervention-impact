@@ -1,5 +1,6 @@
 import os
 import pandas as pd
+import numpy as np
 import sys
 import json
 import pdb
@@ -21,15 +22,14 @@ from malaria.reports.MalariaReport import add_summary_report
 # setup
 location = 'HPC'
 SetupParser.default_block = location
-exp_name = 'Karen_50yr_Burnin_Statpop'  # change this to something unique every time
+exp_name = 'Karen_Fine_Burnin'  # change this to something unique every time
 years = 50
 species = 'minimus'
 
 # Serialization
 serialize = True  # If true, save serialized files
 pull_from_serialization =  False # requires serialization date and experiment id
-serialization_date = 50*365
-serialization_exp_id = "48e3e912-1664-e811-a2c0-c4346bcb7275"
+serialization_exp_id = "1c52b2f5-4064-e811-a2c0-c4346bcb7275"
 
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Simulation_Duration=int(365*years),
@@ -59,13 +59,8 @@ cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
 if serialize:
     cb.update_params({'Serialization_Time_Steps': [365*years]})
 
-if pull_from_serialization:
-    cb.update_params({'Serialized_Population_Filenames':
-                              ['state-%05d.dtk' % serialization_date]
-                              })
 # reporting
 add_summary_report(cb)
-
 
 ## larval habitat
 set_climate_constant(cb)
@@ -102,21 +97,23 @@ if pull_from_serialization:
     df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
 
     builder = ModBuilder.from_list([[
-        ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', '{path}/output'.format(path=df['outpath'][x])),
-       #  ModFn(DTKConfigBuilder.set_param, 'Run_Number', y),
+        ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
+        ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Filenames',
+              [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
+        ModFn(DTKConfigBuilder.set_param, 'Run_Number', y),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-       #  ModFn(add_ITN_age_season, coverage_all=z/100)
-
+        ModFn(add_ITN_age_season, coverage_all=z/100)
                                     ]
-        for x in df.index  # for y in range(10) # for z in range(0,105, 5)
+        for x in df.index for y in range(10) for z in [0, 80, 100] #range(0,105, 5)
     ])
 else:
     builder = ModBuilder.from_list([[
-        # ModFn(DTKConfigBuilder.set_param, 'Run_Number', i),
-        ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', x
-              )
+        ModFn(DTKConfigBuilder.set_param, 'Run_Number', y),
+        ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', 10**x),
+        # ModFn(add_ITN_age_season, start=365*2, coverage_all=z/100)
         ]
-        for i, x in enumerate([5, 10, 50, 100, 500, 1000])
+        for x in np.arange(0, 4.25, 0.25) for y in range(10) # for z in [0, 50, 80]
+        # for x in [100] for y in [0,50,80]
     ])
 
 run_sim_args = {'config_builder': cb,
