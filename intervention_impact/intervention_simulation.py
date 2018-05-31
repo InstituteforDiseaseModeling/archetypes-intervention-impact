@@ -22,9 +22,47 @@ from malaria.reports.MalariaReport import add_summary_report
 # setup
 location = 'HPC'
 SetupParser.default_block = location
-exp_name = 'Karen_Fine_Burnin'  # change this to something unique every time
-years = 50
-species = 'minimus'
+archetype = "moine"
+
+archetypes = {'karen': {
+                        'demog': 'demog/demog_karen.json',
+                        'species': [{'name': 'minimus',
+                                    'seasonality': {
+                                      "Times":  [0, 1, 244, 274, 363],
+                                      "Values": [0.2, 0.2, 0.7, 3, 3]
+                                      }
+                                    }]
+             },
+             'moine': {
+                        'demog': 'demog/demog_moine.json',
+                        'species': [{'name':'gambiae',
+                                     'seasonality': {
+                                         "Times": [0.0, 30.417, 60.833, 91.25, 121.667, 152.083, 182.5, 212.917,
+                                                   243.333, 273.75,
+                                                   304.167, 334.583],
+                                         "Values": [0.0429944166751962,
+                                                    0.145106159922212,
+                                                    0.220520011001099,
+                                                    0.318489404300663,
+                                                    0.0617610600835594,
+                                                    0.0462380862878181,
+                                                    0.0367590381502996,
+                                                    0.02474944109524821,
+                                                    0.0300445801767523,
+                                                    0.021859890543704,
+                                                    0.0261404367939001,
+                                                    0.0253992634551118]
+                                     }
+                        }],
+
+             }
+
+}
+
+arch_vals = archetypes[archetype]
+
+exp_name = 'Karen_Test_Archetype'  # change this to something unique every time
+years = 2
 
 # Serialization
 serialize = True  # If true, save serialized files
@@ -34,7 +72,7 @@ serialization_exp_id = "1c52b2f5-4064-e811-a2c0-c4346bcb7275"
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Simulation_Duration=int(365*years),
                                     Config_Name=exp_name,
-                                    Demographics_Filenames=['demo_karen.json'],
+                                    Demographics_Filenames=[arch_vals['demog']],
                                     Birth_Rate_Dependence='FIXED_BIRTH_RATE',
                                     Num_Cores=1,
 
@@ -65,23 +103,24 @@ add_summary_report(cb)
 ## larval habitat
 set_climate_constant(cb)
 
-set_params_by_species(cb.params, ['minimus'])
-set_species_param(cb, species, "Adult_Life_Expectancy", 20)
 
-capacity_dist_per_year = {
-                          "Times":  [0, 1, 244, 274, 363],
-                          "Values": [0.2, 0.2, 0.7, 3, 3]
-                      }
-hab = {species : {
-        # 'CONSTANT': 2e6,
-        "LINEAR_SPLINE": {
-                           "Capacity_Distribution_Per_Year": capacity_dist_per_year,
-                           "Max_Larval_Capacity": 1e8
-                       }
-                       }
-           }
+set_params_by_species(cb.params, [species['name'] for species in arch_vals['species']])
+for species in arch_vals['species']:
 
-set_larval_habitat(cb, hab)
+    print('setting params for species ' + species['name'])
+
+    set_species_param(cb, species['name'], "Adult_Life_Expectancy", 20)
+
+    hab = {species['name'] : {
+            # 'CONSTANT': 2e6,
+            "LINEAR_SPLINE": {
+                               "Capacity_Distribution_Per_Year": species['seasonality'],
+                               "Max_Larval_Capacity": 1e8
+                           }
+                           }
+               }
+
+    set_larval_habitat(cb, hab)
 
 cb.update_params({
         "Report_Event_Recorder": 1,
@@ -112,8 +151,8 @@ else:
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', 10**x),
         # ModFn(add_ITN_age_season, start=365*2, coverage_all=z/100)
         ]
-        for x in np.arange(0, 4.25, 0.25) for y in range(10) # for z in [0, 50, 80]
-        # for x in [100] for y in [0,50,80]
+        # for x in np.arange(0, 4.25, 0.25) for y in range(10) # for z in [0, 50, 80]
+        for x in [2] for y in [0,50,80]
     ])
 
 run_sim_args = {'config_builder': cb,
