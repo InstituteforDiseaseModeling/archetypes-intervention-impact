@@ -10,6 +10,7 @@ import shutil
 from dtk.vector.species import set_species_param, set_larval_habitat, set_params_by_species
 from simtools.SetupParser import SetupParser
 from dtk.interventions.health_seeking import add_health_seeking
+from dtk.interventions.irs import add_IRS
 from dtk.interventions.itn_age_season import add_ITN_age_season
 from dtk.generic.climate import set_climate_constant
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
@@ -23,6 +24,15 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
+exp_name = 'Moine_Fine_Burnin'  # change this to something unique every time
+years = 50
+interventions = ['itn']
+
+# Serialization
+serialize = True  # If true, save serialized files
+pull_from_serialization =  False # requires experiment id
+serialization_exp_id = "1c52b2f5-4064-e811-a2c0-c4346bcb7275"
+
 
 archetypes = {'karen': {
                         'demog': 'demog/demog_karen.json',
@@ -61,13 +71,6 @@ archetypes = {'karen': {
 
 arch_vals = archetypes[archetype]
 
-exp_name = 'Karen_Test_Archetype'  # change this to something unique every time
-years = 2
-
-# Serialization
-serialize = True  # If true, save serialized files
-pull_from_serialization =  False # requires serialization date and experiment id
-serialization_exp_id = "1c52b2f5-4064-e811-a2c0-c4346bcb7275"
 
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Simulation_Duration=int(365*years),
@@ -114,7 +117,8 @@ for species in arch_vals['species']:
     hab = {species['name'] : {
             # 'CONSTANT': 2e6,
             "LINEAR_SPLINE": {
-                               "Capacity_Distribution_Per_Year": species['seasonality'],
+                               "Capacity_Distribution_Over_Time": species['seasonality'],
+                               "Capacity_Distribution_Number_Of_Years": 1,
                                "Max_Larval_Capacity": 1e8
                            }
                            }
@@ -128,6 +132,43 @@ cb.update_params({
         "Report_Event_Recorder_Ignore_Events_In_List": 0
     })
 
+# irs
+def add_irs_group(cb, coverage=1.0, start_days=[60], decay=270):
+
+    waning = {
+                "Killing_Config": {
+                    "Initial_Effect": 0.6,
+                    "Decay_Time_Constant": decay,
+                    "class": "WaningEffectExponential"
+                },
+                "Blocking_Config": {
+                    "Initial_Effect": 0.0,
+                    "Decay_Time_Constant": 730,
+                    "class": "WaningEffectExponential"
+                }}
+
+    for start in start_days:
+        add_IRS(cb, start, [{'min': 0, 'max': 200, 'coverage': coverage}],
+                waning=waning)
+
+    return {'IRS_halflife': decay, 'IRS_start': start_days[0], 'Coverage': coverage}
+
+if "irs" in interventions:
+    add_irs_group(cb, coverage=0.8, decay=180) # simulate actellic irs
+
+# act
+if "act" in interventions:
+    add_health_seeking(cb,
+                       targets=[{'trigger': 'NewClinicalCase', 'coverage': 0.8, 'agemin': 0, 'agemax': 100, 'seek': 1.0,
+                                 'rate': 1}],
+                       drug=['Artemether', 'Lumefantrine'],
+                       dosing='FullTreatmentNewDetectionTech',
+                       nodes={"class": "NodeSetAll"},
+                       repetitions=1,
+                       tsteps_btwn_repetitions=365,
+                       broadcast_event_name='Received_Treatment')
+
+
 if pull_from_serialization:
     COMPS_login("https://comps.idmod.org")
     expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
@@ -139,11 +180,11 @@ if pull_from_serialization:
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Filenames',
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
-        ModFn(DTKConfigBuilder.set_param, 'Run_Number', y),
+        # ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
         ModFn(add_ITN_age_season, coverage_all=z/100)
                                     ]
-        for x in df.index for y in range(10) for z in [0, 80, 100] #range(0,105, 5)
+        for x in df.index # for y in range(10) # for z in [0, 80, 100] #range(0,105, 5)
     ])
 else:
     builder = ModBuilder.from_list([[
@@ -151,8 +192,8 @@ else:
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', 10**x),
         # ModFn(add_ITN_age_season, start=365*2, coverage_all=z/100)
         ]
-        # for x in np.arange(0, 4.25, 0.25) for y in range(10) # for z in [0, 50, 80]
-        for x in [2] for y in [0,50,80]
+        for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25))) for y in range(5) # for z in [0, 50, 80]
+        # for x in [2] for y in [0,50,80]
     ])
 
 run_sim_args = {'config_builder': cb,

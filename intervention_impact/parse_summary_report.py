@@ -9,7 +9,7 @@ import shutil
 from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
 
-serialization_exp_id = "1c52b2f5-4064-e811-a2c0-c4346bcb7275"
+serialization_exp_id = "31e731e5-be64-e811-a2c0-c4346bcb7275"
 
 COMPS_login("https://comps.idmod.org")
 expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
@@ -32,3 +32,5 @@ for x in df.index:
     prev_list.append(prev_df)
 
 prev_all = pd.concat(prev_list)
+last_year = prev_all.loc[49]
+means = last_year.groupby('x_temp').mean()
