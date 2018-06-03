@@ -24,14 +24,14 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_Fine_Burnin'  # change this to something unique every time
-years = 50
+exp_name = 'Moine_Test_ITNs'  # change this to something unique every time
+years = 2
 interventions = ['itn']
 
 # Serialization
-serialize = True  # If true, save serialized files
-pull_from_serialization =  False # requires experiment id
-serialization_exp_id = "1c52b2f5-4064-e811-a2c0-c4346bcb7275"
+serialize = False  # If true, save serialized files
+pull_from_serialization =  True # requires experiment id
+serialization_exp_id = "cc8002ec-a665-e811-a2c0-c4346bcb7275"
 
 
 archetypes = {'karen': {
@@ -180,11 +180,11 @@ if pull_from_serialization:
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Filenames',
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
-        # ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
+        ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
         ModFn(add_ITN_age_season, coverage_all=z/100)
                                     ]
-        for x in df.index # for y in range(10) # for z in [0, 80, 100] #range(0,105, 5)
+        for x in df.index for z in range(0,105, 5)
     ])
 else:
     builder = ModBuilder.from_list([[
