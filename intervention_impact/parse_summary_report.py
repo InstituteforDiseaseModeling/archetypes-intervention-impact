@@ -22,6 +22,7 @@ expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
 df = pd.DataFrame([x.tags for x in expt.simulations])
 df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
 
+##example 
 prev_list = []
 
 for x in df.index:
