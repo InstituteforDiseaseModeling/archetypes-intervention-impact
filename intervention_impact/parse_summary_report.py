@@ -12,10 +12,11 @@ from simtools.Utilities.COMPSUtilities import COMPS_login
 out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'projects',
                        'map_intervention_impact', 'prelim_itn_sweeps')
 
-df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'add_ITN_age_season.coverage_all', "Healthseek_Coverage"]
+df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'add_ITN_age_season.coverage_all', "Healthseek_Coverage",
+           "IRS_Coverage"]
 
-serialization_exp_id = "b70bff37-4468-e811-a2c0-c4346bcb7275"
-out_fname = "moine_irs_cm.csv"
+serialization_exp_id = "1e1cb425-a368-e811-a2c0-c4346bcb7275"
+out_fname = "moine_itn_discard.csv"
 
 COMPS_login("https://comps.idmod.org")
 expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
@@ -23,7 +24,6 @@ expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
 df = pd.DataFrame([x.tags for x in expt.simulations])
 df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
 
-##example
 prev_list = []
 
 for x in df.index:

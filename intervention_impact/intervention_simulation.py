@@ -24,14 +24,15 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_IRS_CM_Sweep'  # change this to something unique every time
-years = 2
+exp_name = 'Moine_Longer_ITNs'  # change this to something unique every time
+years = 32
 interventions = ['itn']
 
 # Serialization
 serialize = False  # If true, save serialized files
 pull_from_serialization =  True # requires experiment id
-serialization_exp_id = "cc8002ec-a665-e811-a2c0-c4346bcb7275"
+# serialization_exp_id = "cc8002ec-a665-e811-a2c0-c4346bcb7275" # moine
+# serialization_exp_id = "e88827cf-a365-e811-a2c0-c4346bcb7275" # karen
 
 
 archetypes = {'karen': {
@@ -41,7 +42,8 @@ archetypes = {'karen': {
                                       "Times":  [0, 1, 244, 274, 363],
                                       "Values": [0.2, 0.2, 0.7, 3, 3]
                                       }
-                                    }]
+                                    }],
+                        'burnin_id': "e88827cf-a365-e811-a2c0-c4346bcb7275"
              },
              'moine': {
                         'demog': 'demog/demog_moine.json',
@@ -64,6 +66,7 @@ archetypes = {'karen': {
                                                     0.0253992634551118]
                                      }
                         }],
+                        'burnin_id': "cc8002ec-a665-e811-a2c0-c4346bcb7275"
 
              }
 
@@ -132,6 +135,17 @@ cb.update_params({
         "Report_Event_Recorder_Ignore_Events_In_List": 0
     })
 
+# itns
+def add_annual_irs(cb, year_count=1, coverage=0.8, discard_halflife=183):
+    for year in range(year_count):
+        add_ITN_age_season(cb,
+                           coverage_all = coverage,
+                           discard = {'halflife': discard_halflife},
+                           start=365*year)
+
+    return {'ITN_Coverage': coverage, 'ITN_Halflife': discard_halflife}
+
+
 # irs
 def add_irs_group(cb, coverage=1.0, start_days=[0], decay=270):
 
@@ -151,7 +165,7 @@ def add_irs_group(cb, coverage=1.0, start_days=[0], decay=270):
         add_IRS(cb, start, [{'min': 0, 'max': 200, 'coverage': coverage}],
                 waning=waning)
 
-    return {'IRS_halflife': decay, 'IRS_start': start_days[0], 'IRS_Coverage': coverage}
+    return {'IRS_Halflife': decay, 'IRS_Start': start_days[0], 'IRS_Coverage': coverage}
 
 if "irs" in interventions:
     add_irs_group(cb, coverage=0.8, decay=180) # simulate actellic irs
@@ -178,10 +192,13 @@ if "act" in interventions:
 
 if pull_from_serialization:
     COMPS_login("https://comps.idmod.org")
-    expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
+    expt = ExperimentDataStore.get_most_recent_experiment(arch_vals['burnin_id'])
 
     df = pd.DataFrame([x.tags for x in expt.simulations])
     df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
+
+    # temp to reduce dimensionality
+    df = df.query('x_Temporary_Larval_Habitat>100')
 
     builder = ModBuilder.from_list([[
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
@@ -189,11 +206,11 @@ if pull_from_serialization:
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
         ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        # ModFn(add_ITN_age_season, coverage_all=z/100),
-        ModFn(add_healthseeking_by_coverage,coverage=zz/100),
-        ModFn(add_irs_group, coverage=z/100, decay=180)
+        ModFn(add_annual_irs, year_count=years, coverage=z/100),
+        # ModFn(add_healthseeking_by_coverage,coverage=zz/100),
+        # ModFn(add_irs_group, coverage=z/100, decay=180)
                                     ]
-        for x in df.index for z in range(0, 100, 20) for zz in range(0, 100, 20)
+        for x in df.index for z in range(0, 100, 20)  # for zz in range(0, 100, 20)
     ])
 else:
     builder = ModBuilder.from_list([[
