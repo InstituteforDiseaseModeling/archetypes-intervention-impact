@@ -12,9 +12,11 @@ from simtools.Utilities.COMPSUtilities import COMPS_login
 out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'projects',
                        'map_intervention_impact', 'prelim_itn_sweeps')
 
-df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'add_ITN_age_season.coverage_all']
+df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'add_ITN_age_season.coverage_all', "Healthseek_Coverage",
+           "IRS_Coverage"]
 
-serialization_exp_id = "cc8002ec-a665-e811-a2c0-c4346bcb7275"
+serialization_exp_id = "1e1cb425-a368-e811-a2c0-c4346bcb7275"
+out_fname = "moine_itn_discard.csv"
 
 COMPS_login("https://comps.idmod.org")
 expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
@@ -22,7 +24,6 @@ expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
 df = pd.DataFrame([x.tags for x in expt.simulations])
 df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
 
-##example 
 prev_list = []
 
 for x in df.index:
@@ -43,7 +44,7 @@ for x in df.index:
     prev_list.append(prev_df)
 
 prev_all = pd.concat(prev_list)
-prev_all.to_csv(os.path.join(out_dir, 'prelim_moine_burnins.csv'), index=False)
+prev_all.to_csv(os.path.join(out_dir, out_fname), index=False)
 
 # last_year = prev_all.loc[49]
 # means = last_year.groupby('x_temp').mean()
