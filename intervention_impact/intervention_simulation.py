@@ -24,7 +24,7 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_Test_ITNs'  # change this to something unique every time
+exp_name = 'Moine_IRS_CM_Sweep'  # change this to something unique every time
 years = 2
 interventions = ['itn']
 
@@ -133,7 +133,7 @@ cb.update_params({
     })
 
 # irs
-def add_irs_group(cb, coverage=1.0, start_days=[60], decay=270):
+def add_irs_group(cb, coverage=1.0, start_days=[0], decay=270):
 
     waning = {
                 "Killing_Config": {
@@ -151,15 +151,15 @@ def add_irs_group(cb, coverage=1.0, start_days=[60], decay=270):
         add_IRS(cb, start, [{'min': 0, 'max': 200, 'coverage': coverage}],
                 waning=waning)
 
-    return {'IRS_halflife': decay, 'IRS_start': start_days[0], 'Coverage': coverage}
+    return {'IRS_halflife': decay, 'IRS_start': start_days[0], 'IRS_Coverage': coverage}
 
 if "irs" in interventions:
     add_irs_group(cb, coverage=0.8, decay=180) # simulate actellic irs
 
 # act
-if "act" in interventions:
+def add_healthseeking_by_coverage(cb, coverage=1.0):
     add_health_seeking(cb,
-                       targets=[{'trigger': 'NewClinicalCase', 'coverage': 0.8, 'agemin': 0, 'agemax': 100, 'seek': 1.0,
+                       targets=[{'trigger': 'NewClinicalCase', 'coverage': coverage, 'agemin': 0, 'agemax': 100, 'seek': 1.0,
                                  'rate': 1}],
                        drug=['Artemether', 'Lumefantrine'],
                        dosing='FullTreatmentNewDetectionTech',
@@ -167,6 +167,13 @@ if "act" in interventions:
                        repetitions=1,
                        tsteps_btwn_repetitions=365,
                        broadcast_event_name='Received_Treatment')
+
+    return {'Healthseek_Coverage': coverage}
+
+
+
+if "act" in interventions:
+    add_healthseeking_by_coverage(cb, 0.8)
 
 
 if pull_from_serialization:
@@ -182,9 +189,11 @@ if pull_from_serialization:
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
         ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        ModFn(add_ITN_age_season, coverage_all=z/100)
+        # ModFn(add_ITN_age_season, coverage_all=z/100),
+        ModFn(add_healthseeking_by_coverage,coverage=zz/100),
+        ModFn(add_irs_group, coverage=z/100, decay=180)
                                     ]
-        for x in df.index for z in range(0,105, 5)
+        for x in df.index for z in range(0, 100, 20) for zz in range(0, 100, 20)
     ])
 else:
     builder = ModBuilder.from_list([[
