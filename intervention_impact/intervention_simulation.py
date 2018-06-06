@@ -24,17 +24,14 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_Climate_Burnin'  # change this to something unique every time
-years = 50
+exp_name = 'Moine_ITN_CM_80_Climate'  # change this to something unique every time
+years = 10
 interventions = ['itn']
 use_climate = True
 
 # Serialization
-serialize = True  # If true, save serialized files
-pull_from_serialization =  False # requires experiment id
-# serialization_exp_id = "cc8002ec-a665-e811-a2c0-c4346bcb7275" # moine
-# serialization_exp_id = "e88827cf-a365-e811-a2c0-c4346bcb7275" # karen
-
+serialize = False  # If true, save serialized files
+pull_from_serialization =  True # requires experiment id
 
 archetypes = {'karen': {
                         'demog': 'demog/demog_karen.json',
@@ -67,7 +64,7 @@ archetypes = {'karen': {
                                                     0.0253992634551118]
                                      }
                         }],
-                        'burnin_id': "cc8002ec-a665-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "476808e8-6369-e811-a2c0-c4346bcb7275"
 
              }
 
@@ -156,7 +153,7 @@ cb.update_params({
     })
 
 # itns
-def add_annual_itns(cb, year_count=1, coverage=0.8, discard_halflife=183):
+def add_annual_itns(cb, year_count=1, coverage=0.8, discard_halflife=270):
     for year in range(year_count):
         add_ITN_age_season(cb,
                            coverage_all = coverage,
@@ -164,6 +161,9 @@ def add_annual_itns(cb, year_count=1, coverage=0.8, discard_halflife=183):
                            start=365*year)
 
     return {'ITN_Coverage': coverage, 'ITN_Halflife': discard_halflife}
+
+if "itn" in interventions:
+    add_annual_itns(cb, year_count=years)
 
 
 # irs
@@ -194,7 +194,7 @@ if "irs" in interventions:
 def add_healthseeking_by_coverage(cb, coverage=1.0):
     add_health_seeking(cb,
                        targets=[{'trigger': 'NewClinicalCase', 'coverage': coverage, 'agemin': 0, 'agemax': 100, 'seek': 1.0,
-                                 'rate': 1}],
+                                 'rate': 0.3}],
                        drug=['Artemether', 'Lumefantrine'],
                        dosing='FullTreatmentNewDetectionTech',
                        nodes={"class": "NodeSetAll"},
@@ -218,7 +218,7 @@ if pull_from_serialization:
     df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
 
     # temp to reduce dimensionality
-    df = df.query('x_Temporary_Larval_Habitat==100')
+    # df = df.query('x_Temporary_Larval_Habitat==100')
 
     builder = ModBuilder.from_list([[
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),

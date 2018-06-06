@@ -15,7 +15,7 @@ out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team F
 df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'add_ITN_age_season.coverage_all', "Healthseek_Coverage",
            "IRS_Coverage"]
 
-serialization_exp_id = "61ba48ed-1469-e811-a2c0-c4346bcb7275"
+serialization_exp_id = "476808e8-6369-e811-a2c0-c4346bcb7275"
 out_fname = "moine_climate_burnin.csv"
 
 COMPS_login("https://comps.idmod.org")
