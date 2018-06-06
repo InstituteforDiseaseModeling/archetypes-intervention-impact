@@ -24,13 +24,14 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_Longer_ITNs'  # change this to something unique every time
-years = 32
+exp_name = 'Moine_Climate_Burnin'  # change this to something unique every time
+years = 50
 interventions = ['itn']
+use_climate = True
 
 # Serialization
-serialize = False  # If true, save serialized files
-pull_from_serialization =  True # requires experiment id
+serialize = True  # If true, save serialized files
+pull_from_serialization =  False # requires experiment id
 # serialization_exp_id = "cc8002ec-a665-e811-a2c0-c4346bcb7275" # moine
 # serialization_exp_id = "e88827cf-a365-e811-a2c0-c4346bcb7275" # karen
 
@@ -74,7 +75,6 @@ archetypes = {'karen': {
 
 arch_vals = archetypes[archetype]
 
-
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Simulation_Duration=int(365*years),
                                     Config_Name=exp_name,
@@ -107,27 +107,47 @@ if serialize:
 add_summary_report(cb)
 
 ## larval habitat
-set_climate_constant(cb)
 
+if use_climate:
+    climate_path = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'data',
+                               'Mozambique', 'Magude', 'Mozambique climate')
+    cb.update_params( # Climate file paths
+        {'Air_Temperature_Filename': os.path.join('climate',
+                                                 'Mozambique_Moine_2.5arcmin_air_temperature_daily.bin'),
+        'Land_Temperature_Filename': os.path.join('climate',
+                                                  'Mozambique_Moine_2.5arcmin_air_temperature_daily.bin'),
+        'Rainfall_Filename': os.path.join('climate',
+                                          'Mozambique_Moine_2.5arcmin_rainfall_daily.bin'),
+        'Relative_Humidity_Filename': os.path.join('climate',
+                                                   'Mozambique_Moine_2.5arcmin_relative_humidity_daily.bin')})
 
-set_params_by_species(cb.params, [species['name'] for species in arch_vals['species']])
-for species in arch_vals['species']:
+    total_capacity = 4e8
 
-    print('setting params for species ' + species['name'])
+    set_params_by_species(cb.params, ['funestus', 'gambiae'])
+    set_larval_habitat(cb, {'funestus': {'WATER_VEGETATION': total_capacity*0.94},
+                            'gambiae': {'CONSTANT': total_capacity*0.06*0.9,
+                                        'TEMPORARY_RAINFALL': total_capacity*0.06*0.1}})
 
-    set_species_param(cb, species['name'], "Adult_Life_Expectancy", 20)
+else:
+    set_climate_constant(cb)
+    set_params_by_species(cb.params, [species['name'] for species in arch_vals['species']])
 
-    hab = {species['name'] : {
-            # 'CONSTANT': 2e6,
-            "LINEAR_SPLINE": {
-                               "Capacity_Distribution_Over_Time": species['seasonality'],
-                               "Capacity_Distribution_Number_Of_Years": 1,
-                               "Max_Larval_Capacity": 1e8
-                           }
-                           }
-               }
+    for species in arch_vals['species']:
 
-    set_larval_habitat(cb, hab)
+        print('setting params for species ' + species['name'])
+
+        set_species_param(cb, species['name'], "Adult_Life_Expectancy", 20)
+
+        hab = {species['name'] : {
+                "LINEAR_SPLINE": {
+                                   "Capacity_Distribution_Over_Time": species['seasonality'],
+                                   "Capacity_Distribution_Number_Of_Years": 1,
+                                   "Max_Larval_Capacity": 1e8
+                               }
+                               }
+                   }
+
+        set_larval_habitat(cb, hab)
 
 cb.update_params({
         "Report_Event_Recorder": 1,
@@ -136,7 +156,7 @@ cb.update_params({
     })
 
 # itns
-def add_annual_irs(cb, year_count=1, coverage=0.8, discard_halflife=183):
+def add_annual_itns(cb, year_count=1, coverage=0.8, discard_halflife=183):
     for year in range(year_count):
         add_ITN_age_season(cb,
                            coverage_all = coverage,
@@ -198,7 +218,7 @@ if pull_from_serialization:
     df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
 
     # temp to reduce dimensionality
-    df = df.query('x_Temporary_Larval_Habitat>100')
+    df = df.query('x_Temporary_Larval_Habitat==100')
 
     builder = ModBuilder.from_list([[
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
@@ -206,11 +226,11 @@ if pull_from_serialization:
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
         ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        ModFn(add_annual_irs, year_count=years, coverage=z/100),
+        # ModFn(add_annual_itns, year_count=years, coverage=z/100),
         # ModFn(add_healthseeking_by_coverage,coverage=zz/100),
         # ModFn(add_irs_group, coverage=z/100, decay=180)
                                     ]
-        for x in df.index for z in range(0, 100, 20)  # for zz in range(0, 100, 20)
+        for x in df.index # for z in range(0, 100, 20)  # for zz in range(0, 100, 20)
     ])
 else:
     builder = ModBuilder.from_list([[
@@ -219,7 +239,7 @@ else:
         # ModFn(add_ITN_age_season, start=365*2, coverage_all=z/100)
         ]
         for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25))) for y in range(5) # for z in [0, 50, 80]
-        # for x in [2] for y in [0,50,80]
+        # for x in [0.5, 0, 1] # for y in range(2)
     ])
 
 run_sim_args = {'config_builder': cb,

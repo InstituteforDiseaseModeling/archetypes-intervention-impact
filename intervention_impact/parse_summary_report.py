@@ -15,8 +15,8 @@ out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team F
 df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'add_ITN_age_season.coverage_all', "Healthseek_Coverage",
            "IRS_Coverage"]
 
-serialization_exp_id = "1e1cb425-a368-e811-a2c0-c4346bcb7275"
-out_fname = "moine_itn_discard.csv"
+serialization_exp_id = "61ba48ed-1469-e811-a2c0-c4346bcb7275"
+out_fname = "moine_climate_burnin.csv"
 
 COMPS_login("https://comps.idmod.org")
 expt = ExperimentDataStore.get_most_recent_experiment(serialization_exp_id)
@@ -29,6 +29,8 @@ prev_list = []
 for x in df.index:
     print(x)
     report_dir = os.path.join(df['outpath'][x], 'output', 'MalariaSummaryReport_AnnualAverage.json')
+    # report_dir = os.path.join(df['outpath'][x], 'output', 'VectorSpeciesReport.json')
+
 
     with open(report_dir) as f:
         report = json.loads(f.read())
@@ -46,6 +48,5 @@ for x in df.index:
 prev_all = pd.concat(prev_list)
 prev_all.to_csv(os.path.join(out_dir, out_fname), index=False)
 
-# last_year = prev_all.loc[49]
-# means = last_year.groupby('x_temp').mean()
-# print(means)
+means = prev_all.groupby('x_Temporary_Larval_Habitat').mean()
+print(means)
