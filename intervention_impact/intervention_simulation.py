@@ -24,7 +24,7 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_itn_act'  # change this to something unique every time
+exp_name = 'Moine_ITN_ACT_new'  # change this to something unique every time
 years = 3
 interventions = ['itn', 'act']
 use_climate = True
@@ -64,7 +64,7 @@ archetypes = {'karen': {
                                                     0.0253992634551118]
                                      }
                         }],
-                        'burnin_id': "476808e8-6369-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "58be689d-576a-e811-a2c0-c4346bcb7275"
 
              }
 
@@ -160,7 +160,9 @@ cb.update_params({
 # itns
 def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife=270, start_day=0):
 
+    # per-round coverage: 1 minus the nth root of *not* getting a net in any one round
     per_round_coverage = 1 - (1 - coverage) ** (1 / n_rounds)
+
     for year in range(year_count):
         for round in range(n_rounds):
 
@@ -204,7 +206,7 @@ if "irs" in interventions:
 def add_healthseeking_by_coverage(cb, coverage=1.0):
     add_health_seeking(cb,
                        targets=[{'trigger': 'NewClinicalCase', 'coverage': coverage, 'agemin': 0, 'agemax': 100, 'seek': 1.0,
-                                 'rate': 0.3}],
+                                 'rate': 0.15}],
                        drug=['Artemether', 'Lumefantrine'],
                        dosing='FullTreatmentNewDetectionTech',
                        nodes={"class": "NodeSetAll"},
