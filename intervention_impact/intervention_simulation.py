@@ -24,9 +24,9 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_ITN_CM_80_Climate'  # change this to something unique every time
-years = 10
-interventions = ['itn']
+exp_name = 'Moine_itn_act'  # change this to something unique every time
+years = 3
+interventions = ['itn', 'act']
 use_climate = True
 
 # Serialization
@@ -106,24 +106,29 @@ add_summary_report(cb)
 ## larval habitat
 
 if use_climate:
-    climate_path = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'data',
-                               'Mozambique', 'Magude', 'Mozambique climate')
-    cb.update_params( # Climate file paths
-        {'Air_Temperature_Filename': os.path.join('climate',
-                                                 'Mozambique_Moine_2.5arcmin_air_temperature_daily.bin'),
-        'Land_Temperature_Filename': os.path.join('climate',
-                                                  'Mozambique_Moine_2.5arcmin_air_temperature_daily.bin'),
-        'Rainfall_Filename': os.path.join('climate',
-                                          'Mozambique_Moine_2.5arcmin_rainfall_daily.bin'),
-        'Relative_Humidity_Filename': os.path.join('climate',
-                                                   'Mozambique_Moine_2.5arcmin_relative_humidity_daily.bin')})
 
     total_capacity = 4e8
+    species_split = {'funestus': 0.94,
+                     'gambiae': 0.06}
 
-    set_params_by_species(cb.params, ['funestus', 'gambiae'])
-    set_larval_habitat(cb, {'funestus': {'WATER_VEGETATION': total_capacity*0.94},
-                            'gambiae': {'CONSTANT': total_capacity*0.06*0.9,
-                                        'TEMPORARY_RAINFALL': total_capacity*0.06*0.1}})
+    set_params_by_species(cb.params, [species for species in species_split.keys()])
+    climate_path = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'data',
+                                'Mozambique', 'Magude', 'Mozambique climate')
+    cb.update_params(  # Climate file paths
+        {'Air_Temperature_Filename': os.path.join('climate',
+                                                  'Mozambique_Moine_2.5arcmin_air_temperature_daily.bin'),
+         'Land_Temperature_Filename': os.path.join('climate',
+                                                   'Mozambique_Moine_2.5arcmin_air_temperature_daily.bin'),
+         'Rainfall_Filename': os.path.join('climate',
+                                           'Mozambique_Moine_2.5arcmin_rainfall_daily.bin'),
+         'Relative_Humidity_Filename': os.path.join('climate',
+                                                    'Mozambique_Moine_2.5arcmin_relative_humidity_daily.bin')})
+
+    set_species_param(cb, 'funestus', "Adult_Life_Expectancy", 20)
+    set_species_param(cb, 'gambiae', "Adult_Life_Expectancy", 20)
+    set_larval_habitat(cb, {'funestus': {'WATER_VEGETATION': total_capacity*species_split['funestus']},
+                            'gambiae': {'CONSTANT': total_capacity*species_split['gambiae']*0.9,
+                                        'TEMPORARY_RAINFALL': total_capacity*species_split['gambiae']*0.1}})
 
 else:
     set_climate_constant(cb)
@@ -153,17 +158,22 @@ cb.update_params({
     })
 
 # itns
-def add_annual_itns(cb, year_count=1, coverage=0.8, discard_halflife=270):
-    for year in range(year_count):
-        add_ITN_age_season(cb,
-                           coverage_all = coverage,
-                           discard = {'halflife': discard_halflife},
-                           start=365*year)
+def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife=270, start_day=0):
 
-    return {'ITN_Coverage': coverage, 'ITN_Halflife': discard_halflife}
+    per_round_coverage = 1 - (1 - coverage) ** (1 / n_rounds)
+    for year in range(year_count):
+        for round in range(n_rounds):
+
+            add_ITN_age_season(cb,
+                               coverage_all = per_round_coverage,
+                               discard = {'halflife': discard_halflife},
+                               start=(365*year)+(30*round)+start_day)
+
+    return {'ITN_Coverage': coverage, 'ITN_Halflife': discard_halflife, 'ITN_Per_Round_Coverage': per_round_coverage,
+            'ITN_start': start_day, 'ITN_Rounds': n_rounds}
 
 if "itn" in interventions:
-    add_annual_itns(cb, year_count=years)
+    add_annual_itns(cb, year_count=years, n_rounds=3, discard_halflife=180)
 
 
 # irs
@@ -218,7 +228,8 @@ if pull_from_serialization:
     df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
 
     # temp to reduce dimensionality
-    # df = df.query('x_Temporary_Larval_Habitat==100')
+    # df = df.query('x_Temporary_Larval_Habitat<100')
+    # df = df.query('Run_Number==0')
 
     builder = ModBuilder.from_list([[
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
@@ -226,11 +237,11 @@ if pull_from_serialization:
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
         ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        # ModFn(add_annual_itns, year_count=years, coverage=z/100),
+        # ModFn(add_annual_itns, year_count=1, n_rounds=3, coverage=z/100, discard_halflife=180, start_day=0),
         # ModFn(add_healthseeking_by_coverage,coverage=zz/100),
         # ModFn(add_irs_group, coverage=z/100, decay=180)
                                     ]
-        for x in df.index # for z in range(0, 100, 20)  # for zz in range(0, 100, 20)
+        for x in df.index # for z in [60, 80]  # for zz in range(0, 100, 20)
     ])
 else:
     builder = ModBuilder.from_list([[
