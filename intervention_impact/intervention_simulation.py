@@ -24,14 +24,14 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_Working_ITN_ACT_Higher_Cov'  # change this to something unique every time
-years = 3
-interventions = ['itn', 'act']
+exp_name = 'Moine_Burnin_Lower_Anthro'  # change this to something unique every time
+years = 50
+interventions = []
 use_climate = True
 
 # Serialization
-serialize = False  # If true, save serialized files
-pull_from_serialization =  True # requires experiment id
+serialize = True  # If true, save serialized files
+pull_from_serialization =  False # requires experiment id
 
 archetypes = {'karen': {
                         'demog': 'demog/demog_karen.json',
@@ -152,11 +152,11 @@ else:
 
         set_larval_habitat(cb, hab)
 
-cb.update_params({
-        "Report_Event_Recorder": 1,
-        "Report_Event_Recorder_Events": ["Bednet_Using"],
-        "Report_Event_Recorder_Ignore_Events_In_List": 0
-    })
+# cb.update_params({
+#         "Report_Event_Recorder": 1,
+#         "Report_Event_Recorder_Events": ["Bednet_Using"],
+#         "Report_Event_Recorder_Ignore_Events_In_List": 0
+#     })
 
 # itns
 def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife=270, start_day=0):
@@ -248,12 +248,15 @@ if pull_from_serialization:
     ])
 else:
     builder = ModBuilder.from_list([[
-        ModFn(DTKConfigBuilder.set_param, 'Run_Number', y),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', 10**x),
+        ModFn(DTKConfigBuilder.set_param, 'Run_Number', y),
+        ModFn(set_species_param, 'funestus', 'Anthropophily', z),
+        ModFn(set_species_param, 'gambiae', 'Anthropophily', z)
         # ModFn(add_ITN_age_season, start=365*2, coverage_all=z/100)
         ]
-        for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25))) for y in range(5) # for z in [0, 50, 80]
-        # for x in [0.5, 0, 1] # for y in range(2)
+        for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25)))
+        for y in range(5)
+        for z in [0.65, 0.75, 0.85]
     ])
 
 run_sim_args = {'config_builder': cb,
