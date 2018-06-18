@@ -24,7 +24,7 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_ITN_ACT_new'  # change this to something unique every time
+exp_name = 'Moine_Working_ITN_ACT_Higher_Cov'  # change this to something unique every time
 years = 3
 interventions = ['itn', 'act']
 use_climate = True
@@ -64,7 +64,8 @@ archetypes = {'karen': {
                                                     0.0253992634551118]
                                      }
                         }],
-                        'burnin_id': "58be689d-576a-e811-a2c0-c4346bcb7275"
+                        # 'burnin_id': "58be689d-576a-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "476808e8-6369-e811-a2c0-c4346bcb7275" # <-- current 'best', short life expectancy
 
              }
 
@@ -175,7 +176,7 @@ def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife
             'ITN_start': start_day, 'ITN_Rounds': n_rounds}
 
 if "itn" in interventions:
-    add_annual_itns(cb, year_count=years, n_rounds=3, discard_halflife=180)
+    add_annual_itns(cb, year_count=years, n_rounds=1, discard_halflife=180)
 
 
 # irs
@@ -237,13 +238,13 @@ if pull_from_serialization:
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Filenames',
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
-        ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
+        ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]+y*x),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
         # ModFn(add_annual_itns, year_count=1, n_rounds=3, coverage=z/100, discard_halflife=180, start_day=0),
         # ModFn(add_healthseeking_by_coverage,coverage=zz/100),
         # ModFn(add_irs_group, coverage=z/100, decay=180)
                                     ]
-        for x in df.index # for z in [60, 80]  # for zz in range(0, 100, 20)
+        for x in df.index for y in [0,1]# for z in [60, 80]  # for zz in range(0, 100, 20)
     ])
 else:
     builder = ModBuilder.from_list([[
@@ -258,4 +259,3 @@ else:
 run_sim_args = {'config_builder': cb,
                 'exp_name': exp_name,
                 'exp_builder': builder}
-
