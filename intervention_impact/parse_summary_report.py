@@ -15,8 +15,8 @@ out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team F
 df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'ITN_Coverage', "Healthseek_Coverage",
            "IRS_Coverage"]
 
-serialization_exp_ids = {'initial': "58be689d-576a-e811-a2c0-c4346bcb7275",
-                         'final': "e23e8387-6a6a-e811-a2c0-c4346bcb7275"}
+serialization_exp_ids = {'initial': "476808e8-6369-e811-a2c0-c4346bcb7275",
+                         'final': "0bf64336-2e6b-e811-a2c0-c4346bcb7275"}
 
 out_fname = "moine_climate_burnin.csv"
 COMPS_login("https://comps.idmod.org")
@@ -60,9 +60,9 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
 before_after = pd.concat(full_prev_list)
 means = before_after.groupby(['run_type', 'x_Temporary_Larval_Habitat']).mean().drop('Run_Number', axis=1).reset_index()
 means = pd.pivot_table(means, values='PfPR_2to10', index=['x_Temporary_Larval_Habitat'], columns=['run_type'])
-#means = means.query('initial>0 | final>0')
+means = means.query('initial>0 | final>0')
 means = means[['initial', 'final']]
-#means.to_csv(os.path.join(out_dir, 'initial_lookup_table.csv'))
+means.to_csv(os.path.join(out_dir, 'lookup_table_v2.csv'))
 
 # prev_all.to_csv(os.path.join(out_dir, out_fname), index=False)
 
