@@ -12,13 +12,15 @@ from simtools.Utilities.COMPSUtilities import COMPS_login
 out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'projects',
                        'map_intervention_impact', 'prelim_itn_sweeps')
 
-df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'ITN_Coverage', "Healthseek_Coverage",
+df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'funestus.Anthropophily', 'funestus.Indoor_Feeding_Fraction',
+           'ITN_Coverage', "Healthseek_Coverage",
            "IRS_Coverage"]
 
 serialization_exp_ids = {'initial': "476808e8-6369-e811-a2c0-c4346bcb7275",
-                         'final': "0bf64336-2e6b-e811-a2c0-c4346bcb7275"}
+                         'final': "8a1573c6-a673-e811-a2c0-c4346bcb7275"
+                         }
 
-out_fname = "moine_climate_burnin.csv"
+out_fname = "moine_climate_burnin_lower_anthro.csv"
 COMPS_login("https://comps.idmod.org")
 
 full_prev_list = []
@@ -53,18 +55,18 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
         prev_list.append(prev_df)
 
     prev_all = pd.concat(prev_list)
-    prev_all['run_type'] = run_type
+    # prev_all['run_type'] = run_type
+    prev_all.rename(columns={'PfPR_2to10':run_type}, inplace=True)
 
     full_prev_list.append(prev_all)
 
-before_after = pd.concat(full_prev_list)
-means = before_after.groupby(['run_type', 'x_Temporary_Larval_Habitat']).mean().drop('Run_Number', axis=1).reset_index()
-means = pd.pivot_table(means, values='PfPR_2to10', index=['x_Temporary_Larval_Habitat'], columns=['run_type'])
+before_after = pd.merge(full_prev_list[0], full_prev_list[1])
+# before_after.to_csv(os.path.join(out_dir, out_fname), index=False)
+means = before_after.groupby(['x_Temporary_Larval_Habitat', 'funestus.Anthropophily']).mean().drop('Run_Number', axis=1).reset_index()
+# means = pd.pivot_table(means, values='PfPR_2to10', index=['x_Temporary_Larval_Habitat', 'funestus.Anthropophily'], columns=['run_type'])
 means = means.query('initial>0 | final>0')
-means = means[['initial', 'final']]
-means.to_csv(os.path.join(out_dir, 'lookup_table_v2.csv'))
-
-# prev_all.to_csv(os.path.join(out_dir, out_fname), index=False)
+# means = means[['initial', 'final']]
+means.to_csv(os.path.join(out_dir, 'lookup_table_test_low_anthro.csv'), index=False)
 
 
 print(means)

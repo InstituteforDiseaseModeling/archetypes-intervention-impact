@@ -24,14 +24,14 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype = "moine"
-exp_name = 'Moine_Burnin_Lower_Anthro'  # change this to something unique every time
-years = 50
-interventions = []
+exp_name = 'Moine_Interventions_Test_Low_Anthro'  # change this to something unique every time
+years = 3
+interventions = ['itn', 'act']
 use_climate = True
 
 # Serialization
-serialize = True  # If true, save serialized files
-pull_from_serialization =  False # requires experiment id
+serialize = False  # If true, save serialized files
+pull_from_serialization =  True # requires experiment id
 
 archetypes = {'karen': {
                         'demog': 'demog/demog_karen.json',
@@ -64,7 +64,7 @@ archetypes = {'karen': {
                                                     0.0253992634551118]
                                      }
                         }],
-                        # 'burnin_id': "58be689d-576a-e811-a2c0-c4346bcb7275"
+                        # 'burnin_id': "be3f1090-ea72-e811-a2c0-c4346bcb7275" # <-- lower anthro
                         'burnin_id': "476808e8-6369-e811-a2c0-c4346bcb7275" # <-- current 'best', short life expectancy
 
              }
@@ -238,13 +238,15 @@ if pull_from_serialization:
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Filenames',
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
-        ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]+y*x),
+        ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        # ModFn(add_annual_itns, year_count=1, n_rounds=3, coverage=z/100, discard_halflife=180, start_day=0),
+        ModFn(set_species_param, 'funestus', 'Anthropophily', y),
+        ModFn(set_species_param, 'gambiae', 'Anthropophily', y),
+        # ModFn(add_annual_itns, year_count=1, n_rounds=3, coverage=z/100, discard_halflife=180, sModFn(set_species_param, 'funestus', 'Anthropophily', df['funestus.Anthropophily'][x]),tart_day=0),
         # ModFn(add_healthseeking_by_coverage,coverage=zz/100),
         # ModFn(add_irs_group, coverage=z/100, decay=180)
                                     ]
-        for x in df.index for y in [0,1]# for z in [60, 80]  # for zz in range(0, 100, 20)
+        for x in df.index for y in [0.1, 0.25, 0.5, 0.85]# for z in [60, 80]  # for zz in range(0, 100, 20)
     ])
 else:
     builder = ModBuilder.from_list([[
