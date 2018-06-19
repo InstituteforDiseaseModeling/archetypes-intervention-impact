@@ -1,82 +1,93 @@
 {
-    "Metadata": {
-        "Author": "jsteinkraus", 
-        "DateCreated": "Sun Sep 25 23:19:55 2011", 
-        "IdReference": "Gridded world grump2.5arcmin", 
-        "NodeCount": 1, 
-        "Tool": "convertdemog.py"
-    }, 
     "Nodes": [
         {
-            "IndividualAttributes": {
-                "AgeDistributionFlag": 3,
-                "AgeDistribution1": 0.0001068,
-                "AgeDistribution2": 0,
-                "ImmunityDistribution1": 1, 
-                "ImmunityDistribution2": 0, 
-                "ImmunityDistributionFlag": 0, 
-                "MigrationHeterogeneityDistribution1": 1, 
-                "MigrationHeterogeneityDistribution2": 0, 
-                "MigrationHeterogeneityDistributionFlag": 0, 
-                "MortalityDistribution": {
-                    "AxisNames": [
-                        "gender", 
-                        "age"
+            "NodeAttributes": {
+                "LarvalHabitatMultiplier": {
+                    "CONSTANT": 0.7825, 
+                    "TEMPORARY_RAINFALL": 0.7825, 
+                    "WATER_VEGETATION": 0.7825
+                }, 
+                "Longitude": 98.0511163877, 
+                "BirthRate": 0.09861065, 
+                "FacilityName": 2186687066, 
+                "Latitude": 17.4115914037, 
+                "InitialPopulation": 1565
+            }, 
+            "NodeID": 2186687066
+        }
+    ], 
+    "Defaults": {
+        "NodeAttributes": {
+            "Urban": 0, 
+            "AbovePoverty": 0.5, 
+            "Region": 1, 
+            "Seaport": 0, 
+            "InitialPopulation": 1000, 
+            "Airport": 0, 
+            "Altitude": 0
+        }, 
+        "IndividualAttributes": {
+            "PrevalenceDistributionFlag": 1, 
+            "MigrationHeterogeneityDistributionFlag": 0, 
+            "AgeDistributionFlag": 3, 
+            "PrevalenceDistribution1": 0.13, 
+            "AgeDistribution2": 0, 
+            "MortalityDistribution": {
+                "ResultUnits": "annual deaths per 1000 individuals", 
+                "NumPopulationGroups": [
+                    2, 
+                    1
+                ], 
+                "ResultScaleFactor": 2.74e-06, 
+                "AxisNames": [
+                    "gender", 
+                    "age"
+                ], 
+                "AxisUnits": [
+                    "male=0,female=1", 
+                    "years"
+                ], 
+                "NumDistributionAxes": 2, 
+                "AxisScaleFactors": [
+                    1, 
+                    365
+                ], 
+                "ResultValues": [
+                    [
+                        23
                     ], 
-                    "AxisScaleFactors": [
-                        1, 
-                        365
-                    ], 
-                    "AxisUnits": [
-                        "male=0,female=1", 
-                        "years"
-                    ], 
-                    "NumDistributionAxes": 2, 
-                    "NumPopulationGroups": [
-                        2, 
+                    [
+                        23
+                    ]
+                ], 
+                "PopulationGroups": [
+                    [
+                        0, 
                         1
                     ], 
-                    "PopulationGroups": [
-                        [
-                            0, 
-                            1
-                        ], 
-                        [
-                            0
-                        ]
-                    ], 
-                    "ResultScaleFactor": 2.74e-06, 
-                    "ResultUnits": "annual deaths per 1000 individuals", 
-                    "ResultValues": [
-                        [
-                            45
-                        ], 
-                        [
-                            45
-                        ]
+                    [
+                        0
                     ]
-                }, 
-                "PrevalenceDistribution1": 0.1,
-                "PrevalenceDistribution2": 0, 
-                "PrevalenceDistributionFlag": 0,
-                "RiskDistribution1": 1, 
-                "RiskDistribution2": 0, 
-                "RiskDistributionFlag": 0
+                ]
             }, 
-            "NodeAttributes": {
-                "AbovePoverty": 0.5, 
-                "Airport": 0, 
-                "Altitude": 0, 
-                "BirthRate":0.38478809,
-                "Birth_Rate_Dependence": "FIXED_BIRTH_RATE",
-                "InitialPopulation": 3121,
-                "Latitude": 17.4065733582,
-                "Longitude": 97.8086475914,
-                "Region": 1, 
-                "Seaport": 0, 
-                "Urban": 0
-            }, 
-            "NodeID": 2184786521
+            "RiskDistribution1": 1, 
+            "PrevalenceDistribution2": 0.15, 
+            "RiskDistributionFlag": 0, 
+            "MigrationHeterogeneityDistribution1": 1, 
+            "ImmunityDistributionFlag": 0, 
+            "AgeDistribution1": 0.0001068, 
+            "ImmunityDistribution1": 1, 
+            "MigrationHeterogeneityDistribution2": 0, 
+            "RiskDistribution2": 0, 
+            "ImmunityDistribution2": 0
         }
-    ]
+    }, 
+    "Metadata": {
+        "Author": "idm", 
+        "Tool": "dtk-tools", 
+        "IdReference": "Gridded world grump30arcsec", 
+        "DateCreated": "2016-11-08 11:54:47.017000", 
+        "NodeCount": 1, 
+        "Resolution": 30
+    }
 }

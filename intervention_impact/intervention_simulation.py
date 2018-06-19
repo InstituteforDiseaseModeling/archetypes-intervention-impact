@@ -23,60 +23,57 @@ from malaria.reports.MalariaReport import add_summary_report
 # setup
 location = 'HPC'
 SetupParser.default_block = location
-archetype = "moine"
-exp_name = 'Moine_Burnin_Lower_Anthro'  # change this to something unique every time
+archetype_name = "karen"
+exp_name = 'Karen_New_Burnin'  # change this to something unique every time
 years = 50
 interventions = []
-use_climate = True
 
 # Serialization
 serialize = True  # If true, save serialized files
 pull_from_serialization =  False # requires experiment id
 
-archetypes = {'karen': {
+archetypes = {
+            # karen: slightly more maculatus (0.6 maculatus to 0.4 minimus), 2.3e7 max capacity
+            'karen': {
                         'demog': 'demog/demog_karen.json',
                         'species': [{'name': 'minimus',
-                                    'seasonality': {
-                                      "Times":  [0, 1, 244, 274, 363],
-                                      "Values": [0.2, 0.2, 0.7, 3, 3]
-                                      }
-                                    }],
+                                    'larval_hab': {"WATER_VEGETATION": 2.3e7 * 0.4 * 0.9,
+                                                   "CONSTANT": 2.3e7 * 0.4 * 0.1}
+                                    },
+                                    {'name': 'maculatus',
+                                     'larval_hab':{ "TEMPORARY_RAINFALL": 2.3e7 * 0.6 * 0.8,
+                                                    "WATER_VEGETATION": 2.3e7 * 0.6 * 0.1,
+                                                    "CONSTANT": 2.3e7 * 0.6 * 0.1}
+                                     },
+],
                         'burnin_id': "e88827cf-a365-e811-a2c0-c4346bcb7275"
              },
+             # moine: 4e8 maximum capacity, funestus-dominated (94%)
              'moine': {
                         'demog': 'demog/demog_moine.json',
                         'species': [{'name':'gambiae',
-                                     'seasonality': {
-                                         "Times": [0.0, 30.417, 60.833, 91.25, 121.667, 152.083, 182.5, 212.917,
-                                                   243.333, 273.75,
-                                                   304.167, 334.583],
-                                         "Values": [0.0429944166751962,
-                                                    0.145106159922212,
-                                                    0.220520011001099,
-                                                    0.318489404300663,
-                                                    0.0617610600835594,
-                                                    0.0462380862878181,
-                                                    0.0367590381502996,
-                                                    0.02474944109524821,
-                                                    0.0300445801767523,
-                                                    0.021859890543704,
-                                                    0.0261404367939001,
-                                                    0.0253992634551118]
+                                     'larval_hab': {'CONSTANT': 4e8 * 0.94 * 0.9,
+                                                    'TEMPORARY_RAINFALL': 4e8 * 0.06 * 0.1},
+                                     'endophagy': 0.68
+                                    },
+                                    {'name': 'funestus',
+                                     'larval_hab': {'WATER_VEGETATION': 4e8 * 0.94},
+                                     'endophagy': 0.68
                                      }
-                        }],
-                        # 'burnin_id': "58be689d-576a-e811-a2c0-c4346bcb7275"
+                                    ],
+                        # 'burnin_id': "be3f1090-ea72-e811-a2c0-c4346bcb7275" # <-- lower anthro
                         'burnin_id': "476808e8-6369-e811-a2c0-c4346bcb7275" # <-- current 'best', short life expectancy
 
              }
 
 }
 
-arch_vals = archetypes[archetype]
+archetype = archetypes[archetype_name]
 
 cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Simulation_Duration=int(365*years),
                                     Config_Name=exp_name,
-                                    Demographics_Filenames=[arch_vals['demog']],
+                                    Demographics_Filenames=[archetype['demog']],
                                     Birth_Rate_Dependence='FIXED_BIRTH_RATE',
                                     Num_Cores=1,
 
@@ -96,6 +93,16 @@ cb = DTKConfigBuilder.from_defaults('MALARIA_SIM',
                                     Max_Individual_Infections=3,
                                     Nonspecific_Antigenicity_Factor=0.415111634,
 
+                                    # climate files
+                                    Air_Temperature_Filename= os.path.join('climate', archetype_name,
+                                                                           'air_temperature_daily.bin'),
+                                    Land_Temperature_Filename= os.path.join('climate', archetype_name,
+                                                                           'air_temperature_daily.bin'),
+                                    Rainfall_Filename=os.path.join('climate', archetype_name,
+                                                                           'rainfall_daily.bin'),
+                                    Relative_Humidity_Filename=os.path.join('climate', archetype_name,
+                                                                           'relative_humidity_daily.bin'),
+
                                     )
 
 if serialize:
@@ -105,52 +112,15 @@ if serialize:
 add_summary_report(cb)
 
 ## larval habitat
+set_params_by_species(cb.params, [species['name'] for species in archetype['species']])
 
-if use_climate:
-
-    total_capacity = 4e8
-    species_split = {'funestus': 0.94,
-                     'gambiae': 0.06}
-
-    set_params_by_species(cb.params, [species for species in species_split.keys()])
-    climate_path = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'data',
-                                'Mozambique', 'Magude', 'Mozambique climate')
-    cb.update_params(  # Climate file paths
-        {'Air_Temperature_Filename': os.path.join('climate',
-                                                  'Mozambique_Moine_2.5arcmin_air_temperature_daily.bin'),
-         'Land_Temperature_Filename': os.path.join('climate',
-                                                   'Mozambique_Moine_2.5arcmin_air_temperature_daily.bin'),
-         'Rainfall_Filename': os.path.join('climate',
-                                           'Mozambique_Moine_2.5arcmin_rainfall_daily.bin'),
-         'Relative_Humidity_Filename': os.path.join('climate',
-                                                    'Mozambique_Moine_2.5arcmin_relative_humidity_daily.bin')})
-
-    set_species_param(cb, 'funestus', "Adult_Life_Expectancy", 20)
-    set_species_param(cb, 'gambiae', "Adult_Life_Expectancy", 20)
-    set_larval_habitat(cb, {'funestus': {'WATER_VEGETATION': total_capacity*species_split['funestus']},
-                            'gambiae': {'CONSTANT': total_capacity*species_split['gambiae']*0.9,
-                                        'TEMPORARY_RAINFALL': total_capacity*species_split['gambiae']*0.1}})
-
-else:
-    set_climate_constant(cb)
-    set_params_by_species(cb.params, [species['name'] for species in arch_vals['species']])
-
-    for species in arch_vals['species']:
-
-        print('setting params for species ' + species['name'])
-
-        set_species_param(cb, species['name'], "Adult_Life_Expectancy", 20)
-
-        hab = {species['name'] : {
-                "LINEAR_SPLINE": {
-                                   "Capacity_Distribution_Over_Time": species['seasonality'],
-                                   "Capacity_Distribution_Number_Of_Years": 1,
-                                   "Max_Larval_Capacity": 1e8
-                               }
-                               }
-                   }
-
-        set_larval_habitat(cb, hab)
+for species_params in archetype['species']:
+    species_name = species_params['name']
+    print("setting params for " + species_name)
+    set_species_param(cb, species_name, 'Adult_Life_Expectancy', 20)
+    set_species_param(cb, species_name, 'Larval_Habitat_Types', species_params['larval_hab'])
+    if 'endophagy' in species_params.keys():
+        set_species_param(cb, species_name, 'Indoor_Feeding_Fraction', species_params['endophagy'])
 
 # cb.update_params({
 #         "Report_Event_Recorder": 1,
@@ -225,7 +195,7 @@ if "act" in interventions:
 
 if pull_from_serialization:
     COMPS_login("https://comps.idmod.org")
-    expt = ExperimentDataStore.get_most_recent_experiment(arch_vals['burnin_id'])
+    expt = ExperimentDataStore.get_most_recent_experiment(archetype['burnin_id'])
 
     df = pd.DataFrame([x.tags for x in expt.simulations])
     df['outpath'] = pd.Series([sim.get_path() for sim in expt.simulations])
@@ -238,25 +208,24 @@ if pull_from_serialization:
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Path', os.path.join(df['outpath'][x], 'output')),
         ModFn(DTKConfigBuilder.set_param, 'Serialized_Population_Filenames',
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
-        ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]+y*x),
+        ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        # ModFn(add_annual_itns, year_count=1, n_rounds=3, coverage=z/100, discard_halflife=180, start_day=0),
+        ModFn(set_species_param, 'funestus', 'Anthropophily', y),
+        ModFn(set_species_param, 'gambiae', 'Anthropophily', y),
+        # ModFn(add_annual_itns, year_count=1, n_rounds=3, coverage=z/100, discard_halflife=180, sModFn(set_species_param, 'funestus', 'Anthropophily', df['funestus.Anthropophily'][x]),tart_day=0),
         # ModFn(add_healthseeking_by_coverage,coverage=zz/100),
         # ModFn(add_irs_group, coverage=z/100, decay=180)
                                     ]
-        for x in df.index for y in [0,1]# for z in [60, 80]  # for zz in range(0, 100, 20)
+        for x in df.index for y in [0.1, 0.25, 0.5, 0.85]# for z in [60, 80]  # for zz in range(0, 100, 20)
     ])
 else:
     builder = ModBuilder.from_list([[
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', 10**x),
         ModFn(DTKConfigBuilder.set_param, 'Run_Number', y),
-        ModFn(set_species_param, 'funestus', 'Anthropophily', z),
-        ModFn(set_species_param, 'gambiae', 'Anthropophily', z)
         # ModFn(add_ITN_age_season, start=365*2, coverage_all=z/100)
         ]
         for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25)))
         for y in range(5)
-        for z in [0.65, 0.75, 0.85]
     ])
 
 run_sim_args = {'config_builder': cb,
