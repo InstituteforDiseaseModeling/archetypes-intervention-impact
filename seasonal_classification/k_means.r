@@ -22,6 +22,8 @@ library(ggplot2)
 library(gridExtra)
 library(Hmisc)
 
+set.seed(206)
+
 rm(list=ls())
 
 source("classify_functions.r")
@@ -31,6 +33,8 @@ palette <- "Paired" # color scheme for plots
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(tsi= list(africa=2, asia=3, americas=2),
                    rainfall = list(africa=3, asia=3, americas=3)) 
+
+input_list <- list(joint=list(asia=3, americas=3, africa=3))
 
 for (this_cov in names(input_list)){
   nvec_list <- input_list[[this_cov]]
@@ -54,10 +58,10 @@ for (this_cov in names(input_list)){
     }
     
     all_vals <- fread(file.path(main_dir, paste0(this_cov, "_vals.csv")))
-    setnames(all_vals, this_cov, "cov_val")
+    setnames(all_vals, "value", "cov_val")
     
     # k-means and plotting
-    pdf(file.path(main_dir, paste0("k_means_", this_cov, ".pdf")), width=9, height=6)
+    pdf(file.path(main_dir, paste0("k_means_joint.pdf")), width=9, height=6)
     for (nclust in 3:7){
       
       cov_label <- ifelse(nchar(this_cov)==3, toupper(this_cov), capitalize(this_cov))
@@ -65,11 +69,13 @@ for (this_cov in names(input_list)){
       # if k-means has already been run, just load outputs
       k_out_fname <- file.path(main_dir, "k_means", paste0("k_out_", this_cov, "_", nclust, ".tif"))
       cluster_raster_fname <- file.path(main_dir, "k_means", paste0("clusters_", this_cov, "_", nclust, ".tif"))
+      random_trace_fname <- file.path(main_dir, "k_means", paste0("random_trace_", this_cov, "_", nclust, ".csv"))
       time_series_fname <- file.path(main_dir, "k_means", paste0("time_series_", this_cov, "_", nclust, ".csv"))
       
       if (file.exists(k_out_fname)){
         print("k-means already run, loading outputs")
         cluster_raster <- raster(cluster_raster_fname)
+        random_trace <- fread(random_trace_fname)
         time_series <- fread(time_series_fname)
         
       }else{
@@ -79,16 +85,21 @@ for (this_cov in names(input_list)){
         
         print("creating new raster")
         # load mask raster to get dimensions & extent
-        temp_raster <- raster(file.path(main_dir, "rasters", paste0(this_cov, "_month_1.tif")))
+        temp_raster <- raster(file.path(main_dir, "rasters", paste0("rainfall", "_month_1.tif")))
         cluster_raster <- matrix(nrow=temp_raster@nrows, ncol=temp_raster@ncols)
         cluster_raster[rotation$id] <- rotation$cluster
         cluster_raster <- raster(cluster_raster, template=temp_raster)
         writeRaster(cluster_raster, cluster_raster_fname, overwrite=T)
         
-        print("finding mean time series")
         all_vals <- merge(all_vals, rotation[, list(id, cluster)], by="id", all=T)
         
-        time_series <- all_vals[, list(cov_val=mean(cov_val)), by=list(cluster, month)]
+        print("finding random traces")
+        random_grids <- sample(unique(all_vals$id), 500)
+        random_trace <- all_vals[id %in% random_grids]
+        write.csv(random_trace, random_trace_fname, row.names=F)
+        
+        print("finding mean time series")
+        time_series <- all_vals[, list(cov_val=mean(cov_val)), by=list(cluster, month, cov)]
         time_series[, nclust:=nclust]
         write.csv(time_series, time_series_fname, row.names=F)
         all_vals[, cluster:=NULL]
@@ -103,23 +114,37 @@ for (this_cov in names(input_list)){
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
                             main = paste("Mapped", cov_label, "Clusters"), colorkey=F, margin=F)
       
-      lines <- ggplot(time_series, aes(x=month, y=cov_val)) +
+      lines_1 <- ggplot(time_series[cov=="tsi"], aes(x=month, y=cov_val)) +
         geom_line(aes(color=factor(cluster)), size=2) +
-        facet_grid(cluster~.) +
+        geom_line(data=random_trace[cov=="tsi"], aes(group=id, color=factor(cluster)), size=0.5, alpha=0.25) + 
+        facet_grid(cluster~.) + 
         scale_color_brewer(type="qual", palette=palette) +
         scale_x_continuous(breaks=1:12, labels=1:12) +
         theme_minimal() +
         theme(legend.position="none",
               plot.title = element_text(face="bold")) +
-        labs(title=paste("Mean", cov_label, "Trend"),
+        labs(title=paste("TSI"),
              x="Month",
-             y=cov_label)
+             y="")
       
-      layout <- rbind(c(1,1,2),
-                      c(1,1,2))
+      lines_2 <- ggplot(time_series[cov=="rainfall"], aes(x=month, y=cov_val)) +
+        geom_line(aes(color=factor(cluster)), size=2) +
+        geom_line(data=random_trace[cov=="rainfall"], aes(group=id, color=factor(cluster)), size=0.5, alpha=0.25) + 
+        facet_grid(cluster~.) + 
+        scale_color_brewer(type="qual", palette=palette) +
+        scale_x_continuous(breaks=1:12, labels=1:12) +
+        theme_minimal() +
+        theme(legend.position="none",
+              plot.title = element_text(face="bold")) +
+        labs(title=paste("Rainfall"),
+             x="Month",
+             y="")
+      
+      layout <- rbind(c(1,1,2,3),
+                      c(1,1,2,3))
       
       print("saving")
-      full_plot <- grid.arrange(map_plot, lines, layout_matrix=layout)
+      full_plot <- grid.arrange(map_plot, lines_1, lines_2, layout_matrix=layout)
       print(full_plot)
       
     }

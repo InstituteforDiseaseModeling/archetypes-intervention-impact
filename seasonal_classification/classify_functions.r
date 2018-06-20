@@ -80,9 +80,9 @@ rotate_matrix <- function(nvecs, main_dir, cov="tsi"){
   ## multiply by original matrix to get rotations
   for_svd <- fread(file.path(main_dir, paste0(cov, "_vals.csv")))
   print("reshaping")
-  for_svd <- dcast(for_svd, month ~ id)
+  for_svd <- dcast(for_svd, month + cov ~ id)
   print("rotating")
-  rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,2:ncol(for_svd)])))
+  rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,3:ncol(for_svd)])))
   rotation$id <- as.integer(rownames(rotation))
   rotation <- data.table(rotation)
   return(rotation)
