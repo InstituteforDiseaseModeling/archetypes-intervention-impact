@@ -13,11 +13,10 @@ out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team F
                        'map_intervention_impact', 'prelim_itn_sweeps')
 
 df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'funestus.Anthropophily', 'funestus.Indoor_Feeding_Fraction',
-           'ITN_Coverage', "Healthseek_Coverage",
-           "IRS_Coverage"]
+           'ITN_Coverage', "ACT_Coverage", "IRS_Coverage"]
 
 serialization_exp_ids = {'initial': "476808e8-6369-e811-a2c0-c4346bcb7275",
-                         'final': "8a1573c6-a673-e811-a2c0-c4346bcb7275"
+                         'final': "0ab33e79-9375-e811-a2c0-c4346bcb7275"
                          }
 
 out_fname = "moine_climate_burnin_lower_anthro.csv"
@@ -62,11 +61,12 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
 
 before_after = pd.merge(full_prev_list[0], full_prev_list[1])
 # before_after.to_csv(os.path.join(out_dir, out_fname), index=False)
-means = before_after.groupby(['x_Temporary_Larval_Habitat', 'funestus.Anthropophily']).mean().drop('Run_Number', axis=1).reset_index()
+means = before_after.groupby(['x_Temporary_Larval_Habitat',
+                              'IRS_Coverage', 'ITN_Coverage', 'ACT_Coverage']).mean().drop('Run_Number', axis=1).reset_index()
 # means = pd.pivot_table(means, values='PfPR_2to10', index=['x_Temporary_Larval_Habitat', 'funestus.Anthropophily'], columns=['run_type'])
 means = means.query('initial>0 | final>0')
 # means = means[['initial', 'final']]
-means.to_csv(os.path.join(out_dir, 'lookup_table_test_low_anthro.csv'), index=False)
+means.to_csv(os.path.join(out_dir, 'lookup_table_moine_multi_int.csv'), index=False)
 
 
 print(means)
