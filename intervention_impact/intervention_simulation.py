@@ -23,14 +23,14 @@ from malaria.reports.MalariaReport import add_summary_report
 # setup
 location = 'HPC'
 SetupParser.default_block = location
-archetype_name = "karen"
-exp_name = 'Karen_New_Burnin'  # change this to something unique every time
-years = 50
+archetype_name = "moine"
+exp_name = 'Moine_intervention_sweep'  # change this to something unique every time
+years = 3
 interventions = []
 
 # Serialization
-serialize = True  # If true, save serialized files
-pull_from_serialization =  False # requires experiment id
+serialize = False  # If true, save serialized files
+pull_from_serialization =  True # requires experiment id
 
 archetypes = {
             # karen: slightly more maculatus (0.6 maculatus to 0.4 minimus), 2.3e7 max capacity
@@ -46,19 +46,20 @@ archetypes = {
                                                     "CONSTANT": 2.3e7 * 0.6 * 0.1}
                                      },
 ],
-                        'burnin_id': "e88827cf-a365-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "8c0ccb25-c973-e811-a2c0-c4346bcb7275"
              },
              # moine: 4e8 maximum capacity, funestus-dominated (94%)
              'moine': {
                         'demog': 'demog/demog_moine.json',
                         'species': [{'name':'gambiae',
-                                     'larval_hab': {'CONSTANT': 4e8 * 0.94 * 0.9,
+                                     'larval_hab': {'CONSTANT': 4e8 * 0.06 * 0.9,
                                                     'TEMPORARY_RAINFALL': 4e8 * 0.06 * 0.1},
-                                     'endophagy': 0.68
+                                     # 'endophagy': 0.68
+                                    'endophagy': 0.95
                                     },
                                     {'name': 'funestus',
                                      'larval_hab': {'WATER_VEGETATION': 4e8 * 0.94},
-                                     'endophagy': 0.68
+                                     'endophagy': 0.95
                                      }
                                     ],
                         # 'burnin_id': "be3f1090-ea72-e811-a2c0-c4346bcb7275" # <-- lower anthro
@@ -185,7 +186,7 @@ def add_healthseeking_by_coverage(cb, coverage=1.0):
                        tsteps_btwn_repetitions=365,
                        broadcast_event_name='Received_Treatment')
 
-    return {'Healthseek_Coverage': coverage}
+    return {'ACT_Coverage': coverage}
 
 
 
@@ -210,13 +211,14 @@ if pull_from_serialization:
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
         ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        ModFn(set_species_param, 'funestus', 'Anthropophily', y),
-        ModFn(set_species_param, 'gambiae', 'Anthropophily', y),
-        # ModFn(add_annual_itns, year_count=1, n_rounds=3, coverage=z/100, discard_halflife=180, sModFn(set_species_param, 'funestus', 'Anthropophily', df['funestus.Anthropophily'][x]),tart_day=0),
-        # ModFn(add_healthseeking_by_coverage,coverage=zz/100),
-        # ModFn(add_irs_group, coverage=z/100, decay=180)
+        ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=y/100, discard_halflife=180),
+        ModFn(add_healthseeking_by_coverage,coverage=z/100),
+        ModFn(add_irs_group, coverage=q/100, decay=180)
                                     ]
-        for x in df.index for y in [0.1, 0.25, 0.5, 0.85]# for z in [60, 80]  # for zz in range(0, 100, 20)
+        for x in df.index
+        for y in [0, 80]
+        for z in [0, 80]
+        for q in [0, 80]
     ])
 else:
     builder = ModBuilder.from_list([[
