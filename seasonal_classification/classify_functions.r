@@ -20,12 +20,19 @@ get_mask <- function(continent, main_dir, mask_dir){
   if (file.exists(out_fname)){
     clipped_mask <- raster(out_fname)
   }else{
+    print("generating mask")
     mask_vals <- list('africa'=1,
                       'americas'=2,
                       'asia'=3)
     mask <- raster(mask_dir)
     clipped_mask <- mask == mask_vals[[continent]]
     clipped_mask <- trim(clipped_mask, values=F)
+    if (continent=="asia"){
+      # forgive me
+      asia_rast <- raster("Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic/CHIRPS.Synoptic.01.mean.5km.Data.tif")
+      asia_rast <- crop(asia_rast, clipped_mask)
+      clipped_mask <- crop(clipped_mask, asia_rast)
+    }
     writeRaster(clipped_mask, out_fname)
   }
   return(clipped_mask)
@@ -44,7 +51,7 @@ extract_month <- function(month, main_dir, cov, mask_raster){
   in_fname <- files[fname_idx]
   if (length(in_fname)>1){
     # try extracting mean value
-    in_fname <- in_fname[in_fname %like% "mean"]
+    in_fname <- in_fname[in_fname %like% "mean" | in_fname %like% "Mean"]
     
     if (length(in_fname)!=1){ # break if there are further issues
       stop(paste("multiple potential input rasters: ", in_fname))
@@ -59,7 +66,7 @@ extract_month <- function(month, main_dir, cov, mask_raster){
     print("clipping global raster")
     full <- raster(file.path(cov[[1]], in_fname))
     vals <- crop(full, mask_raster)
-    mask_raster <- crop(mask_raster, vals) # ensure that extents of two rasters are the same
+    # mask_raster <- crop(mask_raster, vals) # ensure that extents of two rasters are the same
     vals <- mask(vals, mask_raster, maskvalue=FALSE)
     writeRaster(vals, out_fname)
   }

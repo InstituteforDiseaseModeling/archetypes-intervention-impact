@@ -28,6 +28,7 @@ cov_dirs <- list(tsi="Z:/mastergrids/Other_Global_Covariates/TemperatureSuitabil
                  rainfall="Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic")
 continents <- c("africa", "asia", "americas")
 
+continents <- c("asia")
 
 for (idx in 1:length(cov_dirs)){
   
