@@ -15,8 +15,10 @@ out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team F
 df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'funestus.Anthropophily', 'funestus.Indoor_Feeding_Fraction',
            'ITN_Coverage', "ACT_Coverage", "IRS_Coverage"]
 
-serialization_exp_ids = {'initial': "476808e8-6369-e811-a2c0-c4346bcb7275",
-                         'final': "0ab33e79-9375-e811-a2c0-c4346bcb7275"
+parse_type="all"
+
+serialization_exp_ids = {'initial': "8c0ccb25-c973-e811-a2c0-c4346bcb7275",
+                         'final': "02e963d7-ba75-e811-a2c0-c4346bcb7275"
                          }
 
 out_fname = "moine_climate_burnin_lower_anthro.csv"
@@ -36,14 +38,33 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
     for x in df.index:
         print(x)
         report_dir = os.path.join(df['outpath'][x], 'output', 'MalariaSummaryReport_AnnualAverage.json')
+        inset_dir = os.path.join(df['outpath'][x], 'output', 'InsetChart.json')
         # report_dir = os.path.join(df['outpath'][x], 'output', 'VectorSpeciesReport.json')
 
         with open(report_dir) as f:
             report = json.loads(f.read())
 
-        prev_df = pd.DataFrame(report['DataByTime'])
-        prev_df = prev_df[-2:-1]
-        prev_df = prev_df[['PfPR_2to10']]
+        with open(inset_dir) as f:
+            inset = json.loads(f.read())
+
+        if parse_type=="all":
+            datasets  = {key: pd.DataFrame(value) for (key, value) in report['DataByTimeAndAgeBins'].items()}
+
+            for name, dataset in datasets.items():
+                new_name = name.replace(" ", "_")
+                dataset.columns=report['Metadata']['Age Bins']
+                dataset['year'] = range(len(dataset))
+                datasets[name] = pd.melt(dataset, id_vars="year", value_name=new_name, var_name="age")
+
+            prev_df = pd.merge(datasets['PfPR by Age Bin'], datasets['Average Population by Age Bin'])
+
+            pdb.set_trace()
+
+
+        else:
+            prev_df = pd.DataFrame(report['DataByTime'])
+            prev_df = prev_df[-2:-1]
+            prev_df = prev_df[['PfPR_2to10']]
 
         for col in df_cols:
             try:
@@ -59,14 +80,23 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
 
     full_prev_list.append(prev_all)
 
-before_after = pd.merge(full_prev_list[0], full_prev_list[1])
-# before_after.to_csv(os.path.join(out_dir, out_fname), index=False)
+if parse_type=="all":
+    max_burnin_year = max(full_prev_list[0]['year'])
+    full_prev_list[1]['year'] = full_prev_list[1]['year'] + max_burnin_year
+    full_prev_list[0] = full_prev_list[0].query('year<@max_burnin_year')
+    before_after = pd.concat(full_prev_list)
+
+else:
+    before_after = pd.merge(full_prev_list[0], full_prev_list[1])
+
+# before_after.to_csv(os.path.join(out_dir, 'full_moine_data.csv'), index=False)
+
 means = before_after.groupby(['x_Temporary_Larval_Habitat',
                               'IRS_Coverage', 'ITN_Coverage', 'ACT_Coverage']).mean().drop('Run_Number', axis=1).reset_index()
 # means = pd.pivot_table(means, values='PfPR_2to10', index=['x_Temporary_Larval_Habitat', 'funestus.Anthropophily'], columns=['run_type'])
 means = means.query('initial>0 | final>0')
 # means = means[['initial', 'final']]
-means.to_csv(os.path.join(out_dir, 'lookup_table_moine_multi_int.csv'), index=False)
+means.to_csv(os.path.join(out_dir, 'lookup_table_karen_multi_int.csv'), index=False)
 
 
 print(means)

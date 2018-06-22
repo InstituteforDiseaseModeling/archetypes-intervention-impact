@@ -34,7 +34,7 @@ palette <- "Paired" # color scheme for plots
 input_list <- list(tsi= list(africa=2, asia=3, americas=2),
                    rainfall = list(africa=3, asia=3, americas=3)) 
 
-input_list <- list(joint=list(asia=3, americas=3, africa=3))
+input_list <- list(joint=list(asia=3))
 
 for (this_cov in names(input_list)){
   nvec_list <- input_list[[this_cov]]

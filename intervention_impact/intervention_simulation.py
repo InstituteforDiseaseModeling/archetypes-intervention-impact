@@ -24,7 +24,7 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype_name = "moine"
-exp_name = 'Moine_intervention_sweep'  # change this to something unique every time
+exp_name = 'Moine_Sweep_Interventions'  # change this to something unique every time
 years = 3
 interventions = []
 
@@ -54,16 +54,14 @@ archetypes = {
                         'species': [{'name':'gambiae',
                                      'larval_hab': {'CONSTANT': 4e8 * 0.06 * 0.9,
                                                     'TEMPORARY_RAINFALL': 4e8 * 0.06 * 0.1},
-                                     # 'endophagy': 0.68
-                                    'endophagy': 0.95
+                                     'endophagy': 0.68
                                     },
                                     {'name': 'funestus',
                                      'larval_hab': {'WATER_VEGETATION': 4e8 * 0.94},
-                                     'endophagy': 0.95
+                                     'endophagy': 0.68
                                      }
                                     ],
-                        # 'burnin_id': "be3f1090-ea72-e811-a2c0-c4346bcb7275" # <-- lower anthro
-                        'burnin_id': "476808e8-6369-e811-a2c0-c4346bcb7275" # <-- current 'best', short life expectancy
+                        'burnin_id': "106e7c90-b975-e811-a2c0-c4346bcb7275"
 
              }
 
@@ -213,7 +211,7 @@ if pull_from_serialization:
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
         ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=y/100, discard_halflife=180),
         ModFn(add_healthseeking_by_coverage,coverage=z/100),
-        ModFn(add_irs_group, coverage=q/100, decay=180)
+        ModFn(add_irs_group, coverage=q/100, decay=180, start_days = [365*start for start in range(years)])
                                     ]
         for x in df.index
         for y in [0, 80]

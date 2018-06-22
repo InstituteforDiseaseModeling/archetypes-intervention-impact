@@ -26,6 +26,8 @@ cov_dirs <- list(tsi="Z:/mastergrids/Other_Global_Covariates/TemperatureSuitabil
                  rainfall="Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic")
 continents <- c("africa", "asia", "americas")
 
+continents <- c("asia")
+
 for (continent in continents){
   main_dir <- file.path(base_dir, continent)
   
@@ -38,6 +40,10 @@ for (continent in continents){
     tsi <- fread(file.path(main_dir, "tsi_vals.csv"))
     rainfall <- fread(file.path(main_dir, "rainfall_vals.csv"))
     
+    # # create a joint sample raster with the correct extent
+    # tsi_rast <- raster(file.path(main_dir, "rasters/tsi_month_1.tif"))
+    # rainfall_rast <- raster(file.path(main_dir, "rasters/rainfall_month_1.tif"))
+    # 
     all_vals <- merge(tsi, rainfall, by=c("month", "id"))
     all_vals <- melt(all_vals, id.vars=c("month", "id"), variable.name = "cov")
     write.csv(all_vals, file=all_vals_fname, row.names=F)
