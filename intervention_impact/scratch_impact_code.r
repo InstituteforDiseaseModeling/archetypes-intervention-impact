@@ -25,10 +25,12 @@ for (ageval in 1:109){
   if (ageval<15){
     new_data <- age_dist[age==ageval]
   }else if (ageval<30){
-    new_data <- age_dist[age>=15 & age<=ageval]
+    new_data <- age_dist[age>=floor(ageval/5)*5 & age<=ageval]
+    new_data[, age:=ageval]
     new_data[, pop:=pop/5]
   }else{
-    new_data <- age_dist[age>=30 & age<=ageval]
+    new_data <- age_dist[age>=floor(ageval/10)*10 & age<=ageval]
+    new_data[, age:=ageval]
     new_data[, pop:=pop/10]
   }
   
@@ -38,13 +40,15 @@ for (ageval in 1:109){
 
 
 
-age_dist[, perc:=pop/sum(pop), by="year"]
 ggplot(even_ages, aes(x=age, y=pop)) +
   geom_point() + 
   facet_grid(~year) +
   labs(title="Age Distribution by Year",
        x="Age Bin",
        y="Population")
+
+
+
 sum(age_dist[age<10 & age>=2]$pop)/sum(age_dist$pop)
 
 
