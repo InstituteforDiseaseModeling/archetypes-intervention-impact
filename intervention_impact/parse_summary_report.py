@@ -15,13 +15,13 @@ out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team F
 df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'funestus.Anthropophily', 'funestus.Indoor_Feeding_Fraction',
            'ITN_Coverage', "ACT_Coverage", "IRS_Coverage"]
 
-parse_type="all"
+parse_type="simple"
 
 serialization_exp_ids = {'initial': "8c0ccb25-c973-e811-a2c0-c4346bcb7275",
-                         'final': "02e963d7-ba75-e811-a2c0-c4346bcb7275"
+                         'final': "6dca3c96-3c77-e811-a2c0-c4346bcb7275"
                          }
 
-out_fname = "moine_climate_burnin_lower_anthro.csv"
+out_fname = 'lookup_table_karen_multi_int.csv'
 COMPS_login("https://comps.idmod.org")
 
 full_prev_list = []
@@ -38,14 +38,10 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
     for x in df.index:
         print(x)
         report_dir = os.path.join(df['outpath'][x], 'output', 'MalariaSummaryReport_AnnualAverage.json')
-        inset_dir = os.path.join(df['outpath'][x], 'output', 'InsetChart.json')
         # report_dir = os.path.join(df['outpath'][x], 'output', 'VectorSpeciesReport.json')
 
         with open(report_dir) as f:
             report = json.loads(f.read())
-
-        with open(inset_dir) as f:
-            inset = json.loads(f.read())
 
         if parse_type=="all":
             datasets  = {key: pd.DataFrame(value) for (key, value) in report['DataByTimeAndAgeBins'].items()}
@@ -57,9 +53,6 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
                 datasets[name] = pd.melt(dataset, id_vars="year", value_name=new_name, var_name="age")
 
             prev_df = pd.merge(datasets['PfPR by Age Bin'], datasets['Average Population by Age Bin'])
-
-            pdb.set_trace()
-
 
         else:
             prev_df = pd.DataFrame(report['DataByTime'])
@@ -96,7 +89,6 @@ means = before_after.groupby(['x_Temporary_Larval_Habitat',
 # means = pd.pivot_table(means, values='PfPR_2to10', index=['x_Temporary_Larval_Habitat', 'funestus.Anthropophily'], columns=['run_type'])
 means = means.query('initial>0 | final>0')
 # means = means[['initial', 'final']]
-means.to_csv(os.path.join(out_dir, 'lookup_table_karen_multi_int.csv'), index=False)
-
+means.to_csv(os.path.join(out_dir, out_fname), index=False)
 
 print(means)

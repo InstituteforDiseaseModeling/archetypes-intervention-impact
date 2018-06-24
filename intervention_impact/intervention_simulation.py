@@ -24,7 +24,7 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype_name = "moine"
-exp_name = 'Moine_Sweep_Interventions'  # change this to something unique every time
+exp_name = 'Moine_Ints_Newer_Burnin'  # change this to something unique every time
 years = 3
 interventions = []
 
@@ -33,6 +33,17 @@ serialize = False  # If true, save serialized files
 pull_from_serialization =  True # requires experiment id
 
 archetypes = {
+            # bajonapo: only darlingi
+            'bajonapo': {
+                        'demog': 'demog/demog_bajonapo.json',
+                        'species': [{'name': 'darlingi',
+                                     'larval_hab':{ "WATER_VEGETATION": 1e8,
+                                                    "CONSTANT": 1e6,
+                                                    "BRACKISH_SWAMP": 1e5}
+                                     },
+                                    ],
+                        'burnin_id': "8c0ccb25-c973-e811-a2c0-c4346bcb7275"
+             },
             # karen: slightly more maculatus (0.6 maculatus to 0.4 minimus), 2.3e7 max capacity
             'karen': {
                         'demog': 'demog/demog_karen.json',
@@ -45,7 +56,7 @@ archetypes = {
                                                     "WATER_VEGETATION": 2.3e7 * 0.6 * 0.1,
                                                     "CONSTANT": 2.3e7 * 0.6 * 0.1}
                                      },
-],
+                                    ],
                         'burnin_id': "8c0ccb25-c973-e811-a2c0-c4346bcb7275"
              },
              # moine: 4e8 maximum capacity, funestus-dominated (94%)
@@ -54,14 +65,14 @@ archetypes = {
                         'species': [{'name':'gambiae',
                                      'larval_hab': {'CONSTANT': 4e8 * 0.06 * 0.9,
                                                     'TEMPORARY_RAINFALL': 4e8 * 0.06 * 0.1},
-                                     'endophagy': 0.68
+                                     'endophagy': 0.85
                                     },
                                     {'name': 'funestus',
                                      'larval_hab': {'WATER_VEGETATION': 4e8 * 0.94},
-                                     'endophagy': 0.68
+                                     'endophagy': 0.85
                                      }
                                     ],
-                        'burnin_id': "106e7c90-b975-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "8c2b7a26-3977-e811-a2c0-c4346bcb7275"
 
              }
 
