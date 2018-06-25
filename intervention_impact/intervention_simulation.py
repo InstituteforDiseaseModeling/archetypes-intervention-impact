@@ -23,8 +23,8 @@ from malaria.reports.MalariaReport import add_summary_report
 # setup
 location = 'HPC'
 SetupParser.default_block = location
-archetype_name = "moine"
-exp_name = 'Moine_Ints_Newer_Burnin'  # change this to something unique every time
+archetype_name = "bajonapo"
+exp_name = 'Bajonapo_Interventions'  # change this to something unique every time
 years = 3
 interventions = []
 
@@ -42,7 +42,7 @@ archetypes = {
                                                     "BRACKISH_SWAMP": 1e5}
                                      },
                                     ],
-                        'burnin_id': "8c0ccb25-c973-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "0911f27b-7877-e811-a2c0-c4346bcb7275"
              },
             # karen: slightly more maculatus (0.6 maculatus to 0.4 minimus), 2.3e7 max capacity
             'karen': {
@@ -72,7 +72,7 @@ archetypes = {
                                      'endophagy': 0.85
                                      }
                                     ],
-                        'burnin_id': "8c2b7a26-3977-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "106e7c90-b975-e811-a2c0-c4346bcb7275"
 
              }
 

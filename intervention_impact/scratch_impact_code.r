@@ -6,11 +6,15 @@ rm(list=ls())
 main_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/prelim_itn_sweeps")
 
-lookup_karen <- fread(file.path(main_dir, "lookup_table_karen_multi_int.csv"))
-lookup_karen[, site:='karen']
-lookup_moine <- fread(file.path(main_dir, "lookup_table_moine_multi_int.csv"))
-lookup_moine[, site:='moine']
-lookup_all <- rbind(lookup_karen, lookup_moine)
+sites <- c("karen", "moine", "bajonapo")
+
+lookup_all <- lapply(sites, function(site){
+  lookup <- fread(file.path(main_dir, paste0("lookup_table_", site, "_multi_int.csv")))
+  lookup[, site:=site]
+  return(lookup)
+})
+
+lookup_all <- rbindlist(lookup_all)
 
 # data_all <- fread(file.path(main_dir, "full_karen_data.csv"))
 # 
@@ -41,7 +45,7 @@ lookup_all <- rbind(lookup_karen, lookup_moine)
 # graphics.off()
 
 lookup_all[, ITN_Coverage:=factor(ITN_Coverage)]
-lookup_all[, IRS_Coverage:=factor(IRS_Coverage)]
+lookup_all[, IRS_Coverage:=paste0("IRS: ", IRS_Coverage)]
 lookup_all[, ACT_Coverage:= factor(ACT_Coverage)]
 
 ggplot(lookup_all, aes(x=initial, y=final)) +
@@ -51,6 +55,6 @@ ggplot(lookup_all, aes(x=initial, y=final)) +
   theme_minimal() + 
   labs(x="Initial", 
        y="Final",
-       title="Intervention Impact, SE Asia")
+       title="Intervention Impact")
 
 
