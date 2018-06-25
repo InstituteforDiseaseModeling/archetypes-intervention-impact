@@ -17,11 +17,11 @@ df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'funestus.Anthropophily',
 
 parse_type="simple"
 
-serialization_exp_ids = {'initial': "8c0ccb25-c973-e811-a2c0-c4346bcb7275",
-                         'final': "6dca3c96-3c77-e811-a2c0-c4346bcb7275"
+serialization_exp_ids = {'initial': "0911f27b-7877-e811-a2c0-c4346bcb7275",
+                         'final': "c42fbd67-ba77-e811-a2c0-c4346bcb7275"
                          }
 
-out_fname = 'lookup_table_karen_multi_int.csv'
+out_fname = 'lookup_table_bajonapo_multi_int.csv'
 COMPS_login("https://comps.idmod.org")
 
 full_prev_list = []
