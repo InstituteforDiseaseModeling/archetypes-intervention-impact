@@ -1,0 +1,89 @@
+{
+  "Nodes": [
+    {
+      "NodeID": 1518218607,
+      "NodeAttributes": {
+        "Latitude": 6.92,
+        "Longitude": 13.05,
+        "InitialPopulation": 1000,
+        "FacilityName": 393220,
+        "BirthRate": 0.099459922621121785,
+        "LarvalHabitatMultiplier": 1.0
+      }
+    }
+  ],
+  "Defaults": {
+    "IndividualAttributes": {
+      "MortalityDistribution": {
+        "NumDistributionAxes": 2,
+        "AxisNames": [
+          "gender",
+          "age"
+        ],
+        "AxisUnits": [
+          "male=0,female=1",
+          "years"
+        ],
+        "AxisScaleFactors": [
+          1,
+          365
+        ],
+        "NumPopulationGroups": [
+          2,
+          1
+        ],
+        "PopulationGroups": [
+          [
+            0,
+            1
+          ],
+          [
+            0
+          ]
+        ],
+        "ResultUnits": "annual deaths per 1000 individuals",
+        "ResultScaleFactor": 2.74E-06,
+        "ResultValues": [
+          [
+            36.30287175670945
+          ],
+          [
+            36.30287175670945
+          ]
+        ]
+      },
+      "AgeDistributionFlag": 3,
+      "AgeDistribution1": 0.0001068,
+      "RiskDistribution1": 1,
+      "PrevalenceDistributionFlag": 1,
+      "AgeDistribution2": 0,
+      "PrevalenceDistribution1": 0.13,
+      "PrevalenceDistribution2": 0.15,
+      "RiskDistributionFlag": 0,
+      "RiskDistribution2": 0,
+      "MigrationHeterogeneityDistribution1": 1,
+      "ImmunityDistributionFlag": 0,
+      "MigrationHeterogeneityDistributionFlag": 0,
+      "ImmunityDistribution1": 1,
+      "MigrationHeterogeneityDistribution2": 0,
+      "ImmunityDistribution2": 0
+    },
+    "NodeAttributes": {
+      "Urban": 0,
+      "AbovePoverty": 0.5,
+      "Region": 1,
+      "Seaport": 0,
+      "Airport": 0,
+      "Altitude": 0,
+      "InitialPopulation": 1000
+    }
+  },
+  "Metadata": {
+    "Author": "idm",
+    "Tool": "dtk-tools",
+    "IdReference": "Gridded world grump30arcsec",
+    "DateCreated": "2018-06-27 16:32:27.864573",
+    "NodeCount": 1,
+    "Resolution": 30
+  }
+}

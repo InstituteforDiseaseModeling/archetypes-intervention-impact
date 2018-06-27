@@ -1,10 +1,10 @@
 {
     "Nodes": [
         {
-            "NodeID": 1475161276,
+            "NodeID": 1518218607,
             "NodeAttributes": {
-                "Latitude": 5.43,
-                "Longitude": 7.58,
+                "Latitude": 6.92,
+                "Longitude": 13.05,
                 "InitialPopulation": 1000,
                 "FacilityName": 393220,
                 "BirthRate": 0.09945992262112179,
@@ -82,7 +82,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "Gridded world grump30arcsec",
-        "DateCreated": "2018-06-27 16:31:31.037554",
+        "DateCreated": "2018-06-27 16:32:27.864573",
         "NodeCount": 1,
         "Resolution": 30
     }

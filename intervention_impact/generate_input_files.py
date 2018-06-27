@@ -4,6 +4,7 @@ import pdb
 import os
 import shapely
 import sys
+import re
 import json
 
 from dtk.tools.demographics.Node import Node, nodeid_from_lat_lon
@@ -34,6 +35,7 @@ sites = pd.read_csv("site_details.csv")
 #
 # for species in ['arabiensis', 'funestus', 'gambiae']:
 #     sites[species] = extract_latlongs(os.path.join(vector_raster_dir, '{name}.tif'.format(name=species)), shapes)
+#
 
 print("generating input files")
 for idx, name in enumerate(sites['name']):
@@ -58,11 +60,20 @@ for idx, name in enumerate(sites['name']):
     print("climate")
     climate_path = 'climate/{name}'.format(name=name)
     site_climate = ClimateGenerator(demog_path, os.path.join(climate_path, 'climate_wo.json'), climate_path,
-                                    climate_project='IDM_{country}'.format(country=site['country']))
+                                    climate_project='IDM-{country}'.format(country=site['country']),
+                                    start_year=2001)
     site_climate.generate_climate_files()
 
-    pdb.set_trace()
+    # rename climate files
+    print("renaming climate files")
+    res_unit = 'arcsec' if res == 30 else 'arcmin'
+    for fname in os.listdir(climate_path):
+        if 'daily' in fname:
+            match = '{country}_{res}{res_name}_(.*)'.format(country=site['country'], res=res, res_name=res_unit)
+            new_name = re.sub(match, r'\1', fname)
+            os.replace(os.path.join(climate_path, fname),
+                      os.path.join(climate_path, new_name))
 
 
 
-# DemographicsGenerator.from_grid_file("site_details.csv", "new_demog.json")
+

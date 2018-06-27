@@ -23,14 +23,14 @@ from malaria.reports.MalariaReport import add_summary_report
 # setup
 location = 'HPC'
 SetupParser.default_block = location
-archetype_name = "bajonapo"
-exp_name = 'bajonapo_burnin_lower_anthro'  # change this to something unique every time
-years = 50
+archetype_name = "karen"
+exp_name = 'karen_ints_lower_anthro'  # change this to something unique every time
+years = 3
 interventions = []
 
 # Serialization
-serialize = True  # If true, save serialized files
-pull_from_serialization =  False # requires experiment id
+serialize = False  # If true, save serialized files
+pull_from_serialization =  True # requires experiment id
 
 archetypes = {
             # bajonapo: only darlingi
@@ -43,7 +43,7 @@ archetypes = {
                                      'anthro': 0.5
                                      },
                                     ],
-                        'burnin_id': "0911f27b-7877-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "50320dd7-d179-e811-a2c0-c4346bcb7275"
              },
             # karen: slightly more maculatus (0.6 maculatus to 0.4 minimus), 2.3e7 max capacity
             'karen': {
@@ -59,7 +59,7 @@ archetypes = {
                                      'anthro': 0.5
                                      },
                                     ],
-                        'burnin_id': "8c0ccb25-c973-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "23fb46ef-d079-e811-a2c0-c4346bcb7275"
              },
              # moine: 4e8 maximum capacity, funestus-dominated (94%)
              'moine': {
@@ -76,7 +76,7 @@ archetypes = {
                                      'anthro': 0.65
                                      }
                                     ],
-                        'burnin_id': "106e7c90-b975-e811-a2c0-c4346bcb7275"
+                        'burnin_id': "802ac672-cf79-e811-a2c0-c4346bcb7275"
 
              }
 
@@ -226,14 +226,14 @@ if pull_from_serialization:
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
         ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        # ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=y/100, discard_halflife=180),
-        # ModFn(add_healthseeking_by_coverage,coverage=z/100),
-        # ModFn(add_irs_group, coverage=q/100, decay=180, start_days = [365*start for start in range(years)])
+        ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=y/100, discard_halflife=180),
+        ModFn(add_healthseeking_by_coverage,coverage=z/100),
+        ModFn(add_irs_group, coverage=q/100, decay=180, start_days = [365*start for start in range(years)])
                                      ]
         for x in df.index
-        # for y in [0, 80]
-        # for z in [0, 80]
-        # for q in [0, 80]
+        for y in [0, 80]
+        for z in [0, 80]
+        for q in [0, 80]
     ])
 else:
     builder = ModBuilder.from_list([[
