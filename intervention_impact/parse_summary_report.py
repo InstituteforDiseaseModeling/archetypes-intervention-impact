@@ -36,6 +36,17 @@ serialization_exp_ids = {'initial': "8c0ccb25-c973-e811-a2c0-c4346bcb7275",
 #                          'moine_initial_68': '106e7c90-b975-e811-a2c0-c4346bcb7275',
 #                          'moine_final_68': '6bf96bf2-2776-e811-a2c0-c4346bcb7275'}
 
+serialization_exp_ids = {'bajonapo': {'initial': '50320dd7-d179-e811-a2c0-c4346bcb7275',
+                                      'final': '4cefd777-2f7a-e811-a2c0-c4346bcb7275',
+                                      },
+                         'karen': {'initial': '23fb46ef-d079-e811-a2c0-c4346bcb7275',
+                                   'final': 'aaffbf65-347a-e811-a2c0-c4346bcb7275'},
+                         'moine': {'initial': '802ac672-cf79-e811-a2c0-c4346bcb7275'}
+
+}
+
+
+
 out_fname = 'lookup_table_bajonapo_multi_int.csv'
 COMPS_login("https://comps.idmod.org")
 
