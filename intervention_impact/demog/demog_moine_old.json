@@ -34,7 +34,7 @@
                     "NumDistributionAxes": 2, 
                     "NumPopulationGroups": [
                         2, 
-                        2
+                        1
                     ], 
                     "PopulationGroups": [
                         [
@@ -42,20 +42,17 @@
                             1
                         ], 
                         [
-                            0,
-                            100
+                            0
                         ]
                     ], 
                     "ResultScaleFactor": 2.74e-06, 
                     "ResultUnits": "annual deaths per 1000 individuals", 
                     "ResultValues": [
                         [
-                            45,
-                            999
+                            45
                         ], 
                         [
-                            45,
-                            999
+                            45
                         ]
                     ]
                 }, 
