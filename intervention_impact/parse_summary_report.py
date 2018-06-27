@@ -15,11 +15,26 @@ out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team F
 df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'funestus.Anthropophily', 'funestus.Indoor_Feeding_Fraction',
            'ITN_Coverage', "ACT_Coverage", "IRS_Coverage"]
 
-parse_type="simple"
+parse_type="by_age"
 
-serialization_exp_ids = {'initial': "0911f27b-7877-e811-a2c0-c4346bcb7275",
-                         'final': "c42fbd67-ba77-e811-a2c0-c4346bcb7275"
+## moine endo:
+## 85% burnin: 8c2b7a26-3977-e811-a2c0-c4346bcb7275
+## 85% int: 47944625-7377-e811-a2c0-c4346bcb7275
+
+## 68% burnin: 106e7c90-b975-e811-a2c0-c4346bcb7275
+## 68% int: 6bf96bf2-2776-e811-a2c0-c4346bcb7275
+
+
+serialization_exp_ids = {'initial': "8c0ccb25-c973-e811-a2c0-c4346bcb7275",
+                         'final': "6dca3c96-3c77-e811-a2c0-c4346bcb7275"
                          }
+
+# serialization_exp_ids = {'moine_initial_85': '8c2b7a26-3977-e811-a2c0-c4346bcb7275',
+#                          'moine_final_85': '47944625-7377-e811-a2c0-c4346bcb7275',
+#                          'karen_initial_73': '8c0ccb25-c973-e811-a2c0-c4346bcb7275',
+#                          'karen_final_73': '6dca3c96-3c77-e811-a2c0-c4346bcb7275',
+#                          'moine_initial_68': '106e7c90-b975-e811-a2c0-c4346bcb7275',
+#                          'moine_final_68': '6bf96bf2-2776-e811-a2c0-c4346bcb7275'}
 
 out_fname = 'lookup_table_bajonapo_multi_int.csv'
 COMPS_login("https://comps.idmod.org")
@@ -43,7 +58,7 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
         with open(report_dir) as f:
             report = json.loads(f.read())
 
-        if parse_type=="all":
+        if parse_type=="by_age":
             datasets  = {key: pd.DataFrame(value) for (key, value) in report['DataByTimeAndAgeBins'].items()}
 
             for name, dataset in datasets.items():
@@ -54,6 +69,11 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
 
             prev_df = pd.merge(datasets['PfPR by Age Bin'], datasets['Average Population by Age Bin'])
 
+        elif parse_type=="by_time":
+            prev_df = pd.DataFrame(report['DataByTime'])
+            prev_df = prev_df[:-1]
+            prev_df['year'] = prev_df['Time Of Report']/365
+            prev_df = prev_df[['year', 'PfPR_2to10']]
         else:
             prev_df = pd.DataFrame(report['DataByTime'])
             prev_df = prev_df[-2:-1]
@@ -68,21 +88,28 @@ for run_type, serialization_exp_id in serialization_exp_ids.items():
         prev_list.append(prev_df)
 
     prev_all = pd.concat(prev_list)
-    # prev_all['run_type'] = run_type
-    prev_all.rename(columns={'PfPR_2to10':run_type}, inplace=True)
+
+    prev_all['run_type'] = run_type
+    # prev_all.rename(columns={'PfPR_2to10':run_type}, inplace=True)
 
     full_prev_list.append(prev_all)
 
-if parse_type=="all":
+if parse_type=="by_age":
     max_burnin_year = max(full_prev_list[0]['year'])
     full_prev_list[1]['year'] = full_prev_list[1]['year'] + max_burnin_year
     full_prev_list[0] = full_prev_list[0].query('year<@max_burnin_year')
     before_after = pd.concat(full_prev_list)
+    before_after.to_csv(os.path.join(out_dir, 'full_karen.csv'), index=False)
+
+
+elif parse_type == "by_time":
+    before_after = pd.concat(full_prev_list)
+    before_after.to_csv(os.path.join(out_dir, 'full_endo.csv'), index=False)
 
 else:
     before_after = pd.merge(full_prev_list[0], full_prev_list[1])
 
-# before_after.to_csv(os.path.join(out_dir, 'full_moine_data.csv'), index=False)
+pdb.set_trace()
 
 means = before_after.groupby(['x_Temporary_Larval_Habitat',
                               'IRS_Coverage', 'ITN_Coverage', 'ACT_Coverage']).mean().drop('Run_Number', axis=1).reset_index()

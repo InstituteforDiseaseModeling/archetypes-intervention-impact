@@ -24,29 +24,30 @@ from malaria.reports.MalariaReport import add_summary_report
 location = 'HPC'
 SetupParser.default_block = location
 archetype_name = "bajonapo"
-exp_name = 'Bajonapo_Interventions'  # change this to something unique every time
-years = 3
+exp_name = 'bajonapo_burnin_lower_anthro'  # change this to something unique every time
+years = 50
 interventions = []
 
 # Serialization
-serialize = False  # If true, save serialized files
-pull_from_serialization =  True # requires experiment id
+serialize = True  # If true, save serialized files
+pull_from_serialization =  False # requires experiment id
 
 archetypes = {
             # bajonapo: only darlingi
             'bajonapo': {
-                        'demog': 'demog/demog_bajonapo.json',
+                        'demog': 'demog/demog_bajonapo_old.json',
                         'species': [{'name': 'darlingi',
                                      'larval_hab':{ "WATER_VEGETATION": 1e8,
                                                     "CONSTANT": 1e6,
-                                                    "BRACKISH_SWAMP": 1e5}
+                                                    "BRACKISH_SWAMP": 1e5},
+                                     'anthro': 0.5
                                      },
                                     ],
                         'burnin_id': "0911f27b-7877-e811-a2c0-c4346bcb7275"
              },
             # karen: slightly more maculatus (0.6 maculatus to 0.4 minimus), 2.3e7 max capacity
             'karen': {
-                        'demog': 'demog/demog_karen.json',
+                        'demog': 'demog/demog_karen_old.json',
                         'species': [{'name': 'minimus',
                                     'larval_hab': {"WATER_VEGETATION": 2.3e7 * 0.4 * 0.9,
                                                    "CONSTANT": 2.3e7 * 0.4 * 0.1}
@@ -54,22 +55,25 @@ archetypes = {
                                     {'name': 'maculatus',
                                      'larval_hab':{ "TEMPORARY_RAINFALL": 2.3e7 * 0.6 * 0.8,
                                                     "WATER_VEGETATION": 2.3e7 * 0.6 * 0.1,
-                                                    "CONSTANT": 2.3e7 * 0.6 * 0.1}
+                                                    "CONSTANT": 2.3e7 * 0.6 * 0.1},
+                                     'anthro': 0.5
                                      },
                                     ],
                         'burnin_id': "8c0ccb25-c973-e811-a2c0-c4346bcb7275"
              },
              # moine: 4e8 maximum capacity, funestus-dominated (94%)
              'moine': {
-                        'demog': 'demog/demog_moine.json',
+                        'demog': 'demog/demog_moine_old.json',
                         'species': [{'name':'gambiae',
                                      'larval_hab': {'CONSTANT': 4e8 * 0.06 * 0.9,
                                                     'TEMPORARY_RAINFALL': 4e8 * 0.06 * 0.1},
-                                     'endophagy': 0.85
+                                     'endophagy': 0.85,
+                                     'anthro': 0.85
                                     },
                                     {'name': 'funestus',
                                      'larval_hab': {'WATER_VEGETATION': 4e8 * 0.94},
-                                     'endophagy': 0.85
+                                     'endophagy': 0.85,
+                                     'anthro': 0.65
                                      }
                                     ],
                         'burnin_id': "106e7c90-b975-e811-a2c0-c4346bcb7275"
@@ -131,6 +135,8 @@ for species_params in archetype['species']:
     set_species_param(cb, species_name, 'Larval_Habitat_Types', species_params['larval_hab'])
     if 'endophagy' in species_params.keys():
         set_species_param(cb, species_name, 'Indoor_Feeding_Fraction', species_params['endophagy'])
+    if 'anthro' in species_params.keys():
+        set_species_param(cb, species_name, 'Anthropophily', species_params['anthro'])
 
 # cb.update_params({
 #         "Report_Event_Recorder": 1,
@@ -220,14 +226,14 @@ if pull_from_serialization:
               [name for name in os.listdir(os.path.join(df['outpath'][x], 'output')) if 'state' in name]  ),
         ModFn(DTKConfigBuilder.set_param, 'Run_Number', df['Run_Number'][x]),
         ModFn(DTKConfigBuilder.set_param, 'x_Temporary_Larval_Habitat', df['x_Temporary_Larval_Habitat'][x]),
-        ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=y/100, discard_halflife=180),
-        ModFn(add_healthseeking_by_coverage,coverage=z/100),
-        ModFn(add_irs_group, coverage=q/100, decay=180, start_days = [365*start for start in range(years)])
-                                    ]
+        # ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=y/100, discard_halflife=180),
+        # ModFn(add_healthseeking_by_coverage,coverage=z/100),
+        # ModFn(add_irs_group, coverage=q/100, decay=180, start_days = [365*start for start in range(years)])
+                                     ]
         for x in df.index
-        for y in [0, 80]
-        for z in [0, 80]
-        for q in [0, 80]
+        # for y in [0, 80]
+        # for z in [0, 80]
+        # for q in [0, 80]
     ])
 else:
     builder = ModBuilder.from_list([[
