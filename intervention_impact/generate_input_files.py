@@ -27,16 +27,17 @@ vector_raster_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Mala
 
 sites = pd.read_csv("site_details.csv")
 
-# # for African sites, find vector species mix
-# print("finding vector mix")
-# shp_df = make_shapefile(sites.copy(), type='point',
-#                             to_crs={'init' :'epsg:4326'}, lat_name='lat', lon_name='lon')
-# shapes = [shapely.geometry.mapping(g) for g in shp_df['geometry']]
-#
-# for species in ['arabiensis', 'funestus', 'gambiae']:
-#     sites[species] = extract_latlongs(os.path.join(vector_raster_dir, '{name}.tif'.format(name=species)), shapes)
-#
+# for African sites, find vector species mix
+print("finding vector mix")
+shp_df = make_shapefile(sites.copy(), type='point',
+                            to_crs={'init' :'epsg:4326'}, lat_name='lat', lon_name='lon')
+shapes = [shapely.geometry.mapping(g) for g in shp_df['geometry']]
 
+for species in ['arabiensis', 'funestus', 'gambiae']:
+    sites[species] = extract_latlongs(os.path.join(vector_raster_dir, '{name}.tif'.format(name=species)), shapes)
+sites.to_csv("site_details.csv", index=False)
+
+pdb.set_trace()
 print("generating input files")
 for idx, name in enumerate(sites['name']):
 
@@ -68,7 +69,6 @@ for idx, name in enumerate(sites['name']):
     print("renaming climate files")
     res_unit = 'arcsec' if res == 30 else 'arcmin'
     for fname in os.listdir(climate_path):
-        if 'daily' in fname:
             match = '{country}_{res}{res_name}_(.*)'.format(country=site['country'], res=res, res_name=res_unit)
             new_name = re.sub(match, r'\1', fname)
             os.replace(os.path.join(climate_path, fname),
