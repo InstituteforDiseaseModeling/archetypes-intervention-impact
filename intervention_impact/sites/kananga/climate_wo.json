@@ -1,0 +1,19 @@
+{
+   "WorkItem_Type": "InputDataWorker",
+   "Project": "IDM-Democratic_Republic_of_the_Congo",
+   "Region": "",
+   "IncludeNonPop": true,
+   "Resolution": "0",
+   "Parameters": [
+      "tmean",
+      "humid",
+      "rain"
+   ],
+   "StartYear": "2016",
+   "NumYears": "1",
+   "NaNCheck": true,
+   "Migration": false,
+   "IdReference": "Gridded world grump30arcsec",
+   "Mode": "upload",
+   "ProjectRoot": "v2017"
+}

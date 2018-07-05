@@ -2,7 +2,7 @@ import pandas as pd
 import os
 import json
 
-
+from generate_input_files import generate_input_files
 from dtk.vector.species import set_params_by_species, set_species_param
 from dtk.interventions.health_seeking import add_health_seeking
 from dtk.interventions.irs import add_IRS
@@ -10,19 +10,24 @@ from dtk.interventions.itn_age_season import add_ITN_age_season
 
 
 def site_simulation_setup(cb, site_name, max_larval_capacity=4e8):
-    sites = pd.read_csv("site_details.csv")
-    this_site = sites.query("name==@site_name")
+
+    print("setting up simuilation for " + site_name)
+    site_dir = os.path.join("sites", site_name)
+
+    if not os.path.isdir(site_dir):
+        print("generating input files for " + site_name)
+        generate_input_files(site_name)
 
     # directories
     cb.update_params({
-                    "Demographics_Filenames": ["demog/demog_{site}.json".format(site=site_name)],
-                    "Air_Temperature_Filename": os.path.join("climate", site_name,
+                    "Demographics_Filenames": ["sites/{site}/demographics_{site}.json".format(site=site_name)],
+                    "Air_Temperature_Filename": os.path.join(site_dir,
                                                              "air_temperature_daily.bin"),
-                    "Land_Temperature_Filename": os.path.join("climate", site_name,
+                    "Land_Temperature_Filename": os.path.join(site_dir,
                                                               "air_temperature_daily.bin"),
-                    "Rainfall_Filename": os.path.join("climate", site_name,
+                    "Rainfall_Filename": os.path.join(site_dir,
                                                       "rainfall_daily.bin"),
-                    "Relative_Humidity_Filename": os.path.join("climate", site_name,
+                    "Relative_Humidity_Filename": os.path.join(site_dir,
                                                                "relative_humidity_daily.bin")
                     }
     )
@@ -31,10 +36,9 @@ def site_simulation_setup(cb, site_name, max_larval_capacity=4e8):
     with open("species_details.json") as f:
         species_details = json.loads(f.read())
 
-    # Find vector details for each vector in our site (todo: make this more interpretable-- pull from site-specific file)
-    idx, vectors = this_site[[x for x in this_site.columns if x in species_details.keys()]].transpose().to_dict().popitem()
-    vectors = {name: prop for name, prop in vectors.items() if prop > 0}
-
+    # Find vector details for each vector in our site
+    vectors = pd.read_csv(os.path.join(site_dir, "vector_proportions.csv"))
+    vectors = {row.species: row.proportion for row in vectors.itertuples() if row.proportion>0}
     set_params_by_species(cb.params, [name for name in vectors.keys()])
 
     for species_name, species_prop in vectors.items():
@@ -49,7 +53,7 @@ def site_simulation_setup(cb, site_name, max_larval_capacity=4e8):
             else:
                 set_species_param(cb, species_name, param, val)
 
-    return {"Site_Name": site_name, "Vectors": vectors}
+    return {"Site_Name": site_name}
 
 
 # itns
