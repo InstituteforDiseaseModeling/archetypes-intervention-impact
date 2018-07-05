@@ -18,7 +18,7 @@ burnin_id = "b5f4c942-b67f-e811-a2c0-c4346bcb7275"
 
 # Serialization
 if run_type == "burnin":
-    years = 50
+    years = 3
     exp_name = "Intervention_Impact_Burnins"
     serialize = True
     pull_from_serialization = False
@@ -98,8 +98,9 @@ else:
         ModFn(DTKConfigBuilder.set_param, "Run_Number", y),
         ModFn(site_simulation_setup, site_name=site_name)
         ]
-        for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25)))
-        for y in range(5)
+        #  for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25)))
+        for x in range(1)
+        for y in range(1)
         for site_name in sites["name"]
     ])
 
