@@ -19,7 +19,7 @@ burnin_id = "b5f4c942-b67f-e811-a2c0-c4346bcb7275"
 # Serialization
 if run_type == "burnin":
     years = 3
-    exp_name = "Intervention_Impact_Burnins"
+    exp_name = "Intervention_Impact_Burnins_Test"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -64,6 +64,9 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
 
+# add when you get new .exe working;
+cb.update_params({"Enable_Vector_Species_Report": 0})
+
 # reporting
 add_summary_report(cb)
 
@@ -102,7 +105,7 @@ else:
         #  for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25)))
         for x in range(1)
         for y in range(1)
-        for site_name in sites["name"]
+        for site_name in [sites["name"][0]]
     ])
 
 run_sim_args = {"config_builder": cb,

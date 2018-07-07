@@ -6,6 +6,7 @@ import shapely.geometry
 import sys
 import re
 import json
+import shutil
 
 from dtk.tools.demographics.Node import Node, nodeid_from_lat_lon
 from simtools.SetupParser import SetupParser
@@ -16,7 +17,7 @@ from simtools.Utilities.COMPSUtilities import COMPS_login
 sys.path.insert(0, os.path.pardir)
 from spatial import make_shapefile, extract_latlongs
 
-def generate_input_files(site_name, res=30, pop=1000):
+def generate_input_files(site_name, res=30, pop=1000, overwrite=False):
 
     # setup
     # SetupParser.init()
@@ -27,6 +28,10 @@ def generate_input_files(site_name, res=30, pop=1000):
 
     # specify directories
     out_dir = os.path.join("sites", site_name)
+
+    if overwrite and os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
+
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
 
@@ -41,10 +46,10 @@ def generate_input_files(site_name, res=30, pop=1000):
 
         site_vectors = pd.DataFrame(columns=["species", "proportion"])
         for species in ["arabiensis", "funestus", "gambiae"]:
-            species_prop = extract_latlongs(os.path.join(vector_raster_dir, "{name}.tif".format(name=species)), shapes)
+            species_prop = extract_latlongs(os.path.join(vector_raster_dir, "{name}.tif".format(name=species)), shapes)[0]
             if species_prop > 0:
                 site_vectors = site_vectors.append({"species": species,
-                                                    "proportion": species_prop[0]},
+                                                    "proportion": species_prop},
                                                      ignore_index=True)
     else:
         site_vectors = pd.read_csv("vector_props_non_africa.csv")
