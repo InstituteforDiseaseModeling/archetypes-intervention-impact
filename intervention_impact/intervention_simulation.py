@@ -13,18 +13,19 @@ from malaria.reports.MalariaReport import add_summary_report
 from sweep_functions import add_annual_itns, add_irs_group, add_healthseeking_by_coverage, site_simulation_setup
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
+run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "b5f4c942-b67f-e811-a2c0-c4346bcb7275"
+# burnin_id = "010c5f63-3d82-e811-a2c0-c4346bcb7275"
 
 # Serialization
 if run_type == "burnin":
-    years = 3
+    years = 10
     exp_name = "Intervention_Impact_Burnins_Test"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "Intervention_Impact_Interventions"
+    exp_name = "Intervention_Impact_Interventions_Test"
     serialize = False
     pull_from_serialization = True
 else:
@@ -39,13 +40,14 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Simulation_Duration=int(365*years),
                                     Config_Name=exp_name,
                                     Birth_Rate_Dependence="FIXED_BIRTH_RATE",
+                                    Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX",
                                     Num_Cores=1,
 
                                     # interventions
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=0,
+                                    Enable_Default_Reporting=1,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
