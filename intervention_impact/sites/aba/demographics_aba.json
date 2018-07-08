@@ -5,9 +5,9 @@
             "NodeAttributes": {
                 "Latitude": 5.43,
                 "Longitude": 7.58,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": 393220,
-                "BirthRate": 0.09945992262112179,
+                "BirthRate": 0.21307945205479453,
                 "LarvalHabitatMultiplier": 1.0
             }
         }
@@ -45,10 +45,10 @@
                 "ResultScaleFactor": 2.74e-06,
                 "ResultValues": [
                     [
-                        36.30287175670945
+                        38.887
                     ],
                     [
-                        36.30287175670945
+                        38.887
                     ]
                 ]
             },
@@ -82,7 +82,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "Gridded world grump30arcsec",
-        "DateCreated": "2018-07-04 14:35:53.179685",
+        "DateCreated": "2018-07-07 17:23:37.192162",
         "NodeCount": 1,
         "Resolution": 30
     }

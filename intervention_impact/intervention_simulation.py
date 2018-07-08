@@ -13,7 +13,7 @@ from malaria.reports.MalariaReport import add_summary_report
 from sweep_functions import add_annual_itns, add_irs_group, add_healthseeking_by_coverage, site_simulation_setup
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "b5f4c942-b67f-e811-a2c0-c4346bcb7275"
 # burnin_id = "010c5f63-3d82-e811-a2c0-c4346bcb7275"
 
@@ -40,7 +40,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Simulation_Duration=int(365*years),
                                     Config_Name=exp_name,
                                     Birth_Rate_Dependence="FIXED_BIRTH_RATE",
-                                    Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX",
+                                    # Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX",
                                     Num_Cores=1,
 
                                     # interventions
@@ -104,10 +104,10 @@ else:
         ModFn(DTKConfigBuilder.set_param, "Run_Number", y),
         ModFn(site_simulation_setup, site_name=site_name)
         ]
-        #  for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25)))
+        # for x in np.concatenate((np.arange(0, 2.25, 0.05), np.arange(2.25, 4.25, 0.25)))
         for x in range(1)
         for y in range(1)
-        for site_name in [sites["name"][0]]
+        for site_name in sites["name"]
     ])
 
 run_sim_args = {"config_builder": cb,
