@@ -1,4 +1,5 @@
 import pandas as pd
+
 import os
 import json
 
@@ -14,9 +15,10 @@ def site_simulation_setup(cb, site_name, max_larval_capacity=4e8):
     print("setting up simulation for " + site_name)
     site_dir = os.path.join("sites", site_name)
 
+
     if not os.path.isdir(site_dir):
         print("generating input files for " + site_name)
-        generate_input_files(site_name)
+        generate_input_files(site_name, pop=2000, overwrite=True)
 
     # directories
     cb.update_params({
@@ -43,6 +45,7 @@ def site_simulation_setup(cb, site_name, max_larval_capacity=4e8):
 
     for species_name, species_prop in vectors.items():
         set_species_param(cb, species_name, "Adult_Life_Expectancy", 20)
+        set_species_param(cb, species_name, "Vector_Sugar_Feeding_Frequency", "VECTOR_SUGAR_FEEDING_NONE")
 
         species_modifications = species_details[species_name]
 

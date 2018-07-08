@@ -1,4 +1,5 @@
-
+import numpy as np
+import scipy.integrate as sp
 import pandas as pd
 import pdb
 import os
@@ -6,6 +7,7 @@ import shapely.geometry
 import sys
 import re
 import json
+import shutil
 
 from dtk.tools.demographics.Node import Node, nodeid_from_lat_lon
 from simtools.SetupParser import SetupParser
@@ -16,7 +18,77 @@ from simtools.Utilities.COMPSUtilities import COMPS_login
 sys.path.insert(0, os.path.pardir)
 from spatial import make_shapefile, extract_latlongs
 
-def generate_input_files(site_name, res=30, pop=1000):
+
+def custom_age_distribution(birth_rate, mort_scale, mort_value):
+    # we want to kill everyone over 100
+    age_vec = [365 * 0, 365 * 99.999, 365 * 100]
+    mort_vec = [mort_scale * mort_value, mort_scale * mort_value, 1]
+
+    max_yr = 120
+    day_to_year = 365
+
+    mvec_x = [-1] + age_vec + [max_yr * day_to_year + 1]
+    mvec_y = [mort_vec[0]] + mort_vec + [mort_vec[-1]]
+    m_x = np.arange(0, max_yr * day_to_year, 30)
+    mval = (1.0 - np.interp(m_x, xp=mvec_x, fp=mvec_y)) ** 30
+    popvec = birth_rate * np.cumprod(mval)
+
+    tpop = np.trapz(popvec, x=m_x)
+
+    npvec = popvec / tpop
+    cpvec = sp.cumtrapz(npvec, x=m_x, initial=0)
+
+    resval = np.around(np.linspace(0, max_yr * day_to_year))
+    distval = np.interp(resval, xp=m_x, fp=cpvec)
+
+    return resval, distval
+
+
+def update_demog(demographics):
+
+    # update age distribution--  Assumes Birth_Rate_Dependence="FIXED_BIRTH_RATE" and
+    #                            Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX"
+
+    birth_rate = demographics["Nodes"][0]["NodeAttributes"]["BirthRate"]
+    mort_defaults = demographics["Defaults"]["IndividualAttributes"]["MortalityDistribution"]
+    mort_scale = mort_defaults["ResultScaleFactor"]
+    mort_value = mort_defaults["ResultValues"][1][0]  # annual deaths per 1000, set to mirror birth rate in defaults
+
+    resval, distval = custom_age_distribution(birth_rate, mort_scale, mort_value)
+    age_dist = {
+                "DistributionValues":
+                [
+                  #[
+                    distval.tolist()
+                  #]
+                ],
+                "ResultScaleFactor": 1,
+                "ResultValues":
+                [
+                 #[
+                    resval.tolist()
+                 #]
+                ]
+              }
+
+    # make new age distribution key in demographics dict, remove other age distribution parameters
+    for key in ["AgeDistributionFlag", "AgeDistribution1", "AgeDistribution2"]:
+        del demographics["Defaults"]["IndividualAttributes"][key]
+
+    demographics["Defaults"]["IndividualAttributes"]["AgeDistribution"] = age_dist
+
+    # update mortality distribution to kill everyone over 100
+    mort_defaults["NumPopulationGroups"] = [2, 2]  # add second age bin
+    mort_defaults["PopulationGroups"][1] = [0, 100]  # add age value of second age bin
+    for val_list in mort_defaults["ResultValues"]:
+        val_list.append(999)
+
+    demographics["Defaults"]["IndividualAttributes"]["MortalityDistribution"] = mort_defaults
+
+    return demographics
+
+
+def generate_input_files(site_name, res=30, pop=1000, overwrite=False):
 
     # setup
     # SetupParser.init()
@@ -27,6 +99,10 @@ def generate_input_files(site_name, res=30, pop=1000):
 
     # specify directories
     out_dir = os.path.join("sites", site_name)
+
+    if overwrite and os.path.isdir(out_dir):
+        shutil.rmtree(out_dir)
+
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
 
@@ -41,10 +117,10 @@ def generate_input_files(site_name, res=30, pop=1000):
 
         site_vectors = pd.DataFrame(columns=["species", "proportion"])
         for species in ["arabiensis", "funestus", "gambiae"]:
-            species_prop = extract_latlongs(os.path.join(vector_raster_dir, "{name}.tif".format(name=species)), shapes)
+            species_prop = extract_latlongs(os.path.join(vector_raster_dir, "{name}.tif".format(name=species)), shapes)[0]
             if species_prop > 0:
                 site_vectors = site_vectors.append({"species": species,
-                                                    "proportion": species_prop[0]},
+                                                    "proportion": species_prop},
                                                      ignore_index=True)
     else:
         site_vectors = pd.read_csv("vector_props_non_africa.csv")
@@ -60,7 +136,7 @@ def generate_input_files(site_name, res=30, pop=1000):
     demog_path = os.path.join(out_dir, "demographics_{name}.json".format(name=site_name))
     node_id = nodeid_from_lat_lon(this_site["lat"], this_site["lon"], res)
     node = Node(this_site["lat"], this_site["lon"], pop, node_id)
-    site_demog = DemographicsGenerator([node], res_in_arcsec=res)
+    site_demog = DemographicsGenerator([node], res_in_arcsec=res, update_demographics=update_demog)
     demographics = site_demog.generate_demographics()
 
     demo_f = open(demog_path, "w+")
