@@ -136,7 +136,8 @@ def generate_input_files(site_name, res=30, pop=1000, overwrite=False):
     demog_path = os.path.join(out_dir, "demographics_{name}.json".format(name=site_name))
     node_id = nodeid_from_lat_lon(this_site["lat"], this_site["lon"], res)
     node = Node(this_site["lat"], this_site["lon"], pop, node_id)
-    site_demog = DemographicsGenerator([node], res_in_arcsec=res, update_demographics=update_demog)
+    site_demog = DemographicsGenerator([node], res_in_arcsec=res, country=this_site["birth_rate_country"].iloc[0],
+                                       update_demographics=update_demog)
     demographics = site_demog.generate_demographics()
 
     demo_f = open(demog_path, "w+")

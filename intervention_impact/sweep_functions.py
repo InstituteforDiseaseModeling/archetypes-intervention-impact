@@ -12,9 +12,7 @@ from dtk.interventions.itn_age_season import add_ITN_age_season
 
 def site_simulation_setup(cb, site_name, max_larval_capacity=4e8):
 
-    print("setting up simulation for " + site_name)
     site_dir = os.path.join("sites", site_name)
-
 
     if not os.path.isdir(site_dir):
         print("generating input files for " + site_name)
