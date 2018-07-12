@@ -26,7 +26,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "Intervention_Impact_Interventions_Better_Demog"
+    exp_name = "Intervention_Impact_All"
     serialize = False
     pull_from_serialization = True
 else:
@@ -67,11 +67,24 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
 
-# add when you get new .exe working;
-cb.update_params({"Enable_Vector_Species_Report": 0})
+# collection ids:
+cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
+cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
+def set_site_id(cb, site):
+    input_collection_ids = {"aba": "75b33195-1685-e811-a2c0-c4346bcb7275",
+                            "martae": "5db33195-1685-e811-a2c0-c4346bcb7275",
+                            "djibo": "59b33195-1685-e811-a2c0-c4346bcb7275",
+                            "kananga": "18aee64b-1685-e811-a2c0-c4346bcb7275",
+                            "moine": "27b33195-1685-e811-a2c0-c4346bcb7275",
+                            "gode": "b8eb358f-1685-e811-a2c0-c4346bcb7275",
+                            "karen": "4feb358f-1685-e811-a2c0-c4346bcb7275",
+                            "bajonapo": "49eb358f-1685-e811-a2c0-c4346bcb7275"}
+
+    cb.set_input_collection(input_collection_ids[site])
 
 # reporting
 add_summary_report(cb)
+cb.update_params({"Enable_Vector_Species_Report": 0})
 
 if pull_from_serialization:
 
@@ -91,6 +104,7 @@ if pull_from_serialization:
         ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=itn_cov/100, discard_halflife=180),
         ModFn(add_healthseeking_by_coverage, coverage=irs_cov/100),
         ModFn(add_irs_group, coverage=act_cov/100, decay=180, start_days=[365*start for start in range(years)]),
+        ModFn(set_site_id, site=df["Site_Name"][x]),
         ModFn(site_simulation_setup, site_name=df["Site_Name"][x])
                                      ]
         for x in df.index
