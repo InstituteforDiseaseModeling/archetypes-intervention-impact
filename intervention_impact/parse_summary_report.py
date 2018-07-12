@@ -17,35 +17,6 @@ df_cols = ['Run_Number', 'x_Temporary_Larval_Habitat', 'funestus.Anthropophily',
 
 parse_type="simple"
 
-## moine endo:
-## 85% burnin: 8c2b7a26-3977-e811-a2c0-c4346bcb7275
-## 85% int: 47944625-7377-e811-a2c0-c4346bcb7275
-
-## 68% burnin: 106e7c90-b975-e811-a2c0-c4346bcb7275
-## 68% int: 6bf96bf2-2776-e811-a2c0-c4346bcb7275
-
-
-# serialization_exp_ids = {'initial': "8c0ccb25-c973-e811-a2c0-c4346bcb7275",
-#                          'final': "6dca3c96-3c77-e811-a2c0-c4346bcb7275"
-#                          }
-
-# serialization_exp_ids = {'moine_initial_85': '8c2b7a26-3977-e811-a2c0-c4346bcb7275',
-#                          'moine_final_85': '47944625-7377-e811-a2c0-c4346bcb7275',
-#                          'karen_initial_73': '8c0ccb25-c973-e811-a2c0-c4346bcb7275',
-#                          'karen_final_73': '6dca3c96-3c77-e811-a2c0-c4346bcb7275',
-#                          'moine_initial_68': '106e7c90-b975-e811-a2c0-c4346bcb7275',
-#                          'moine_final_68': '6bf96bf2-2776-e811-a2c0-c4346bcb7275'}
-
-# all_exp_ids = {'bajonapo': {'initial': '50320dd7-d179-e811-a2c0-c4346bcb7275',
-#                                       'final': '4cefd777-2f7a-e811-a2c0-c4346bcb7275',
-#                                       },
-#                          'karen': {'initial': '23fb46ef-d079-e811-a2c0-c4346bcb7275',
-#                                    'final': '8050371a-607a-e811-a2c0-c4346bcb7275'},
-#                          'moine': {'initial': '802ac672-cf79-e811-a2c0-c4346bcb7275',
-#                                    'final': '9b14265f-457a-e811-a2c0-c4346bcb7275'}
-#
-# }
-
 sites = pd.read_csv('site_details.csv')
 
 
