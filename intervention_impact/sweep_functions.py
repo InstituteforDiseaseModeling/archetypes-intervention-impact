@@ -75,7 +75,7 @@ def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife
                                start=(365 * year) + (30 * this_round) + start_day)
 
     return {"ITN_Coverage": coverage, "ITN_Halflife": discard_halflife, "ITN_Per_Round_Coverage": per_round_coverage,
-            "ITN_start": start_day, "ITN_Rounds": n_rounds}
+            "ITN_start": start_day, "ITN_Rounds": n_rounds, "ITN_Distributions": year_count}
 
 
 # irs
