@@ -30,7 +30,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "ITN_Impact_Moine_Sweep_Importation"
+    exp_name = "ITN_Impact_Moine_Sweep_ITN_Distributions"
     serialize = False
     pull_from_serialization = True
 else:
@@ -52,7 +52,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=1,
+                                    Enable_Default_Reporting=0,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
@@ -113,8 +113,8 @@ if __name__=="__main__":
                   [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name]),
             ModFn(DTKConfigBuilder.set_param, "Run_Number", df["Run_Number"][x]),
             ModFn(DTKConfigBuilder.set_param, "x_Temporary_Larval_Habitat", df["x_Temporary_Larval_Habitat"][x]),
-            ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=itn_cov / 100, discard_halflife=180),
-            ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction, repetitions=12 * years, tsteps_btwn=30),
+            ModFn(add_annual_itns, year_count=n_dists, n_rounds=1, coverage=itn_cov / 100, discard_halflife=180),
+            # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction, repetitions=12 * years, tsteps_btwn=30),
             #  ModFn(add_healthseeking_by_coverage, coverage=irs_cov/100),
             # ModFn(add_irs_group, coverage=act_cov/100, decay=180, start_days=[365*start for start in range(years)]),
             ModFn(set_site_id, site=df["Site_Name"][x]),
@@ -122,8 +122,8 @@ if __name__=="__main__":
         ]
             for x in df.index
             for itn_cov in intervention_coverages
-            # for n_rounds in [1,2,3]
-            for outbreak_fraction in [0.001, 0.005, 0.01]
+            for n_dists in [1,2,3]
+            # for outbreak_fraction in [0.001, 0.005, 0.01]
             # for irs_cov in intervention_coverages
             # for act_cov in intervention_coverages
 

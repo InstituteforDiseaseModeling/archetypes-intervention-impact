@@ -44,9 +44,9 @@ if __name__ == "__main__":
     SetupParser.init("HPC")
     out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'projects',
                            'map_intervention_impact', 'lookup_tables')
-    am = AnalyzeManager("881657d6-338a-e811-a2c0-c4346bcb7275",
-                        analyzers=PfPRAnalyzer(expname="final_prev_kananga",
-                                               colname="final_prev",
+    am = AnalyzeManager("4683d052-b58a-e811-a2c0-c4346bcb7275",
+                        analyzers=PfPRAnalyzer(expname="initial_prev_better_spacing",
+                                               colname="initial_prev",
                                                outdir = out_dir,
                                                sweep_variables=["Site_Name",
                                                                 "Run_Number",
