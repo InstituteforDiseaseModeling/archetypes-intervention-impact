@@ -17,10 +17,10 @@ from sweep_functions import add_annual_itns, add_irs_group, add_healthseeking_by
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "d9101f31-1785-e811-a2c0-c4346bcb7275"
+# burnin_id = "d9101f31-1785-e811-a2c0-c4346bcb7275" # badly spaced burnin
+burnin_id = "4683d052-b58a-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 
-# burnin_id = "010c5f63-3d82-e811-a2c0-c4346bcb7275"
 
 # Serialization
 if run_type == "burnin":
@@ -30,7 +30,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "ITN_Impact_Moine_Sweep_ITN_Distributions"
+    exp_name = "ACT_Impact_All_Sites"
     serialize = False
     pull_from_serialization = True
 else:
@@ -105,7 +105,7 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        df = df.query("Site_Name=='moine'")
+       #  df = df.query("Site_Name=='moine'")
 
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.set_param, "Serialized_Population_Path", os.path.join(df["outpath"][x], "output")),
@@ -113,19 +113,21 @@ if __name__=="__main__":
                   [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name]),
             ModFn(DTKConfigBuilder.set_param, "Run_Number", df["Run_Number"][x]),
             ModFn(DTKConfigBuilder.set_param, "x_Temporary_Larval_Habitat", df["x_Temporary_Larval_Habitat"][x]),
-            ModFn(add_annual_itns, year_count=n_dists, n_rounds=1, coverage=itn_cov / 100, discard_halflife=180),
-            # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction, repetitions=12 * years, tsteps_btwn=30),
-            #  ModFn(add_healthseeking_by_coverage, coverage=irs_cov/100),
-            # ModFn(add_irs_group, coverage=act_cov/100, decay=180, start_days=[365*start for start in range(years)]),
             ModFn(set_site_id, site=df["Site_Name"][x]),
-            ModFn(site_simulation_setup, site_name=df["Site_Name"][x])
+            ModFn(site_simulation_setup, site_name=df["Site_Name"][x]),
+
+            # ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=itn_cov / 100, discard_halflife=180),
+            # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction, repetitions=12 * years, tsteps_btwn=30),
+            # ModFn(add_irs_group, coverage=irs_cov/100, decay=180, start_days=[365*start for start in range(years)]),
+            ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
+
         ]
             for x in df.index
-            for itn_cov in intervention_coverages
-            for n_dists in [1,2,3]
+            # for itn_cov in intervention_coverages
+            # for n_dists in [1,2,3]
             # for outbreak_fraction in [0.001, 0.005, 0.01]
             # for irs_cov in intervention_coverages
-            # for act_cov in intervention_coverages
+            for act_cov in intervention_coverages
 
         ])
     else:
