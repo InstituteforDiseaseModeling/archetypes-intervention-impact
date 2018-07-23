@@ -16,7 +16,7 @@ from malaria.reports.MalariaReport import add_summary_report
 from sweep_functions import add_annual_itns, add_irs_group, add_healthseeking_by_coverage, site_simulation_setup
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 # burnin_id = "d9101f31-1785-e811-a2c0-c4346bcb7275" # badly spaced burnin
 burnin_id = "4683d052-b58a-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
@@ -25,7 +25,7 @@ intervention_coverages = [0, 20, 40, 60, 80]
 # Serialization
 if run_type == "burnin":
     years = 10
-    exp_name = "Intervention_Impact_Burnins_Better_Hab_Spacing"
+    exp_name = "MAP_II_Burnin_0"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
