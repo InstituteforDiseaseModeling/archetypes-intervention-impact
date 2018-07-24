@@ -3,22 +3,18 @@ import pandas as pd
 import os
 import json
 
-from generate_input_files import generate_input_files
 from dtk.vector.species import set_params_by_species, set_species_param
 from dtk.interventions.health_seeking import add_health_seeking
 from dtk.interventions.irs import add_IRS
 from dtk.interventions.itn_age_season import add_ITN_age_season
 
 
-def site_simulation_setup(cb, site_name, max_larval_capacity=4e8):
+def site_simulation_setup(cb, site_name, species_details, vectors, max_larval_capacity=4e8):
 
     site_dir = os.path.join("sites", site_name)
 
-    if not os.path.isdir(site_dir):
-        print("generating input files for " + site_name)
-        generate_input_files(site_name, pop=2000, overwrite=True)
-
     # directories
+    # todo: do I need this if I specify an asset collection?
     cb.update_params({
                     "Demographics_Filenames": ["sites/{site}/demographics_{site}.json".format(site=site_name)],
                     "Air_Temperature_Filename": os.path.join(site_dir,
@@ -32,13 +28,7 @@ def site_simulation_setup(cb, site_name, max_larval_capacity=4e8):
                     }
     )
 
-    # vectors
-    with open("species_details.json") as f:
-        species_details = json.loads(f.read())
-
-    # Find vector details for each vector in our site
-    vectors = pd.read_csv(os.path.join(site_dir, "vector_proportions.csv"))
-    vectors = {row.species: row.proportion for row in vectors.itertuples() if row.proportion>0}
+    # Find vector proportions for each vector in our site
     set_params_by_species(cb.params, [name for name in vectors.keys()])
 
     for species_name, species_prop in vectors.items():
