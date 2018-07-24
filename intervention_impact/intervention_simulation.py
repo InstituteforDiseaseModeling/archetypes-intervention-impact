@@ -89,7 +89,7 @@ for site_name in sites["name"]:
 
     if new_inputs:
         print("generating input files for " + site_name)
-        # todo: fix shapely import
+        # todo: fix geopandas import
         # generate_input_files(site_name, pop=2000, overwrite=True)
 
     else:
@@ -104,6 +104,7 @@ cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
 cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
 def set_site_id(cb, asset_collection):
     cb.set_input_collection(asset_collection)
+    return {"Input_collection": str(asset_collection.id)}
 
 # reporting
 add_summary_report(cb)
@@ -157,9 +158,8 @@ if __name__=="__main__":
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"])
         ]
-            for run_num in range(1)
-            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for hab_exp in [0]
+            for run_num in range(10)
+            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
             for site_name in sites["name"]
         ])
 
