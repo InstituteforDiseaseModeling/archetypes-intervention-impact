@@ -2,9 +2,11 @@ import os
 import pandas as pd
 import numpy as np
 import pdb
+import json
 
 from simtools.ExperimentManager.ExperimentManagerFactory import ExperimentManagerFactory
 from simtools.SetupParser import SetupParser
+from simtools.Utilities.COMPSUtilities import COMPS_login, get_asset_collection
 
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
 from dtk.interventions.outbreakindividual import recurring_outbreak
@@ -13,6 +15,8 @@ from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
 
 from malaria.reports.MalariaReport import add_summary_report
+# todo: fix shapely import
+# from generate_input_files import generate_input_files
 from sweep_functions import add_annual_itns, add_irs_group, add_healthseeking_by_coverage, site_simulation_setup
 
 # variables
@@ -25,7 +29,7 @@ intervention_coverages = [0, 20, 40, 60, 80]
 # Serialization
 if run_type == "burnin":
     years = 10
-    exp_name = "MAP_II_Burnin_0"
+    exp_name = "MAP_II_Burnin_Test"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -71,26 +75,38 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
 
+## vectors and input files: generate new OR pull from input collections
+COMPS_login("https://comps.idmod.org")
+new_inputs = False
+site_info = {}
+
+with open("species_details.json") as f:
+    species_details = json.loads(f.read())
+
+for site_name in sites["name"]:
+    site_dir = os.path.join("sites", site_name)
+    site_info[site_name] = {}
+
+    if new_inputs:
+        print("generating input files for " + site_name)
+        # todo: fix shapely import
+        # generate_input_files(site_name, pop=2000, overwrite=True)
+
+    else:
+        site_info[site_name]["asset_collection"] = get_asset_collection(sites.query('name==@site_name')['asset_id'].iloc[0])
+
+    # Find vector proportions for each vector in our site
+    vectors = pd.read_csv(os.path.join(site_dir, "vector_proportions.csv"))
+    site_info[site_name]["vectors"] = {row.species: row.proportion for row in vectors.itertuples() if row.proportion > 0}
+
 # collection ids:
 cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
 cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
-def set_site_id(cb, site):
-    input_collection_ids = {"aba": "75b33195-1685-e811-a2c0-c4346bcb7275",
-                            "martae": "5db33195-1685-e811-a2c0-c4346bcb7275",
-                            "djibo": "59b33195-1685-e811-a2c0-c4346bcb7275",
-                            "kananga": "18aee64b-1685-e811-a2c0-c4346bcb7275",
-                            "moine": "27b33195-1685-e811-a2c0-c4346bcb7275",
-                            "gode": "b8eb358f-1685-e811-a2c0-c4346bcb7275",
-                            "karen": "4feb358f-1685-e811-a2c0-c4346bcb7275",
-                            "bajonapo": "49eb358f-1685-e811-a2c0-c4346bcb7275"}
-
-    cb.set_input_collection(input_collection_ids[site])
+def set_site_id(cb, asset_collection):
+    cb.set_input_collection(asset_collection)
 
 # reporting
 add_summary_report(cb)
-cb.update_params({"Enable_Vector_Species_Report": 0})
-
-
 
 if __name__=="__main__":
     SetupParser.init()
@@ -98,7 +114,6 @@ if __name__=="__main__":
     if pull_from_serialization:
 
         # serialization
-        COMPS_login("https://comps.idmod.org")
         expt = ExperimentDataStore.get_most_recent_experiment(burnin_id)
 
         df = pd.DataFrame([x.tags for x in expt.simulations])
@@ -108,13 +123,15 @@ if __name__=="__main__":
        #  df = df.query("Site_Name=='moine'")
 
         builder = ModBuilder.from_list([[
-            ModFn(DTKConfigBuilder.set_param, "Serialized_Population_Path", os.path.join(df["outpath"][x], "output")),
-            ModFn(DTKConfigBuilder.set_param, "Serialized_Population_Filenames",
-                  [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name]),
-            ModFn(DTKConfigBuilder.set_param, "Run_Number", df["Run_Number"][x]),
-            ModFn(DTKConfigBuilder.set_param, "x_Temporary_Larval_Habitat", df["x_Temporary_Larval_Habitat"][x]),
-            ModFn(set_site_id, site=df["Site_Name"][x]),
-            ModFn(site_simulation_setup, site_name=df["Site_Name"][x]),
+            ModFn(DTKConfigBuilder.update_params, {
+                "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
+                "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
+                "Run_Number": df["Run_Number"][x],
+                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
+            ModFn(set_site_id, asset_collection=site_info[df["Site_Name"][x]]["asset_collection"]),
+            ModFn(site_simulation_setup, site_name=df["Site_Name"][x],
+                                         species_details=species_details,
+                                         vectors=site_info[df["Site_Name"][x]]["vectors"]),
 
             # ModFn(add_annual_itns, year_count=years, n_rounds=1, coverage=itn_cov / 100, discard_halflife=180),
             # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction, repetitions=12 * years, tsteps_btwn=30),
@@ -132,13 +149,17 @@ if __name__=="__main__":
         ])
     else:
         builder = ModBuilder.from_list([[
-            ModFn(DTKConfigBuilder.set_param, "x_Temporary_Larval_Habitat", 10 ** x),
-            ModFn(DTKConfigBuilder.set_param, "Run_Number", y),
-            ModFn(site_simulation_setup, site_name=site_name),
-            ModFn(set_site_id, site=site_name)
+            ModFn(DTKConfigBuilder.update_params, {
+                "Run_Number": run_num,
+                "x_Temporary_Larval_Habitat":10 ** hab_exp}),
+            ModFn(set_site_id, asset_collection=site_info[site_name]["asset_collection"]),
+            ModFn(site_simulation_setup, site_name=site_name,
+                                         species_details=species_details,
+                                         vectors=site_info[site_name]["vectors"])
         ]
-            for x in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for y in range(10)
+            for run_num in range(1)
+            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for hab_exp in [0]
             for site_name in sites["name"]
         ])
 
