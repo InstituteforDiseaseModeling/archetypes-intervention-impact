@@ -1,13 +1,54 @@
 import pandas as pd
+import json
 
 import os
-import json
 
 from dtk.vector.species import set_params_by_species, set_species_param
 from dtk.interventions.health_seeking import add_health_seeking
 from dtk.interventions.irs import add_IRS
 from dtk.interventions.itn_age_season import add_ITN_age_season
 
+from input_file_generation.add_properties_to_demographics import generate_demographics_properties, check_df_valid
+
+
+def net_usage_overlay(site_name, hates_net_prop):
+
+    base_demog_path = os.path.join("sites", site_name, "demographics_{name}.json".format(name=site_name))
+    overlay_path = os.path.join("sites", site_name, "demographics_{name}_hateforest_{prop}.json".format(name=site_name,
+                                                                                                        prop=hates_net_prop))
+    with open(base_demog_path) as f:
+        demo = json.loads(f.read())
+
+    nodeid = demo["Nodes"][0]["NodeID"]
+
+    prop_by_node_dict = { 'node' : [nodeid, nodeid],
+                          'Property' : ['NetUsage', 'NetUsage'],
+                          'Property_Type' : ['IP', 'IP'],
+                          'Property_Value' : [ 'HatesNets',
+                                               'LovesNets'],
+                          'Initial_Distribution' : [hates_net_prop, 1-hates_net_prop]}
+
+    # base IPs and NPs
+    IPs = [
+        { 'Property' : 'NetUsage',
+          'Values' : [ 'HatesNets',
+                       'LovesNets'],
+          'Initial_Distribution' : [0, 1],
+          'Transitions' : [] }
+    ]
+    NPs = [
+    ]
+
+    df = pd.DataFrame(prop_by_node_dict)
+    if (not df.empty) and (not check_df_valid(df, IPs, NPs)):
+        print('properties by node df is invalid')
+        exit()
+    generate_demographics_properties(base_demog_path, overlay_path, IPs=IPs, NPs=NPs, df=df, as_overlay=True)
+
+def assign_overlay(cb, fname, tags):
+    filenames = cb.get_param('Demographics_Filenames')
+    cb.update_params({"Demographics_Filenames": filenames + [fname]})
+    return tags
 
 def site_simulation_setup(cb, site_name, species_details, vectors, max_larval_capacity=4e8):
 
@@ -51,7 +92,7 @@ def site_simulation_setup(cb, site_name, species_details, vectors, max_larval_ca
 
 
 # itns
-def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife=270, start_day=0):
+def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife=270, start_day=0, IP=[]):
 
     # per-round coverage: 1 minus the nth root of *not* getting a net in any one round
     per_round_coverage = 1 - (1 - coverage) ** (1 / n_rounds)
@@ -62,7 +103,8 @@ def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife
             add_ITN_age_season(cb,
                                coverage_all=per_round_coverage,
                                discard={"halflife": discard_halflife},
-                               start=(365 * year) + (30 * this_round) + start_day)
+                               start=(365 * year) + (30 * this_round) + start_day,
+                               ind_property_restrictions=IP)
 
     return {"ITN_Coverage": coverage, "ITN_Halflife": discard_halflife, "ITN_Per_Round_Coverage": per_round_coverage,
             "ITN_start": start_day, "ITN_Rounds": n_rounds, "ITN_Distributions": year_count}
