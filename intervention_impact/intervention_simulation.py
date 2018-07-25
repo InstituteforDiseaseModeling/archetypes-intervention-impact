@@ -20,7 +20,7 @@ from malaria.reports.MalariaReport import add_summary_report, add_event_counter_
 from sweep_functions import *
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 # burnin_id = "d9101f31-1785-e811-a2c0-c4346bcb7275" # badly spaced burnin
 burnin_id = "c315f2ce-818e-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
@@ -31,7 +31,7 @@ net_hating_props = [0, 0.2, 0.5, 0.8]
 # Serialization
 if run_type == "burnin":
     years = 10
-    exp_name = "MAP_II_Burnin_Test"
+    exp_name = "MAP_II_Burnin_1_Test"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -74,7 +74,8 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
 
                                     )
 
-cb.update_params({"Disable_IP_Whitelist": 1})
+cb.update_params({"Disable_IP_Whitelist": 1,
+                  "Enable_Property_Output": 0})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
@@ -114,7 +115,7 @@ for site_name in sites["name"]:
 
 # collection ids:
 cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
-# cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
+cb.set_dll_collection("17f8bb9c-6f8f-e811-a2c0-c4346bcb7275")
 def set_site_id(cb, asset_collection):
     cb.set_input_collection(asset_collection)
     return {"Input_collection": str(asset_collection.id)}
@@ -152,14 +153,14 @@ if __name__=="__main__":
                                    n_rounds=1,
                                    coverage=itn_cov / 100,
                                    discard_halflife=180,
-                                  #IP=[{"NetUsage":"LovesNets"}]
+                                   IP=[{"NetUsage":"LovesNets"}]
                   ),
-            # ModFn(assign_overlay,
-            #       fname=os.path.join("sites",
-            #                          df["Site_Name"][x],
-            #                          "demographics_{name}_hateforest_{prop}.json".format(name=df["Site_Name"][x],
-            #                                                                              prop=hates_net_prop)),
-            #       tags={"Hate_Nets": hates_net_prop})
+            ModFn(assign_overlay,
+                  fname=os.path.join("sites",
+                                     df["Site_Name"][x],
+                                     "demographics_{name}_hateforest_{prop}.json".format(name=df["Site_Name"][x],
+                                                                                         prop=hates_net_prop)),
+                  tags={"Hate_Nets": hates_net_prop})
             # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction,
             #                           repetitions=12 * years,
             #                           tsteps_btwn=30),
@@ -171,7 +172,7 @@ if __name__=="__main__":
         ]
             for x in df.index
             for itn_cov in intervention_coverages
-            # for hates_net_prop in net_hating_props
+            for hates_net_prop in net_hating_props
             # for n_dists in [1,2,3]
             # for outbreak_fraction in [0.001, 0.005, 0.01]
             # for irs_cov in intervention_coverages
@@ -186,10 +187,17 @@ if __name__=="__main__":
             ModFn(set_site_id, asset_collection=site_info[site_name]["asset_collection"]),
             ModFn(site_simulation_setup, site_name=site_name,
                                          species_details=species_details,
-                                         vectors=site_info[site_name]["vectors"])
+                                         vectors=site_info[site_name]["vectors"]),
+            ModFn(assign_overlay,
+                  fname=os.path.join("sites",
+                                     site_name,
+                                     "demographics_{name}_hateforest_{prop}.json".format(name=site_name,
+                                                                                         prop=0)),
+                  tags={"Hate_Nets": 0})
         ]
-            for run_num in range(10)
-            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for run_num in range(1)
+            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for hab_exp in [0]
             for site_name in sites["name"]
         ])
 

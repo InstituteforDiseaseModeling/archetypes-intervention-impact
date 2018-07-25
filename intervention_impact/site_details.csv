@@ -1,9 +1,9 @@
 name,lat,lon,cluster,country,birth_rate_country,continent,asset_id
-aba,5.43,7.58,1,Nigeria,Nigeria,Africa,75b33195-1685-e811-a2c0-c4346bcb7275
-martae,6.92,13.05,2,Cameroon,Cameroon,Africa,5db33195-1685-e811-a2c0-c4346bcb7275
-djibo,14.1,-1.65,3,Burkina_Faso,Burkina Faso,Africa,59b33195-1685-e811-a2c0-c4346bcb7275
-kananga,-6.188,21.57,4,Democratic_Republic_of_the_Congo,"Congo, Dem. Rep.",Africa,18aee64b-1685-e811-a2c0-c4346bcb7275
-moine,-24.896,32.5,5,Mozambique,Mozambique,Africa,27b33195-1685-e811-a2c0-c4346bcb7275
-gode,5.91,43.6,6,Ethiopia,Ethiopia,Africa,b8eb358f-1685-e811-a2c0-c4346bcb7275
-karen,17.4116,98.0511,1,Myanmar,Myanmar,Asia,4feb358f-1685-e811-a2c0-c4346bcb7275
-bajonapo,-0.7292,-75.6459,1,Ecuador,Ecuador,Americas,49eb358f-1685-e811-a2c0-c4346bcb7275
+aba,5.43,7.58,1,Nigeria,Nigeria,Africa,7c4bd661-ce8f-e811-a2c0-c4346bcb7275
+martae,6.92,13.05,2,Cameroon,Cameroon,Africa,7a4bd661-ce8f-e811-a2c0-c4346bcb7275
+djibo,14.1,-1.65,3,Burkina_Faso,Burkina Faso,Africa,784bd661-ce8f-e811-a2c0-c4346bcb7275
+kananga,-6.188,21.57,4,Democratic_Republic_of_the_Congo,"Congo, Dem. Rep.",Africa,764bd661-ce8f-e811-a2c0-c4346bcb7275
+moine,-24.896,32.5,5,Mozambique,Mozambique,Africa,c46a053e-6a8f-e811-a2c0-c4346bcb7275
+gode,5.91,43.6,6,Ethiopia,Ethiopia,Africa,734bd661-ce8f-e811-a2c0-c4346bcb7275
+karen,17.4116,98.0511,1,Myanmar,Myanmar,Asia,714bd661-ce8f-e811-a2c0-c4346bcb7275
+bajonapo,-0.7292,-75.6459,1,Ecuador,Ecuador,Americas,6f4bd661-ce8f-e811-a2c0-c4346bcb7275
