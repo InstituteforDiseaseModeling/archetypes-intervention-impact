@@ -10,6 +10,7 @@ from simtools.Utilities.COMPSUtilities import get_asset_collection
 
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
 from dtk.interventions.outbreakindividual import recurring_outbreak
+from dtk.interventions.property_change import change_individual_property
 from simtools.ModBuilder import ModBuilder, ModFn
 from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
@@ -22,7 +23,7 @@ from sweep_functions import *
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
 # burnin_id = "d9101f31-1785-e811-a2c0-c4346bcb7275" # badly spaced burnin
-burnin_id = "c315f2ce-818e-e811-a2c0-c4346bcb7275"
+burnin_id = "5553b581-d18f-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 intervention_coverages = [80]
 net_hating_props = [0, 0.2, 0.5, 0.8]
@@ -31,7 +32,7 @@ new_inputs = False
 # Serialization
 if run_type == "burnin":
     years = 10
-    exp_name = "MAP_II_Burnin_1"
+    exp_name = "MAP_II_Burnin_Test_IP"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -75,7 +76,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     )
 
 cb.update_params({"Disable_IP_Whitelist": 1,
-                  "Enable_Property_Output": 0})
+                  "Enable_Property_Output": 1})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
@@ -98,8 +99,6 @@ if __name__=="__main__":
     cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
     cb.set_dll_collection("17f8bb9c-6f8f-e811-a2c0-c4346bcb7275")
 
-
-
     site_info = {}
 
     with open("species_details.json") as f:
@@ -114,12 +113,6 @@ if __name__=="__main__":
         if new_inputs:
             print("generating input files for " + site_name)
             # generate_input_files(site_name, pop=2000, overwrite=True)
-
-        # demographic overlay: net usage
-        for hates_net_prop in net_hating_props:
-            overlay_fname = "demographics_{name}_hateforest_{prop}.json".format(name=site_name, prop=hates_net_prop)
-            if not os.path.isfile(os.path.join("sites", site_name, overlay_fname)):
-                net_usage_overlay(site_name, hates_net_prop)
 
         # asset collections
         site_info[site_name]["asset_collection"] = get_asset_collection(
@@ -159,14 +152,10 @@ if __name__=="__main__":
                                    n_rounds=1,
                                    coverage=itn_cov / 100,
                                    discard_halflife=180,
+                                    start_day=5,
                                    IP=[{"NetUsage":"LovesNets"}]
                   ),
-            ModFn(assign_overlay,
-                  fname=os.path.join("sites",
-                                     df["Site_Name"][x],
-                                     "demographics_{name}_hateforest_{prop}.json".format(name=df["Site_Name"][x],
-                                                                                         prop=hates_net_prop)),
-                  tags={"Hate_Nets": hates_net_prop})
+            ModFn(assign_net_ip, hates_net_prop),
             # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction,
             #                           repetitions=12 * years,
             #                           tsteps_btwn=30),
@@ -194,12 +183,6 @@ if __name__=="__main__":
             ModFn(site_simulation_setup, site_name=site_name,
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"]),
-            ModFn(assign_overlay,
-                  fname=os.path.join("sites",
-                                     site_name,
-                                     "demographics_{name}_hateforest_{prop}.json".format(name=site_name,
-                                                                                         prop=0)),
-                  tags={"Hate_Nets": 0})
         ]
             for run_num in range(10)
             for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))

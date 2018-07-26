@@ -7,6 +7,7 @@ from dtk.vector.species import set_params_by_species, set_species_param
 from dtk.interventions.health_seeking import add_health_seeking
 from dtk.interventions.irs import add_IRS
 from dtk.interventions.itn_age_season import add_ITN_age_season
+from dtk.interventions.property_change import change_individual_property
 
 from input_file_generation.add_properties_to_demographics import generate_demographics_properties, check_df_valid
 
@@ -14,7 +15,7 @@ from input_file_generation.add_properties_to_demographics import generate_demogr
 def net_usage_overlay(site_name, hates_net_prop):
 
     base_demog_path = os.path.join("sites", site_name, "demographics_{name}.json".format(name=site_name))
-    overlay_path = os.path.join("sites", site_name, "demographics_{name}_hateforest_{prop}.json".format(name=site_name,
+    overlay_path = os.path.join("sites", site_name, "demographics_{name}_hatenets_{prop}.json".format(name=site_name,
                                                                                                         prop=hates_net_prop))
     with open(base_demog_path) as f:
         demo = json.loads(f.read())
@@ -45,10 +46,15 @@ def net_usage_overlay(site_name, hates_net_prop):
         exit()
     generate_demographics_properties(base_demog_path, overlay_path, IPs=IPs, NPs=NPs, df=df, as_overlay=True)
 
-def assign_overlay(cb, fname, tags):
-    filenames = cb.get_param('Demographics_Filenames')
-    cb.update_params({"Demographics_Filenames": filenames + [fname]})
-    return tags
+def assign_net_ip(cb, hates_net_prop):
+    change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop),
+    change_individual_property(cb, "NetUsage", "LovesNets", coverage=1 - hates_net_prop),
+    change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop,
+          trigger_condition_list=["Births"]),
+    change_individual_property(cb, "NetUsage", "LovesNets", coverage=1 - hates_net_prop,
+          trigger_condition_list=["Births"])
+
+    return {"Hates_Nets": hates_net_prop}
 
 def site_simulation_setup(cb, site_name, species_details, vectors, max_larval_capacity=4e8):
 
@@ -57,7 +63,8 @@ def site_simulation_setup(cb, site_name, species_details, vectors, max_larval_ca
     # directories
     # todo: do I need this if I specify an asset collection?
     cb.update_params({
-                    "Demographics_Filenames": ["sites/{site}/demographics_{site}.json".format(site=site_name)],
+                    "Demographics_Filenames": ["sites/{site}/demographics_{site}.json".format(site=site_name),
+                                               "sites/{site}/demographics_{site}_hatenets_0.json".format(site=site_name)],
                     "Air_Temperature_Filename": os.path.join(site_dir,
                                                              "air_temperature_daily.bin"),
                     "Land_Temperature_Filename": os.path.join(site_dir,
