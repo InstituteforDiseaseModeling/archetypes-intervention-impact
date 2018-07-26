@@ -7,7 +7,7 @@ rm(list=ls())
 main_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
 
-type <- "irs"
+type <- "act"
 
 initial <- fread(file.path(main_dir, "initial_prev_better_spacing.csv"))
 #explore distribution of initial prevalences
@@ -16,22 +16,22 @@ initial <- fread(file.path(main_dir, "initial_prev_better_spacing.csv"))
 #   facet_wrap(~Site_Name)
 
 
-if (type=="irs"){
-  final <- fread(file.path(main_dir, "irs_only", "final_prev.csv"))
+if (type=="act"){
+  final <- fread(file.path(main_dir, "act_only", "final_prev.csv"))
   
   lookup <- merge(final, initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"))
-  lookup[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, IRS_Coverage)]
-  lookup[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, IRS_Coverage)]
-  lookup[, IRS_Coverage:=factor(IRS_Coverage)]
+  lookup[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ACT_Coverage)]
+  lookup[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ACT_Coverage)]
+  lookup[, ACT_Coverage:=factor(ACT_Coverage)]
   lookup[, Run_Number:=factor(Run_Number)]
   
-  ggplot(lookup, aes(x=initial_prev, y=final_prev, color=IRS_Coverage)) +
-    geom_line(aes(group=interaction(IRS_Coverage, Run_Number)), alpha=0.75) + 
+  ggplot(lookup, aes(x=initial_prev, y=final_prev, color=ACT_Coverage)) +
+    geom_line(aes(group=interaction(ACT_Coverage, Run_Number)), alpha=0.75) + 
     geom_line(aes(x=mean_initial, y=mean_final), size=1.5) +
     theme_minimal() + 
     labs(x="Initial PfPR",
          y="Final PfPR",
-         title="IRS Simulations") + 
+         title="ACT Simulations") + 
     facet_wrap(~Site_Name)
   
 }else if (type=="itns"){

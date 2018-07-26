@@ -1,7 +1,0 @@
-name,lat,lon,cluster,country,continent,arabiensis,funestus,gambiae,burnin_id,intervention_id
-aba,5.43,7.58,1,Nigeria,Africa,0.140857741,0.456841707,0.402300566,06a17495-997a-e811-a2c0-c4346bcb7275,c7aac0ca-df7a-e811-a2c0-c4346bcb7275
-martae,6.92,13.05,2,Cameroon,Africa,0.173846006,0.391525328,0.434628636,092ebb7c-9d7a-e811-a2c0-c4346bcb7275,e045d193-e07a-e811-a2c0-c4346bcb7275
-djibo,14.1,-1.65,3,Burkina_Faso,Africa,0.839742362,0,0.160257652,f160f721-9a7a-e811-a2c0-c4346bcb7275,475696d7-e47a-e811-a2c0-c4346bcb7275
-kananga,-6.188,21.57,4,Democratic_Republic_of_the_Congo,Africa,0,0.9988994,0.001100627,dec82bdb-9c7a-e811-a2c0-c4346bcb7275,474d9d19-e27a-e811-a2c0-c4346bcb7275
-moine,-24.896,32.5,5,Mozambique,Africa,0.921830475,0,0.078169495,3f250f2c-9f7a-e811-a2c0-c4346bcb7275,342bdbde-e27a-e811-a2c0-c4346bcb7275
-gode,5.91,43.6,6,Ethiopia,Africa,1,0,0,32a0f7eb-9b7a-e811-a2c0-c4346bcb7275,5e009ea4-e37a-e811-a2c0-c4346bcb7275

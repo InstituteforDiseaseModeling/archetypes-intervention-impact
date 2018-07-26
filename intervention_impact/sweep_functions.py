@@ -103,14 +103,14 @@ def add_irs_group(cb, coverage=1.0, start_days=[0], decay=270):
 
 
 # act
-def add_healthseeking_by_coverage(cb, coverage=1.0):
+def add_healthseeking_by_coverage(cb, coverage=1.0, rate=0.15):
     add_health_seeking(cb,
                        targets=[{"trigger": "NewClinicalCase",
                                  "coverage": coverage,
                                  "agemin": 0,
                                  "agemax": 100,
                                  "seek": 1.0,
-                                 "rate": 0.15}],
+                                 "rate": rate}],
                        drug=["Artemether", "Lumefantrine"],
                        dosing="FullTreatmentNewDetectionTech",
                        nodes={"class": "NodeSetAll"},
@@ -118,4 +118,4 @@ def add_healthseeking_by_coverage(cb, coverage=1.0):
                        tsteps_btwn_repetitions=365,
                        broadcast_event_name="Received_Treatment")
 
-    return {"ACT_Coverage": coverage}
+    return {"ACT_Coverage": coverage, "ACT_HS_Rate": rate}
