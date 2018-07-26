@@ -14,6 +14,7 @@ from simtools.SetupParser import SetupParser
 from input_file_generation.DemographicsGenerator import DemographicsGenerator
 from input_file_generation.ClimateGenerator import ClimateGenerator
 from simtools.Utilities.COMPSUtilities import COMPS_login
+from input_file_generation.add_properties_to_demographics import generate_demographics_properties, check_df_valid
 
 sys.path.insert(0, os.path.pardir)
 from spatial import make_shapefile, extract_latlongs
@@ -58,16 +59,12 @@ def update_demog(demographics):
     age_dist = {
                 "DistributionValues":
                 [
-                  #[
                     distval.tolist()
-                  #]
                 ],
                 "ResultScaleFactor": 1,
                 "ResultValues":
                 [
-                 #[
                     resval.tolist()
-                 #]
                 ]
               }
 
@@ -86,6 +83,41 @@ def update_demog(demographics):
     demographics["Defaults"]["IndividualAttributes"]["MortalityDistribution"] = mort_defaults
 
     return demographics
+
+def net_usage_overlay(site_name, hates_net_prop):
+
+    base_demog_path = os.path.join("sites", site_name, "demographics_{name}.json".format(name=site_name))
+    overlay_path = os.path.join("sites", site_name, "demographics_{name}_hatenets_{prop}.json".format(name=site_name,
+                                                                                                        prop=hates_net_prop))
+    with open(base_demog_path) as f:
+        demo = json.loads(f.read())
+
+    nodeid = demo["Nodes"][0]["NodeID"]
+
+    prop_by_node_dict = { 'node' : [nodeid, nodeid],
+                          'Property' : ['NetUsage', 'NetUsage'],
+                          'Property_Type' : ['IP', 'IP'],
+                          'Property_Value' : [ 'HatesNets',
+                                               'LovesNets'],
+                          'Initial_Distribution' : [hates_net_prop, 1-hates_net_prop]}
+
+    # base IPs and NPs
+    IPs = [
+        { 'Property' : 'NetUsage',
+          'Values' : [ 'HatesNets',
+                       'LovesNets'],
+          'Initial_Distribution' : [0, 1],
+          'Transitions' : [] }
+    ]
+    NPs = [
+    ]
+
+    df = pd.DataFrame(prop_by_node_dict)
+    if (not df.empty) and (not check_df_valid(df, IPs, NPs)):
+        print('properties by node df is invalid')
+        exit()
+    generate_demographics_properties(base_demog_path, overlay_path, IPs=IPs, NPs=NPs, df=df, as_overlay=True)
+
 
 
 def generate_input_files(site_name, res=30, pop=1000, overwrite=False):

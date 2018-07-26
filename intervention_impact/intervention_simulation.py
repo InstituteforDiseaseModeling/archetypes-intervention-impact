@@ -17,7 +17,7 @@ from simtools.Utilities.COMPSUtilities import COMPS_login
 
 from malaria.reports.MalariaReport import add_summary_report, add_event_counter_report
 # todo: fix fiona?? bug
-# from generate_input_files import generate_input_files
+# from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
@@ -37,7 +37,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "Test_ITN_Overlays"
+    exp_name = "Test_ITN_IPs_Births"
     serialize = False
     pull_from_serialization = True
 else:
@@ -105,7 +105,6 @@ if __name__=="__main__":
         species_details = json.loads(f.read())
 
     for site_name in sites["name"]:
-        print("generating input files and demog overlays for " + site_name)
         site_dir = os.path.join("sites", site_name)
         site_info[site_name] = {}
 
@@ -113,6 +112,11 @@ if __name__=="__main__":
         if new_inputs:
             print("generating input files for " + site_name)
             # generate_input_files(site_name, pop=2000, overwrite=True)
+
+        # make sure net overlay exists
+        overlay_fname = "demographics_{name}_hatenets_0.json".format(name=site_name)
+        # if not os.path.isfile(os.path.join("sites", site_name, overlay_fname)):
+        #     net_usage_overlay(site_name, hates_net_prop=0)
 
         # asset collections
         site_info[site_name]["asset_collection"] = get_asset_collection(
@@ -135,7 +139,7 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        df = df.query("Site_Name=='moine' & x_Temporary_Larval_Habitat>10 & x_Temporary_Larval_Habitat<11")
+        df = df.query("Site_Name=='moine' & x_Temporary_Larval_Habitat>10 & x_Temporary_Larval_Habitat<11 & Run_Number==9")
 
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
@@ -152,7 +156,7 @@ if __name__=="__main__":
                                    n_rounds=1,
                                    coverage=itn_cov / 100,
                                    discard_halflife=180,
-                                    start_day=5,
+                                   start_day=5,
                                    IP=[{"NetUsage":"LovesNets"}]
                   ),
             ModFn(assign_net_ip, hates_net_prop),

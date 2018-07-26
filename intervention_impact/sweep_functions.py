@@ -9,50 +9,13 @@ from dtk.interventions.irs import add_IRS
 from dtk.interventions.itn_age_season import add_ITN_age_season
 from dtk.interventions.property_change import change_individual_property
 
-from input_file_generation.add_properties_to_demographics import generate_demographics_properties, check_df_valid
-
-
-def net_usage_overlay(site_name, hates_net_prop):
-
-    base_demog_path = os.path.join("sites", site_name, "demographics_{name}.json".format(name=site_name))
-    overlay_path = os.path.join("sites", site_name, "demographics_{name}_hatenets_{prop}.json".format(name=site_name,
-                                                                                                        prop=hates_net_prop))
-    with open(base_demog_path) as f:
-        demo = json.loads(f.read())
-
-    nodeid = demo["Nodes"][0]["NodeID"]
-
-    prop_by_node_dict = { 'node' : [nodeid, nodeid],
-                          'Property' : ['NetUsage', 'NetUsage'],
-                          'Property_Type' : ['IP', 'IP'],
-                          'Property_Value' : [ 'HatesNets',
-                                               'LovesNets'],
-                          'Initial_Distribution' : [hates_net_prop, 1-hates_net_prop]}
-
-    # base IPs and NPs
-    IPs = [
-        { 'Property' : 'NetUsage',
-          'Values' : [ 'HatesNets',
-                       'LovesNets'],
-          'Initial_Distribution' : [0, 1],
-          'Transitions' : [] }
-    ]
-    NPs = [
-    ]
-
-    df = pd.DataFrame(prop_by_node_dict)
-    if (not df.empty) and (not check_df_valid(df, IPs, NPs)):
-        print('properties by node df is invalid')
-        exit()
-    generate_demographics_properties(base_demog_path, overlay_path, IPs=IPs, NPs=NPs, df=df, as_overlay=True)
-
 def assign_net_ip(cb, hates_net_prop):
     change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop),
-    change_individual_property(cb, "NetUsage", "LovesNets", coverage=1 - hates_net_prop),
+    # change_individual_property(cb, "NetUsage", "LovesNets", coverage=1 - hates_net_prop),
     change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop,
           trigger_condition_list=["Births"]),
-    change_individual_property(cb, "NetUsage", "LovesNets", coverage=1 - hates_net_prop,
-          trigger_condition_list=["Births"])
+    # change_individual_property(cb, "NetUsage", "LovesNets", coverage=1 - hates_net_prop,
+    #       trigger_condition_list=["Births"])
 
     return {"Hates_Nets": hates_net_prop}
 
