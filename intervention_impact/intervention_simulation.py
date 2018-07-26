@@ -10,7 +10,7 @@ from simtools.Utilities.COMPSUtilities import get_asset_collection
 
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
 from dtk.interventions.outbreakindividual import recurring_outbreak
-from dtk.interventions.property_change import change_individual_property
+from dtk.interventions.biting_risk import change_biting_risk
 from simtools.ModBuilder import ModBuilder, ModFn
 from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
@@ -37,7 +37,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "Test_ITN_IPs_Births"
+    exp_name = "Test_Biting_Risk"
     serialize = False
     pull_from_serialization = True
 else:
@@ -77,6 +77,9 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
 
 cb.update_params({"Disable_IP_Whitelist": 1,
                   "Enable_Property_Output": 1})
+
+# add hetero biting
+change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
