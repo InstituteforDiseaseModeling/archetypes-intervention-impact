@@ -6,32 +6,33 @@ import json
 
 from simtools.ExperimentManager.ExperimentManagerFactory import ExperimentManagerFactory
 from simtools.SetupParser import SetupParser
-from simtools.Utilities.COMPSUtilities import COMPS_login, get_asset_collection
+from simtools.Utilities.COMPSUtilities import get_asset_collection
 
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
 from dtk.interventions.outbreakindividual import recurring_outbreak
+from dtk.interventions.property_change import change_individual_property
 from simtools.ModBuilder import ModBuilder, ModFn
 from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
 
 from malaria.reports.MalariaReport import add_summary_report, add_event_counter_report
-# todo: fix shapely import
+# todo: fix fiona?? bug
 # from generate_input_files import generate_input_files
 from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
 # burnin_id = "d9101f31-1785-e811-a2c0-c4346bcb7275" # badly spaced burnin
-burnin_id = "c315f2ce-818e-e811-a2c0-c4346bcb7275"
+burnin_id = "5553b581-d18f-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 intervention_coverages = [80]
 net_hating_props = [0, 0.2, 0.5, 0.8]
-
+new_inputs = False
 
 # Serialization
 if run_type == "burnin":
     years = 10
-    exp_name = "MAP_II_Burnin_Test"
+    exp_name = "MAP_II_Burnin_Test_IP"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -45,7 +46,7 @@ else:
 # setup
 location = "HPC"
 SetupParser.default_block = location
-sites = pd.read_csv("site_details.csv")
+
 
 cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Simulation_Duration=int(365*years),
@@ -74,56 +75,55 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
 
                                     )
 
-cb.update_params({"Disable_IP_Whitelist": 1})
+cb.update_params({"Disable_IP_Whitelist": 1,
+                  "Enable_Property_Output": 1})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
-
-## vectors and input files: generate new OR pull from input collections
-COMPS_login("https://comps.idmod.org")
-new_inputs = False
-new_overlays = True
-site_info = {}
-
-with open("species_details.json") as f:
-    species_details = json.loads(f.read())
-
-for site_name in sites["name"]:
-    print("generating input files and demog overlays for " + site_name)
-    site_dir = os.path.join("sites", site_name)
-    site_info[site_name] = {}
-
-    # input files
-    if new_inputs:
-        print("generating input files for " + site_name)
-        # todo: fix geopandas import
-        # generate_input_files(site_name, pop=2000, overwrite=True)
-
-    # demographic overlay: net usage
-    for hates_net_prop in net_hating_props:
-        overlay_fname = "demographics_{name}_hateforest_{prop}.json".format(name=site_name, prop=hates_net_prop)
-        if not os.path.isfile(os.path.join("sites", site_name, overlay_fname)):
-            net_usage_overlay(site_name, hates_net_prop)
-
-    # asset collections
-    site_info[site_name]["asset_collection"] = get_asset_collection(sites.query('name==@site_name')['asset_id'].iloc[0])
-
-    # Find vector proportions for each vector in our site
-    vectors = pd.read_csv(os.path.join(site_dir, "vector_proportions.csv"))
-    site_info[site_name]["vectors"] = {row.species: row.proportion for row in vectors.itertuples() if row.proportion > 0}
-
-# collection ids:
-cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
-# cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
-def set_site_id(cb, asset_collection):
-    cb.set_input_collection(asset_collection)
-    return {"Input_collection": str(asset_collection.id)}
 
 # reporting
 add_summary_report(cb)
 add_event_counter_report(cb, ["Bednet_Using"])
 
+def set_site_id(cb, asset_collection):
+    cb.set_input_collection(asset_collection)
+    return {"Input_collection": str(asset_collection.id)}
+
 if __name__=="__main__":
+
+    # collect site-specific data to pass to builder functions
+    COMPS_login("https://comps.idmod.org")
+    sites = pd.read_csv("site_details.csv")
+
+    # collection ids:
+    cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
+    cb.set_dll_collection("17f8bb9c-6f8f-e811-a2c0-c4346bcb7275")
+
+    site_info = {}
+
+    with open("species_details.json") as f:
+        species_details = json.loads(f.read())
+
+    for site_name in sites["name"]:
+        print("generating input files and demog overlays for " + site_name)
+        site_dir = os.path.join("sites", site_name)
+        site_info[site_name] = {}
+
+        # input files
+        if new_inputs:
+            print("generating input files for " + site_name)
+            # generate_input_files(site_name, pop=2000, overwrite=True)
+
+        # asset collections
+        site_info[site_name]["asset_collection"] = get_asset_collection(
+            sites.query('name==@site_name')['asset_id'].iloc[0])
+
+        # Find vector proportions for each vector in our site
+        vectors = pd.read_csv(os.path.join(site_dir, "vector_proportions.csv"))
+        site_info[site_name]["vectors"] = {row.species: row.proportion for row in vectors.itertuples() if
+                                           row.proportion > 0}
+
+    # builders
     SetupParser.init()
 
     if pull_from_serialization:
@@ -152,14 +152,10 @@ if __name__=="__main__":
                                    n_rounds=1,
                                    coverage=itn_cov / 100,
                                    discard_halflife=180,
-                                  #IP=[{"NetUsage":"LovesNets"}]
+                                    start_day=5,
+                                   IP=[{"NetUsage":"LovesNets"}]
                   ),
-            # ModFn(assign_overlay,
-            #       fname=os.path.join("sites",
-            #                          df["Site_Name"][x],
-            #                          "demographics_{name}_hateforest_{prop}.json".format(name=df["Site_Name"][x],
-            #                                                                              prop=hates_net_prop)),
-            #       tags={"Hate_Nets": hates_net_prop})
+            ModFn(assign_net_ip, hates_net_prop),
             # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction,
             #                           repetitions=12 * years,
             #                           tsteps_btwn=30),
@@ -171,7 +167,7 @@ if __name__=="__main__":
         ]
             for x in df.index
             for itn_cov in intervention_coverages
-            # for hates_net_prop in net_hating_props
+            for hates_net_prop in net_hating_props
             # for n_dists in [1,2,3]
             # for outbreak_fraction in [0.001, 0.005, 0.01]
             # for irs_cov in intervention_coverages
@@ -186,7 +182,7 @@ if __name__=="__main__":
             ModFn(set_site_id, asset_collection=site_info[site_name]["asset_collection"]),
             ModFn(site_simulation_setup, site_name=site_name,
                                          species_details=species_details,
-                                         vectors=site_info[site_name]["vectors"])
+                                         vectors=site_info[site_name]["vectors"]),
         ]
             for run_num in range(10)
             for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
