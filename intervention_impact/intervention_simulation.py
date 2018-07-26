@@ -10,34 +10,32 @@ from simtools.Utilities.COMPSUtilities import get_asset_collection
 
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
 from dtk.interventions.outbreakindividual import recurring_outbreak
-from dtk.interventions.property_change import change_individual_property
+from dtk.interventions.biting_risk import change_biting_risk
 from simtools.ModBuilder import ModBuilder, ModFn
 from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
 
 from malaria.reports.MalariaReport import add_summary_report, add_event_counter_report
-# todo: fix fiona?? bug
-# from generate_input_files import generate_input_files
+from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-# burnin_id = "d9101f31-1785-e811-a2c0-c4346bcb7275" # badly spaced burnin
-burnin_id = "5553b581-d18f-e811-a2c0-c4346bcb7275"
+burnin_id = "3dc6771b-0291-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
-intervention_coverages = [80]
-net_hating_props = [0, 0.2, 0.5, 0.8]
+net_hating_props = [0.2, 0.5, 0.8]
+hs_rates = [0.15, 0.33, 0.5]
 new_inputs = False
 
 # Serialization
 if run_type == "burnin":
     years = 10
-    exp_name = "MAP_II_Burnin_Test_IP"
+    exp_name = "MAP_II_Burnin_2"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "Test_ITN_Overlays"
+    exp_name = "ACT_Sweep_HS_Rate"
     serialize = False
     pull_from_serialization = True
 else:
@@ -59,7 +57,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=1,
+                                    Enable_Default_Reporting=0,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
@@ -76,14 +74,17 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     )
 
 cb.update_params({"Disable_IP_Whitelist": 1,
-                  "Enable_Property_Output": 1})
+                  "Enable_Property_Output": 0})
+
+# add hetero biting
+change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
 
 # reporting
 add_summary_report(cb)
-add_event_counter_report(cb, ["Bednet_Using"])
+# add_event_counter_report(cb, ["Bednet_Using"])
 
 def set_site_id(cb, asset_collection):
     cb.set_input_collection(asset_collection)
@@ -97,7 +98,7 @@ if __name__=="__main__":
 
     # collection ids:
     cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
-    cb.set_dll_collection("17f8bb9c-6f8f-e811-a2c0-c4346bcb7275")
+    cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
 
     site_info = {}
 
@@ -105,14 +106,18 @@ if __name__=="__main__":
         species_details = json.loads(f.read())
 
     for site_name in sites["name"]:
-        print("generating input files and demog overlays for " + site_name)
         site_dir = os.path.join("sites", site_name)
         site_info[site_name] = {}
 
         # input files
         if new_inputs:
             print("generating input files for " + site_name)
-            # generate_input_files(site_name, pop=2000, overwrite=True)
+            generate_input_files(site_name, pop=2000, overwrite=True)
+
+        # make sure net overlay exists
+        overlay_fname = "demographics_{name}_hatenets_0.json".format(name=site_name)
+        if not os.path.isfile(os.path.join("sites", site_name, overlay_fname)):
+            net_usage_overlay(site_name, hates_net_prop=0)
 
         # asset collections
         site_info[site_name]["asset_collection"] = get_asset_collection(
@@ -135,7 +140,7 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        df = df.query("Site_Name=='moine' & x_Temporary_Larval_Habitat>10 & x_Temporary_Larval_Habitat<11")
+        # df = df.query("Site_Name=='moine' & x_Temporary_Larval_Habitat>10 & x_Temporary_Larval_Habitat<11 & Run_Number==9")
 
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
@@ -143,35 +148,36 @@ if __name__=="__main__":
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
                 "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
-            # ModFn(set_site_id, asset_collection=site_info[df["Site_Name"][x]]["asset_collection"]),
+            ModFn(set_site_id, asset_collection=site_info[df["Site_Name"][x]]["asset_collection"]),
             ModFn(site_simulation_setup, site_name=df["Site_Name"][x],
                                          species_details=species_details,
                                          vectors=site_info[df["Site_Name"][x]]["vectors"]),
 
-            ModFn(add_annual_itns, year_count=years,
-                                   n_rounds=1,
-                                   coverage=itn_cov / 100,
-                                   discard_halflife=180,
-                                    start_day=5,
-                                   IP=[{"NetUsage":"LovesNets"}]
-                  ),
-            ModFn(assign_net_ip, hates_net_prop),
+            # ModFn(add_annual_itns, year_count=years,
+            #                        n_rounds=1,
+            #                        coverage=itn_cov / 100,
+            #                        discard_halflife=180,
+            #                        start_day=5,
+            #                        IP=[{"NetUsage":"LovesNets"}]
+            #       ),
+            # ModFn(assign_net_ip, hates_net_prop),
             # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction,
             #                           repetitions=12 * years,
             #                           tsteps_btwn=30),
             # ModFn(add_irs_group, coverage=irs_cov/100,
             #                      decay=180,
             #                      start_days=[365*start for start in range(years)]),
-            # ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
+            ModFn(add_healthseeking_by_coverage, coverage=act_cov/100, rate=hs_rate),
 
         ]
             for x in df.index
-            for itn_cov in intervention_coverages
-            for hates_net_prop in net_hating_props
+            # for itn_cov in intervention_coverages
+            # for hates_net_prop in net_hating_props
             # for n_dists in [1,2,3]
             # for outbreak_fraction in [0.001, 0.005, 0.01]
             # for irs_cov in intervention_coverages
-            # for act_cov in intervention_coverages
+            for act_cov in intervention_coverages
+            for hs_rate in hs_rates
 
         ])
     else:
