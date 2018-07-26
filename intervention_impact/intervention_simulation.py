@@ -21,18 +21,16 @@ from malaria.reports.MalariaReport import add_summary_report, add_event_counter_
 from sweep_functions import *
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
-# burnin_id = "d9101f31-1785-e811-a2c0-c4346bcb7275" # badly spaced burnin
+run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "5553b581-d18f-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
-intervention_coverages = [80]
-net_hating_props = [0, 0.2, 0.5, 0.8]
+net_hating_props = [0.2, 0.5, 0.8]
 new_inputs = False
 
 # Serialization
 if run_type == "burnin":
     years = 10
-    exp_name = "MAP_II_Burnin_Test_IP"
+    exp_name = "MAP_II_Burnin_2"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -59,7 +57,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=1,
+                                    Enable_Default_Reporting=0,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
@@ -76,7 +74,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     )
 
 cb.update_params({"Disable_IP_Whitelist": 1,
-                  "Enable_Property_Output": 1})
+                  "Enable_Property_Output": 0})
 
 # add hetero biting
 change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
@@ -86,7 +84,7 @@ if serialize:
 
 # reporting
 add_summary_report(cb)
-add_event_counter_report(cb, ["Bednet_Using"])
+# add_event_counter_report(cb, ["Bednet_Using"])
 
 def set_site_id(cb, asset_collection):
     cb.set_input_collection(asset_collection)
@@ -99,8 +97,8 @@ if __name__=="__main__":
     sites = pd.read_csv("site_details.csv")
 
     # collection ids:
-    cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
-    cb.set_dll_collection("17f8bb9c-6f8f-e811-a2c0-c4346bcb7275")
+    # cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
+    # cb.set_dll_collection("17f8bb9c-6f8f-e811-a2c0-c4346bcb7275")
 
     site_info = {}
 
@@ -186,7 +184,7 @@ if __name__=="__main__":
             ModFn(DTKConfigBuilder.update_params, {
                 "Run_Number": run_num,
                 "x_Temporary_Larval_Habitat":10 ** hab_exp}),
-            ModFn(set_site_id, asset_collection=site_info[site_name]["asset_collection"]),
+            # ModFn(set_site_id, asset_collection=site_info[site_name]["asset_collection"]),
             ModFn(site_simulation_setup, site_name=site_name,
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"]),
