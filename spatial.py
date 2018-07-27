@@ -5,7 +5,6 @@ import geopandas as gpd
 import rasterio
 import rasterio.mask
 import rasterio.plot
-import matplotlib.pyplot as plt
 from shapely.ops import cascaded_union, polygonize
 from scipy.spatial import Delaunay
 import numpy as np
@@ -207,6 +206,7 @@ def plot_shape(ax, points=None, shapes=None, title=None,
 
 def plot_all_shapes(data, shape_types=['point', 'bbox', 'convex_hull', 'concave_hull'],
                     alphas = [1, 15, 30]):
+    import matplotlib.pyplot as plt
 
     plot_count = len(shape_types)-1 + len(alphas)
     col_count = int(np.ceil(plot_count/2))
@@ -264,6 +264,7 @@ def mask_raster(raster, mask_shapes, out_path=".", write=False, crop=True):
 def run_all_clipping(in_raster_path, out_path, shapefile_name,
                      data, raster_pattern = '.*', overwrite=False, raster_folder = ".",
                      alpha=15, out_name="raster", write_shp=True, crop=True, unit="year"):
+    import matplotlib.pyplot as plt
 
     shapefile_path = os.path.join(out_path, "shp", "{fname}.shp".format(fname=shapefile_name))
     raster_path = os.path.join(out_path, "rasters", raster_folder)
