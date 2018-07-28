@@ -44,19 +44,32 @@ if __name__ == "__main__":
     SetupParser.init("HPC")
     out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'projects',
                            'map_intervention_impact', 'lookup_tables')
-    am = AnalyzeManager("85074b3c-b38b-e811-a2c0-c4346bcb7275",
-                        analyzers=PfPRAnalyzer(expname="final_prev",
-                                               colname="final_prev",
-                                               outdir = os.path.join(out_dir, "act_only"),
-                                               sweep_variables=["Site_Name",
-                                                                "Run_Number",
-                                                                "x_Temporary_Larval_Habitat",
-                                                                "ACT_Coverage",
-                                                                "IRS_Coverage",
-                                                                "ITN_Coverage",
-                                                                "ITN_Distributions",
-                                                                "outbreak_fraction"
-                                                                ]
-                                               ),
-                        force_analyze=True)
-    am.analyze()
+
+    exps = {"initial": {"initial_prev": "3dc6771b-0291-e811-a2c0-c4346bcb7275"},
+            "itn_only": {"itn_baseline": "49e54528-1891-e811-a2c0-c4346bcb7275",
+                         "itn_corr_nets": "df13a542-1e91-e811-a2c0-c4346bcb7275"},
+            "irs_only": {"irs_baseline": "aebafa27-2291-e811-a2c0-c4346bcb7275"},
+            "act_only": {"act_baseline": "a69da6dd-2491-e811-a2c0-c4346bcb7275",
+                         "act_hs_rate": "b9ea054c-2791-e811-a2c0-c4346bcb7275"}
+            }
+
+    for subfolder, int_list in exps.items():
+        colname = "initial_prev" if subfolder=="initial" else "final_prev"
+        for int_name, exp_id in int_list.items():
+
+            am = AnalyzeManager(exp_id,
+                                analyzers=PfPRAnalyzer(expname=int_name,
+                                                       colname=colname,
+                                                       outdir = os.path.join(out_dir, subfolder),
+                                                       sweep_variables=["Site_Name",
+                                                                        "Run_Number",
+                                                                        "x_Temporary_Larval_Habitat",
+                                                                        "ACT_Coverage",
+                                                                        "IRS_Coverage",
+                                                                        "ITN_Coverage",
+                                                                        "Hates_Nets",
+                                                                        "ACT_HS_Rate"
+                                                                        ]
+                                                       ),
+                                force_analyze=True)
+            am.analyze()
