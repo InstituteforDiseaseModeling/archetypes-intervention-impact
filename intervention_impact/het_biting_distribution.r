@@ -13,17 +13,26 @@ data <- data[!is.na(Peak), list(id=V1, bites=Peak)]
 
 # counts of bites
 ggplot(data, aes(x=id, y=bites)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity") +
+  theme_minimal() +
+  labs(title="Peak Season Bites by Individual")
 
 # convert to a risk (ie proportion of bites)
 data[, risk:= bites/sum(bites)]
 ggplot(data, aes(x=id, y=risk)) +
-  geom_bar(stat="identity")
+  geom_bar(stat="identity")+
+  theme_minimal() +
+  labs(title="Fraction of Bites by Individual",
+       y="Risk")
 
 # convert to a risk relative to the mean(?)
 data[, relrisk:= risk/mean(risk)]
-# ggplot(data, aes(x=id, y=relrisk)) +
-#   geom_bar(stat="identity")
+ggplot(data, aes(x=id, y=relrisk)) +
+  geom_bar(stat="identity") +
+  geom_hline(yintercept=1, size=1.5, color="red") +
+  theme_minimal() +
+  labs(title="Biting Risk by Individual (Relative to Mean)",
+       y="Relative Risk")
 
 # fit distribution
 histval <- data$relrisk
@@ -43,6 +52,6 @@ ggplot(histo, aes(x=xhist, y=yhist)) +
   theme_minimal() +
   labs(x="Relative Risk",
        y="Density",
-       title="Data and Exponential Distirbution, Biting Risk")
+       title="Observed and Fitted Distribution, Biting Risk")
 
 
