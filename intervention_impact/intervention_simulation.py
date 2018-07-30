@@ -21,7 +21,7 @@ from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "3dc6771b-0291-e811-a2c0-c4346bcb7275"
+burnin_id = "5553b581-d18f-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 net_hating_props = [0.2, 0.5, 0.8]
 hs_rates = [0.15, 0.33, 0.5]
@@ -35,7 +35,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "ACT_Sweep_HS_Rate"
+    exp_name = "ITN_Baseline_Homo_Biting"
     serialize = False
     pull_from_serialization = True
 else:
@@ -77,7 +77,7 @@ cb.update_params({"Disable_IP_Whitelist": 1,
                   "Enable_Property_Output": 0})
 
 # add hetero biting
-change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
+# change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
@@ -153,13 +153,13 @@ if __name__=="__main__":
                                          species_details=species_details,
                                          vectors=site_info[df["Site_Name"][x]]["vectors"]),
 
-            # ModFn(add_annual_itns, year_count=years,
-            #                        n_rounds=1,
-            #                        coverage=itn_cov / 100,
-            #                        discard_halflife=180,
-            #                        start_day=5,
-            #                        IP=[{"NetUsage":"LovesNets"}]
-            #       ),
+            ModFn(add_annual_itns, year_count=years,
+                                   n_rounds=1,
+                                   coverage=itn_cov / 100,
+                                   discard_halflife=180,
+                                   start_day=5,
+                                   IP=[{"NetUsage":"LovesNets"}]
+                  ),
             # ModFn(assign_net_ip, hates_net_prop),
             # ModFn(recurring_outbreak, outbreak_fraction=outbreak_fraction,
             #                           repetitions=12 * years,
@@ -167,17 +167,17 @@ if __name__=="__main__":
             # ModFn(add_irs_group, coverage=irs_cov/100,
             #                      decay=180,
             #                      start_days=[365*start for start in range(years)]),
-            ModFn(add_healthseeking_by_coverage, coverage=act_cov/100, rate=hs_rate),
+            # ModFn(add_healthseeking_by_coverage, coverage=act_cov/100, rate=hs_rate),
 
         ]
             for x in df.index
-            # for itn_cov in intervention_coverages
+            for itn_cov in intervention_coverages
             # for hates_net_prop in net_hating_props
             # for n_dists in [1,2,3]
             # for outbreak_fraction in [0.001, 0.005, 0.01]
             # for irs_cov in intervention_coverages
-            for act_cov in intervention_coverages
-            for hs_rate in hs_rates
+            # for act_cov in intervention_coverages
+            # for hs_rate in hs_rates
 
         ])
     else:
