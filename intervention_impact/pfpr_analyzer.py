@@ -46,12 +46,14 @@ if __name__ == "__main__":
                            'map_intervention_impact', 'lookup_tables')
 
     exps = {"initial": {"initial_prev": "3dc6771b-0291-e811-a2c0-c4346bcb7275"},
-            "itn_only": {"itn_baseline": "49e54528-1891-e811-a2c0-c4346bcb7275",
-                         "itn_corr_nets": "df13a542-1e91-e811-a2c0-c4346bcb7275"},
-            "irs_only": {"irs_baseline": "aebafa27-2291-e811-a2c0-c4346bcb7275"},
-            "act_only": {"act_baseline": "a69da6dd-2491-e811-a2c0-c4346bcb7275",
-                         "act_hs_rate": "b9ea054c-2791-e811-a2c0-c4346bcb7275"}
+            "itn": {"itn_baseline": "49e54528-1891-e811-a2c0-c4346bcb7275",
+                    "itn_corr_nets": "df13a542-1e91-e811-a2c0-c4346bcb7275"},
+            "irs": {"irs_baseline": "aebafa27-2291-e811-a2c0-c4346bcb7275"},
+            "act": {"act_baseline": "a69da6dd-2491-e811-a2c0-c4346bcb7275",
+                    "act_hs_rate": "b9ea054c-2791-e811-a2c0-c4346bcb7275"}
             }
+
+    exps = {"itn": {"itn_baseline_homo_biting": "ea7f39dc-8f93-e811-a2c0-c4346bcb7275"}}
 
     for subfolder, int_list in exps.items():
         colname = "initial_prev" if subfolder=="initial" else "final_prev"
