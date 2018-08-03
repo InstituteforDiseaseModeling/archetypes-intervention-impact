@@ -46,6 +46,7 @@ int_data[, Coverage:=factor(Coverage)]
 int_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage, Hates_Nets, ACT_HS_Rate)]
 int_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage, Hates_Nets, ACT_HS_Rate)]
 
+write.csv(int_data, file=file.path(main_dir, "lookup_ind_ints_het_biting.csv"), row.names = F)
 
 ggplot(int_data[Intervention=="ACT" & Site_Name=="martae"], aes(x=initial_prev, y=final_prev, color=Coverage)) +
   geom_line(aes(group=interaction(Coverage, Run_Number)), alpha=0.25) +
