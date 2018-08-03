@@ -53,7 +53,7 @@ if __name__ == "__main__":
                     "act_hs_rate": "b9ea054c-2791-e811-a2c0-c4346bcb7275"}
             }
 
-    exps = {"itn": {"itn_baseline_homo_biting": "ea7f39dc-8f93-e811-a2c0-c4346bcb7275"}}
+    exps = {"interactions": {"all_interventions": "3421c801-1b96-e811-a2c0-c4346bcb7275"}}
 
     for subfolder, int_list in exps.items():
         colname = "initial_prev" if subfolder=="initial" else "final_prev"
@@ -68,9 +68,7 @@ if __name__ == "__main__":
                                                                         "x_Temporary_Larval_Habitat",
                                                                         "ACT_Coverage",
                                                                         "IRS_Coverage",
-                                                                        "ITN_Coverage",
-                                                                        "Hates_Nets",
-                                                                        "ACT_HS_Rate"
+                                                                        "ITN_Coverage"
                                                                         ]
                                                        ),
                                 force_analyze=True)
