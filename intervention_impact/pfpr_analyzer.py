@@ -1,5 +1,6 @@
 import pandas as pd
 import os
+import pdb
 
 from simtools.SetupParser import SetupParser
 from simtools.Analysis.AnalyzeManager import AnalyzeManager
@@ -46,10 +47,10 @@ if __name__ == "__main__":
     out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'projects',
                            'map_intervention_impact', 'lookup_tables')
 
-    run_type = "suite"
+    run_type = "exp"
 
     if run_type=="exp":
-        exps = {"interactions": {"all_interventions": "3421c801-1b96-e811-a2c0-c4346bcb7275"}}
+        exps = {"initial": {"initial_het_biting": "3dc6771b-0291-e811-a2c0-c4346bcb7275"}}
 
         for subfolder, int_list in exps.items():
             colname = "initial_prev" if subfolder == "initial" else "final_prev"
@@ -70,23 +71,21 @@ if __name__ == "__main__":
                 am.analyze()
 
     elif run_type=="suite":
-        suite = {"itn": {"test_suite": "d3949f66-ff9a-e811-a2c0-c4346bcb7275"}}
 
         exps = exps_for_suite_id("d3949f66-ff9a-e811-a2c0-c4346bcb7275")
-        am = AnalyzeManager([exp.id for exp in exps],
-                            analyzers=PfPRAnalyzer(expname="all_interventions",
-                                                   colname="final_prev",
-                                                   outdir=os.path.join(out_dir, "interactions"),
-                                                   sweep_variables=["Site_Name",
-                                                                    "Run_Number",
-                                                                    "x_Temporary_Larval_Habitat",
-                                                                    "ACT_Coverage",
-                                                                    "IRS_Coverage",
-                                                                    "ITN_Coverage"
-                                                                    ]
-                                                   ),
-                            force_analyze=True
-                            )
-        am.analyze()
 
-
+        for exp in [exps[7]]:
+            am = AnalyzeManager(exp.id,
+                                analyzers=PfPRAnalyzer(expname=exp.name,
+                                                       colname="final_prev",
+                                                       outdir=os.path.join(out_dir, "interactions"),
+                                                       sweep_variables=["Site_Name",
+                                                                        "Run_Number",
+                                                                        "x_Temporary_Larval_Habitat",
+                                                                        "ACT_Coverage",
+                                                                        "IRS_Coverage",
+                                                                        "ITN_Coverage"
+                                                                        ]
+                                                       ),
+                                force_analyze=True)
+            am.analyze()
