@@ -9,10 +9,7 @@ theme_set(theme_minimal(base_size = 18))
 
 # main_dir <- file.path(Sys.getenv("USERPROFILE"), 
 #                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
-data <- fread(file.path("data", "lookup_ind_ints_het_biting.csv"))
-data <- data[(is.na(Hates_Nets) | Hates_Nets==0) & (is.na(ACT_HS_Rate) | ACT_HS_Rate==0.15),
-             list(Site_Name, Run_Number, Intervention, Coverage, x_Temporary_Larval_Habitat, initial_prev, final_prev, mean_initial, mean_final)]
-
+data <- fread(file.path("data", "lookup_full_interactions.csv"))
 
 ui <- fluidPage(
   
@@ -37,8 +34,7 @@ ui <- fluidPage(
     column(2, 
            checkboxGroupInput("ITN",
                               h3("ITN (%)"),
-                              choices=list("0"=0,
-                                           "20"=0.2,
+                              choices=list("20"=0.2,
                                            "40"=0.4,
                                            "60"=0.6,
                                            "80"=0.8),
@@ -48,8 +44,7 @@ ui <- fluidPage(
     column(2,
            checkboxGroupInput("IRS",
                               h3("IRS (%)"),
-                              choices=list("0"=0,
-                                           "20"=0.2,
+                              choices=list("20"=0.2,
                                            "40"=0.4,
                                            "60"=0.6,
                                            "80"=0.8),
@@ -59,8 +54,7 @@ ui <- fluidPage(
     column(2,
            checkboxGroupInput("ACT",
                               h3("ACT (%)"),
-                              choices=list("0"=0,
-                                           "20"=0.2,
+                              choices=list("20"=0.2,
                                            "40"=0.4,
                                            "60"=0.6,
                                            "80"=0.8),
@@ -88,24 +82,42 @@ ui <- fluidPage(
 server <- function(input, output){
   
   plotData <- reactive({
-    subset <- data[((Intervention=="ITN" & Coverage %in% input$ITN) |
-                    (Intervention=="IRS" & Coverage %in% input$IRS) |
-                    (Intervention=="ACT" & Coverage %in% input$ACT)) & 
-                   (Site_Name %in% input$site)]
+    
+    if (input$interactions){
+      
+      combos <- data.table(expand.grid(ITN=c(0, input$ITN), IRS=c(0, input$IRS), ACT=c(0, input$ACT)))
+      combos[, label:=""]
+      
+      for (int in c("ITN", "IRS", "ACT")){
+        combos[get(int)!=0, label:= paste0(label, int, " ", get(int), "; ") ]
+      }
+      combos[label=="", label:="None"]
+      
+      
+      subset <- data[(Intervention %in% combos$label) &
+                      (Site_Name %in% input$site)]
+      
+    }else{
+      subset <- data[((ITN_Coverage %in% input$ITN & IRS_Coverage==0 & ACT_Coverage==0) |
+                        (IRS_Coverage %in% input$IRS & ITN_Coverage==0 & ACT_Coverage==0) |
+                        (ACT_Coverage %in% input$ACT & IRS_Coverage==0 & ITN_Coverage==0)) &
+                       (Site_Name %in% input$site)]
+    }
+    
     subset
   })
   
   
   
   output$curves <- renderPlot({
-    out_plot <- ggplot(plotData(), aes(x=mean_initial, y=mean_final, color=Coverage)) +
-                  geom_line(aes(linetype=Intervention), size=1) +
+    out_plot <- ggplot(plotData(), aes(x=mean_initial, y=mean_final, color=Intervention)) +
+                  geom_line(size=1) +
                   geom_abline() + 
                   facet_wrap(~Site_Name) +
                   labs(x="Initial Prevalence",
                        y="Final Prevalence")
     if (input$random_seeds){
-      out_plot <- out_plot + geom_line(aes(x=initial_prev, y=final_prev, group=interaction(Intervention, Coverage, Run_Number)), alpha=0.25)
+      out_plot <- out_plot + geom_line(aes(x=initial_prev, y=final_prev, group=interaction(Intervention, Run_Number)), alpha=0.25)
     }
     print(out_plot)
   })

@@ -5,6 +5,6 @@ account: abertozzivilla
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 394674
-bundleId: 1517617
+bundleId: 1527711
 url: https://abertozzivilla.shinyapps.io/shiny/
-when: 1533335909.70266
+when: 1533870860.89046

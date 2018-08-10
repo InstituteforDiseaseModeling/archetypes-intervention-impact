@@ -14,39 +14,36 @@ main_dir <- file.path(Sys.getenv("USERPROFILE"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
 
 
-initial <- fread(file.path(main_dir, "initial", "initial_prev.csv"))
+initial <- fread(file.path(main_dir, "initial", "initial_het_biting.csv"))
 # explore distribution of initial prevalences
 ggplot(initial, aes(x=log10(x_Temporary_Larval_Habitat), y=initial_prev)) +
   geom_point() +
   facet_wrap(~Site_Name)
 
-int_data <- lapply(c("itn", "irs", "act"), function(dirname){
-  
-  files <- list.files(file.path(main_dir, dirname), full.names = T)
-  
-  subdata <- lapply(files, fread)
-  subdata <- rbindlist(subdata, fill=T)
-  
-  int_name <- toupper(dirname)
-  subdata[, Intervention:=int_name]
-  setnames(subdata, paste0(int_name, "_Coverage"), "Coverage")
-   
-  
-  return(subdata)
-})
+files <- list.files(file.path(main_dir, "interactions"), full.names = T)
 
-int_data <- rbindlist(int_data, fill=T)
-int_data[Intervention=="ITN" & is.na(Hates_Nets), Hates_Nets:=0]
+all_data <- lapply(files, fread)
+all_data <- rbindlist(all_data, fill=T)
+all_data[, Intervention:=""]
 
-int_data <- merge(int_data, initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
-int_data <- int_data[Coverage!=0] # UGH
 
-int_data[, Run_Number:=factor(Run_Number)]
-int_data[, Coverage:=factor(Coverage)]
-int_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage, Hates_Nets, ACT_HS_Rate)]
-int_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage, Hates_Nets, ACT_HS_Rate)]
+for (int in c("ITN", "IRS", "ACT")){
+  varname = paste0(int, "_Coverage")
+  all_data[get(varname)!=0, Intervention:= paste0(Intervention, int, " ", get(varname), "; ") ]
+}
 
-write.csv(int_data, file=file.path(main_dir, "lookup_ind_ints_het_biting.csv"), row.names = F)
+all_data[Intervention=="", Intervention:="None"]
+all_data <- merge(all_data, initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
+
+all_data[, Run_Number:=factor(Run_Number)]
+all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
+all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
+
+write.csv(all_data, file=file.path(main_dir, "interactions", "lookup_full_interactions.csv"), row.names = F)
+
+
+
+
 
 ggplot(int_data[Intervention=="ACT" & Site_Name=="martae"], aes(x=initial_prev, y=final_prev, color=Coverage)) +
   geom_line(aes(group=interaction(Coverage, Run_Number)), alpha=0.25) +
