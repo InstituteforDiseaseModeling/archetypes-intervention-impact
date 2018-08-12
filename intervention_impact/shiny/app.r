@@ -3,6 +3,7 @@
 
 library(shiny)
 library(data.table)
+library(rsconnect)
 library(ggplot2)
 
 theme_set(theme_minimal(base_size = 18))
@@ -10,6 +11,8 @@ theme_set(theme_minimal(base_size = 18))
 # main_dir <- file.path(Sys.getenv("USERPROFILE"), 
 #                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
 data <- fread(file.path("data", "lookup_full_interactions.csv"))
+
+data[, names:=gsub("[0-9]", "", Intervention)]
 
 ui <- fluidPage(
   
@@ -66,7 +69,7 @@ ui <- fluidPage(
                         h3("Include Interactions"),
                         choices=list("Yes"=T,
                                      "No"=F),
-                        selected=F),
+                        selected=T),
            radioButtons("random_seeds",
                         h3("Show All Runs"),
                         choices=list("Yes"=T,
@@ -93,9 +96,9 @@ server <- function(input, output){
       }
       combos[label=="", label:="None"]
       
-      
       subset <- data[(Intervention %in% combos$label) &
-                      (Site_Name %in% input$site)]
+                      (Site_Name %in% input$site)
+                     ]
       
     }else{
       subset <- data[((ITN_Coverage %in% input$ITN & IRS_Coverage==0 & ACT_Coverage==0) |
@@ -104,14 +107,24 @@ server <- function(input, output){
                        (Site_Name %in% input$site)]
     }
     
+    # set color order
+    for_colors <- subset[x_Temporary_Larval_Habitat== unique(subset$x_Temporary_Larval_Habitat)[25] &
+                           Run_Number==0 &
+                           Site_Name==input$site[1] ]
+    for_colors <- for_colors[order(mean_final, decreasing=T)]
+    
+    subset[, Intervention:= factor(Intervention, levels=for_colors$Intervention)]
+    
     subset
+    
   })
   
   
   
   output$curves <- renderPlot({
     out_plot <- ggplot(plotData(), aes(x=mean_initial, y=mean_final, color=Intervention)) +
-                  geom_line(size=1) +
+                  geom_line(aes(linetype=names), size=1) +
+                  scale_linetype(guide="none") + 
                   geom_abline() + 
                   facet_wrap(~Site_Name) +
                   labs(x="Initial Prevalence",
