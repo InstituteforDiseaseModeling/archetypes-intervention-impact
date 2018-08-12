@@ -20,7 +20,7 @@ from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "3dc6771b-0291-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -28,8 +28,8 @@ new_inputs = False
 
 # Serialization
 if run_type == "burnin":
-    years = 10
-    exp_name = "MAP_II_Burnin_2"
+    years = 13
+    exp_name = "MAP_II_Burnin_Test_13yr"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -56,7 +56,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=0,
+                                    Enable_Default_Reporting=1,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),

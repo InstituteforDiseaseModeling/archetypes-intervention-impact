@@ -15,6 +15,22 @@ main_dir <- file.path(Sys.getenv("USERPROFILE"),
 
 
 initial <- fread(file.path(main_dir, "initial", "initial_het_biting.csv"))
+initial_longer <- fread(file.path(main_dir, "initial", "initial_longer_burnin.csv"))
+setnames(initial_longer, "initial_prev", "initial_prev_13yr")
+initial_compare <- merge(initial, initial_longer, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"))
+initial_compare[, prev_diff:=initial_prev_13yr - initial_prev]
+
+ggplot(initial_compare, aes(x=initial_prev, y=initial_prev_13yr)) +
+  geom_point() + 
+  geom_abline() + 
+  facet_wrap(~Site_Name)
+
+ggplot(initial_compare[initial_prev<0.3], aes(x=prev_diff)) +
+  geom_density(aes(fill=Site_Name, color=Site_Name), alpha=0.5) +
+  geom_vline(xintercept=0) +
+  facet_wrap(~Site_Name)
+
+
 # explore distribution of initial prevalences
 ggplot(initial, aes(x=log10(x_Temporary_Larval_Habitat), y=initial_prev)) +
   geom_point() +
