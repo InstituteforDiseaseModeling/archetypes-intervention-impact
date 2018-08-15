@@ -20,21 +20,21 @@ from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
-burnin_id = "3dc6771b-0291-e811-a2c0-c4346bcb7275"
-intervention_coverages = [0, 20, 40, 60, 80]
+run_type = "intervention"  # set to "burnin" or "intervention"
+burnin_id = "ada025b1-4ea0-e811-a2c0-c4346bcb7275"
+intervention_coverages = [0]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
 new_inputs = False
 
 # Serialization
 if run_type == "burnin":
-    years = 13
-    exp_name = "MAP_II_Burnin_Test_13yr"
+    years = 10
+    exp_name = "MAP_II_Burnin_test_enable_risk"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "MAP_II_Full_Int_Sweep"
+    exp_name = "MAP_II_Test_Demog_Het_Biting"
     serialize = False
     pull_from_serialization = True
 else:
@@ -57,6 +57,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
                                     Enable_Default_Reporting=1,
+                                    Enable_Demographics_Risk=1,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
@@ -76,7 +77,7 @@ cb.update_params({"Disable_IP_Whitelist": 1,
                   "Enable_Property_Output": 0})
 
 # add hetero biting
-change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
+# change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
@@ -90,6 +91,8 @@ def set_site_id(cb, asset_collection):
     return {"Input_collection": str(asset_collection.id)}
 
 if __name__=="__main__":
+
+    SetupParser.init()
 
     # collect site-specific data to pass to builder functions
     COMPS_login("https://comps.idmod.org")
@@ -128,7 +131,6 @@ if __name__=="__main__":
                                            row.proportion > 0}
 
     # builders
-    SetupParser.init()
 
     if pull_from_serialization:
 
@@ -139,8 +141,8 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        # df = df.query("Site_Name=='moine' & x_Temporary_Larval_Habitat>10 & x_Temporary_Larval_Habitat<11 & Run_Number==9")
-
+        # df = df.query("Site_Name=='aba' &  Run_Number==7")
+        print("where am I slow?")
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
@@ -173,6 +175,7 @@ if __name__=="__main__":
             for act_cov in intervention_coverages
 
         ])
+        print("am I slow here?")
     else:
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
@@ -183,16 +186,17 @@ if __name__=="__main__":
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"]),
         ]
-            for run_num in range(10)
-            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for site_name in sites["name"]
+            for run_num in range(1)
+            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for hab_exp in [-1,0,1]
+            for site_name in  sites["name"]
         ])
 
     run_sim_args = {"config_builder": cb,
                     "exp_name": exp_name,
                     "exp_builder": builder}
 
-
+    print("or am I slow at the end?")
     em = ExperimentManagerFactory.from_cb(cb)
     em.run_simulations(**run_sim_args)
 
