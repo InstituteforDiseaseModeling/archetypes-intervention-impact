@@ -59,7 +59,7 @@
             "PrevalenceDistributionFlag": 1,
             "PrevalenceDistribution1": 0.13,
             "PrevalenceDistribution2": 0.15,
-            "RiskDistributionFlag": 0,
+            "RiskDistributionFlag": 3,
             "RiskDistribution2": 0,
             "MigrationHeterogeneityDistribution1": 1,
             "ImmunityDistributionFlag": 0,
@@ -193,7 +193,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "Gridded world grump30arcsec",
-        "DateCreated": "2018-07-11 07:16:54.107245",
+        "DateCreated": "2018-08-14 15:50:26.419858",
         "NodeCount": 1,
         "Resolution": 30
     }

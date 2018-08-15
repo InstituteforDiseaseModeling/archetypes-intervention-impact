@@ -11,12 +11,8 @@ from dtk.interventions.property_change import change_individual_property
 
 def assign_net_ip(cb, hates_net_prop):
     change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop),
-    # change_individual_property(cb, "NetUsage", "LovesNets", coverage=1 - hates_net_prop),
     change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop,
-          trigger_condition_list=["Births"]),
-    # change_individual_property(cb, "NetUsage", "LovesNets", coverage=1 - hates_net_prop,
-    #       trigger_condition_list=["Births"])
-
+          trigger_condition_list=["Births"])
     return {"Hates_Nets": hates_net_prop}
 
 def site_simulation_setup(cb, site_name, species_details, vectors, max_larval_capacity=4e8):

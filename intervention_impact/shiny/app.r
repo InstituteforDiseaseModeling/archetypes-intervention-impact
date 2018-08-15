@@ -10,9 +10,16 @@ theme_set(theme_minimal(base_size = 18))
 
 # main_dir <- file.path(Sys.getenv("USERPROFILE"), 
 #                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
-data <- fread(file.path("data", "lookup_full_interactions.csv"))
+# data <- fread(file.path("data", "lookup_full_interactions.csv"))
+data <- fread(file.path("data", "lookup_just_burnin.csv"))
 
 data[, names:=gsub("[0-9]", "", Intervention)]
+
+int_choices = list("5"=0.05,
+                   "20"=0.2,
+                   "40"=0.4,
+                   "60"=0.6,
+                   "80"=0.8)
 
 ui <- fluidPage(
   
@@ -37,30 +44,21 @@ ui <- fluidPage(
     column(2, 
            checkboxGroupInput("ITN",
                               h3("ITN (%)"),
-                              choices=list("20"=0.2,
-                                           "40"=0.4,
-                                           "60"=0.6,
-                                           "80"=0.8),
+                              choices=int_choices,
                               selected=0.2)
            ),
     
     column(2,
            checkboxGroupInput("IRS",
                               h3("IRS (%)"),
-                              choices=list("20"=0.2,
-                                           "40"=0.4,
-                                           "60"=0.6,
-                                           "80"=0.8),
+                              choices=int_choices,
                               selected=0.4)
     ),
     
     column(2,
            checkboxGroupInput("ACT",
                               h3("ACT (%)"),
-                              choices=list("20"=0.2,
-                                           "40"=0.4,
-                                           "60"=0.6,
-                                           "80"=0.8),
+                              choices=int_choices,
                               selected=0.6)
     ),
     
