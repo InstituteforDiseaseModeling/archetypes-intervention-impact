@@ -20,11 +20,11 @@ from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
-burnin_id = "3dc6771b-0291-e811-a2c0-c4346bcb7275"
+run_type = "intervention"  # set to "burnin" or "intervention"
+burnin_id = "ada025b1-4ea0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = True
+new_inputs = False
 
 # Serialization
 if run_type == "burnin":
@@ -34,7 +34,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "MAP_II_Test_New_Het_Biting"
+    exp_name = "MAP_II_Test_Demog_Het_Biting"
     serialize = False
     pull_from_serialization = True
 else:
@@ -141,8 +141,8 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        df = df.query("Site_Name=='aba' &  Run_Number==7")
-
+        # df = df.query("Site_Name=='aba' &  Run_Number==7")
+        print("where am I slow?")
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
@@ -175,6 +175,7 @@ if __name__=="__main__":
             for act_cov in intervention_coverages
 
         ])
+        print("am I slow here?")
     else:
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
@@ -195,7 +196,7 @@ if __name__=="__main__":
                     "exp_name": exp_name,
                     "exp_builder": builder}
 
-
+    print("or am I slow at the end?")
     em = ExperimentManagerFactory.from_cb(cb)
     em.run_simulations(**run_sim_args)
 

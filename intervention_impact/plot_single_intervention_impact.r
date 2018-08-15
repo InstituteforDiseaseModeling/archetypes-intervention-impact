@@ -14,17 +14,17 @@ main_dir <- file.path(Sys.getenv("USERPROFILE"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
 
 
-initial <- fread(file.path(main_dir, "initial", "initial_het_biting.csv"))
+initial <- fread(file.path(main_dir, "initial", "test_het_in_demog.csv"))
 
-# initial_longer <- fread(file.path(main_dir, "initial", "initial_longer_burnin.csv"))
+initial_longer <- fread(file.path(main_dir, "interactions", "test_no_ints_het_in_demog.csv"))
 # setnames(initial_longer, "initial_prev", "initial_prev_13yr")
-# initial_compare <- merge(initial, initial_longer, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"))
+initial_compare <- merge(initial, initial_longer, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"))
 # initial_compare[, prev_diff:=initial_prev_13yr - initial_prev]
-# 
-# ggplot(initial_compare, aes(x=initial_prev, y=initial_prev_13yr)) +
-#   geom_point() + 
-#   geom_abline() + 
-#   facet_wrap(~Site_Name)
+
+ggplot(initial_compare, aes(x=initial_prev, y=final_prev)) +
+  geom_point() +
+  geom_abline() +
+  facet_wrap(~Site_Name)
 # 
 # ggplot(initial_compare[initial_prev<0.3], aes(x=prev_diff)) +
 #   geom_density(aes(fill=Site_Name, color=Site_Name), alpha=0.5) +
