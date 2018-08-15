@@ -21,15 +21,17 @@ from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "ada025b1-4ea0-e811-a2c0-c4346bcb7275"
+burnin_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
+asset_exp_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
 new_inputs = False
 
 # Serialization
+print("setting up")
 if run_type == "burnin":
-    years = 10
-    exp_name = "MAP_II_Burnin_test_enable_risk"
+    years = 15
+    exp_name = "MAP_II_Burnin_test_improvements"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -86,9 +88,13 @@ if serialize:
 add_summary_report(cb)
 # add_event_counter_report(cb, ["Bednet_Using"])
 
-def set_site_id(cb, asset_collection):
-    cb.set_input_collection(asset_collection)
-    return {"Input_collection": str(asset_collection.id)}
+def set_site_id(cb, asset_collection, use_assets=True):
+
+    if use_assets:
+        cb.set_input_collection(asset_collection)
+        return {"Input_collection": str(asset_collection.id)}
+    else:
+        return {"Input_collection": "None"}
 
 if __name__=="__main__":
 
@@ -98,6 +104,7 @@ if __name__=="__main__":
     COMPS_login("https://comps.idmod.org")
     sites = pd.read_csv("site_details.csv")
 
+    print("finding collection ids and vector details")
     # collection ids:
     cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
     cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
@@ -107,6 +114,10 @@ if __name__=="__main__":
     with open("species_details.json") as f:
         species_details = json.loads(f.read())
 
+    print("retrieving asset experiment")
+    asset_expt = ExperimentDataStore.get_most_recent_experiment(asset_exp_id)
+    asset_df = pd.DataFrame([x.tags for x in asset_expt.simulations])
+
     for site_name in sites["name"]:
         site_dir = os.path.join("sites", site_name)
         site_info[site_name] = {}
@@ -114,7 +125,7 @@ if __name__=="__main__":
         # input files
         if new_inputs:
             print("generating input files for " + site_name)
-            generate_input_files(site_name, pop=2000, overwrite=True)
+            generate_input_files(site_name, pop=3000, overwrite=True)
 
         # make sure net overlay exists
         overlay_fname = "demographics_{name}_hatenets_0.json".format(name=site_name)
@@ -123,7 +134,7 @@ if __name__=="__main__":
 
         # asset collections
         site_info[site_name]["asset_collection"] = get_asset_collection(
-            sites.query('name==@site_name')['asset_id'].iloc[0])
+            asset_df.query('Site_Name==@site_name')['input_collection_id'].unique()[0])
 
         # Find vector proportions for each vector in our site
         vectors = pd.read_csv(os.path.join(site_dir, "vector_proportions.csv"))
@@ -133,8 +144,10 @@ if __name__=="__main__":
     # builders
 
     if pull_from_serialization:
+        print("building from pickup")
 
         # serialization
+        print("retrieving burnin")
         expt = ExperimentDataStore.get_most_recent_experiment(burnin_id)
 
         df = pd.DataFrame([x.tags for x in expt.simulations])
@@ -142,7 +155,6 @@ if __name__=="__main__":
 
         # temp for testing
         # df = df.query("Site_Name=='aba' &  Run_Number==7")
-        print("where am I slow?")
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
@@ -175,13 +187,13 @@ if __name__=="__main__":
             for act_cov in intervention_coverages
 
         ])
-        print("am I slow here?")
     else:
+        print("building burnin")
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Run_Number": run_num,
                 "x_Temporary_Larval_Habitat":10 ** hab_exp}),
-            ModFn(set_site_id, asset_collection=site_info[site_name]["asset_collection"]),
+            ModFn(set_site_id, asset_collection=site_info[site_name]["asset_collection"], use_assets=not new_inputs),
             ModFn(site_simulation_setup, site_name=site_name,
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"]),
@@ -196,7 +208,6 @@ if __name__=="__main__":
                     "exp_name": exp_name,
                     "exp_builder": builder}
 
-    print("or am I slow at the end?")
     em = ExperimentManagerFactory.from_cb(cb)
     em.run_simulations(**run_sim_args)
 
