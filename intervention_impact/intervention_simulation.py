@@ -9,8 +9,6 @@ from simtools.SetupParser import SetupParser
 from simtools.Utilities.COMPSUtilities import get_asset_collection
 
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
-from dtk.interventions.outbreakindividual import recurring_outbreak
-from dtk.interventions.biting_risk import change_biting_risk
 from simtools.ModBuilder import ModBuilder, ModFn
 from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
@@ -20,7 +18,7 @@ from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
 asset_exp_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0]
@@ -31,12 +29,12 @@ new_inputs = False
 print("setting up")
 if run_type == "burnin":
     years = 15
-    exp_name = "MAP_II_Burnin_test_improvements"
+    sweep_name = "MAP_II_Burnin_3"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "MAP_II_Test_Demog_Het_Biting"
+    sweep_name = "MAP_II_Test_Demog_Het_Biting"
     serialize = False
     pull_from_serialization = True
 else:
@@ -49,7 +47,7 @@ SetupParser.default_block = location
 
 cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Simulation_Duration=int(365*years),
-                                    Config_Name=exp_name,
+                                    Config_Name=sweep_name,
                                     Birth_Rate_Dependence="FIXED_BIRTH_RATE",
                                     Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX",
                                     Num_Cores=1,
@@ -58,7 +56,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=1,
+                                    Enable_Default_Reporting=0,
                                     Enable_Demographics_Risk=1,
 
                                     # ento from prashanth
@@ -77,9 +75,6 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
 
 cb.update_params({"Disable_IP_Whitelist": 1,
                   "Enable_Property_Output": 0})
-
-# add hetero biting
-# change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
@@ -150,43 +145,66 @@ if __name__=="__main__":
         print("retrieving burnin")
         expt = ExperimentDataStore.get_most_recent_experiment(burnin_id)
 
-        df = pd.DataFrame([x.tags for x in expt.simulations])
-        df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
+        df_all = pd.DataFrame([x.tags for x in expt.simulations])
+        df_all["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
         # df = df.query("Site_Name=='aba' &  Run_Number==7")
-        builder = ModBuilder.from_list([[
-            ModFn(DTKConfigBuilder.update_params, {
-                "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
-                "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
-                "Run_Number": df["Run_Number"][x],
-                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
-            ModFn(set_site_id, asset_collection=site_info[df["Site_Name"][x]]["asset_collection"]),
-            ModFn(site_simulation_setup, site_name=df["Site_Name"][x],
-                                         species_details=species_details,
-                                         vectors=site_info[df["Site_Name"][x]]["vectors"]),
 
-            ModFn(add_annual_itns, year_count=years,
-                                   n_rounds=1,
-                                   coverage=itn_cov / 100,
-                                   discard_halflife=180,
-                                   start_day=5,
-                                   IP=[{"NetUsage":"LovesNets"}]
-                  ),
-            ModFn(assign_net_ip, hates_net_prop),
-            ModFn(add_irs_group, coverage=irs_cov/100,
-                                 decay=180,
-                                 start_days=[365*start for start in range(years)]),
-            ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
+        # split into suite of experiments
+        em = ExperimentManagerFactory.init()
+        s = em.create_suite(sweep_name)
 
-        ]
-            for x in df.index
-            for itn_cov in intervention_coverages
-            for hates_net_prop in net_hating_props
-            for irs_cov in intervention_coverages
-            for act_cov in intervention_coverages
+        for site_name in sites["name"]:
 
-        ])
+            # add experiment to suite
+            exp_name = "{suite}_{site}".format(suite=sweep_name, site=site_name)
+            em.create_experiment(exp_name, suite_id=s)
+
+            df = df_all.query("Site_Name==@site_name")
+
+            builder = ModBuilder.from_list([[
+                ModFn(DTKConfigBuilder.update_params, {
+                    "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
+                    "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
+                    "Run_Number": df["Run_Number"][x],
+                    "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
+                ModFn(set_site_id, asset_collection=site_info[df["Site_Name"][x]]["asset_collection"]),
+                ModFn(site_simulation_setup, site_name=df["Site_Name"][x],
+                                             species_details=species_details,
+                                             vectors=site_info[df["Site_Name"][x]]["vectors"]),
+
+                ModFn(add_annual_itns, year_count=years,
+                                       n_rounds=1,
+                                       coverage=itn_cov / 100,
+                                       discard_halflife=180,
+                                       start_day=5,
+                                       IP=[{"NetUsage":"LovesNets"}]
+                      ),
+                ModFn(assign_net_ip, hates_net_prop),
+                ModFn(add_irs_group, coverage=irs_cov/100,
+                                     decay=180,
+                                     start_days=[365*start for start in range(years)]),
+                ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
+
+            ]
+                for x in df.index
+                for itn_cov in intervention_coverages
+                for hates_net_prop in net_hating_props
+                for irs_cov in intervention_coverages
+                for act_cov in intervention_coverages
+
+            ])
+
+            ## what do I do here?
+            run_sim_args = {"config_builder": cb,
+                            "exp_name": exp_name,
+                            "exp_builder": builder}
+
+            em = ExperimentManagerFactory.from_cb(cb)
+            em.run_simulations(**run_sim_args)
+
+
     else:
         print("building burnin")
         builder = ModBuilder.from_list([[
@@ -198,16 +216,15 @@ if __name__=="__main__":
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"]),
         ]
-            for run_num in range(1)
-            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for hab_exp in [-1,0,1]
+            for run_num in range(10)
+            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
             for site_name in  sites["name"]
         ])
 
-    run_sim_args = {"config_builder": cb,
-                    "exp_name": exp_name,
-                    "exp_builder": builder}
+        run_sim_args = {"config_builder": cb,
+                        "exp_name": sweep_name,
+                        "exp_builder": builder}
 
-    em = ExperimentManagerFactory.from_cb(cb)
-    em.run_simulations(**run_sim_args)
+        em = ExperimentManagerFactory.from_cb(cb)
+        em.run_simulations(**run_sim_args)
 
