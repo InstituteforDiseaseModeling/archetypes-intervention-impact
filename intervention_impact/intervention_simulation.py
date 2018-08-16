@@ -18,7 +18,7 @@ from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
+run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
 asset_exp_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0]
@@ -159,7 +159,7 @@ if __name__=="__main__":
 
             # add experiment to suite
             exp_name = "{suite}_{site}".format(suite=sweep_name, site=site_name)
-            em.create_experiment(exp_name, suite_id=s)
+            # em.create_experiment(exp_name, suite_id=s)
 
             df = df_all.query("Site_Name==@site_name")
 
@@ -196,8 +196,8 @@ if __name__=="__main__":
 
             ])
 
-            ## what do I do here?
             run_sim_args = {"config_builder": cb,
+                            "suite_id": s,
                             "exp_name": exp_name,
                             "exp_builder": builder}
 
@@ -216,8 +216,9 @@ if __name__=="__main__":
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"]),
         ]
-            for run_num in range(10)
-            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for run_num in range(1)
+            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for hab_exp in [2]
             for site_name in  sites["name"]
         ])
 
