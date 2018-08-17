@@ -50,7 +50,8 @@ if __name__ == "__main__":
     run_type = "exp"
 
     if run_type=="exp":
-        exps = {"initial": {"test_het_in_demog": "ada025b1-4ea0-e811-a2c0-c4346bcb7275"}}
+        exps = {"initial": {"initial_burnin_3": "b11481d8-dca0-e811-a2c0-c4346bcb7275"},
+                "interactions": {"no_ints_burnin_3":"1115d5ac-11a1-e811-a2c0-c4346bcb7275"}}
 
         for subfolder, int_list in exps.items():
             colname = "initial_prev" if subfolder == "initial" else "final_prev"

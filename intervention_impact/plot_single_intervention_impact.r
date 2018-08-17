@@ -14,9 +14,9 @@ main_dir <- file.path(Sys.getenv("USERPROFILE"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
 
 
-initial <- fread(file.path(main_dir, "initial", "test_het_in_demog.csv"))
+initial <- fread(file.path(main_dir, "initial", "initial_burnin_3.csv"))
 
-initial_longer <- fread(file.path(main_dir, "interactions", "test_no_ints_het_in_demog.csv"))
+initial_longer <- fread(file.path(main_dir, "interactions", "no_ints_burnin_3.csv"))
 # setnames(initial_longer, "initial_prev", "initial_prev_13yr")
 initial_compare <- merge(initial, initial_longer, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"))
 # initial_compare[, prev_diff:=initial_prev_13yr - initial_prev]
