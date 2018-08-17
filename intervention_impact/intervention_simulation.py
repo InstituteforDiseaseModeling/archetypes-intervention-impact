@@ -9,8 +9,6 @@ from simtools.SetupParser import SetupParser
 from simtools.Utilities.COMPSUtilities import get_asset_collection
 
 from dtk.utils.core.DTKConfigBuilder import DTKConfigBuilder
-from dtk.interventions.outbreakindividual import recurring_outbreak
-from dtk.interventions.biting_risk import change_biting_risk
 from simtools.ModBuilder import ModBuilder, ModFn
 from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
@@ -21,9 +19,9 @@ from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
+burnin_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 asset_exp_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
-intervention_coverages = [0]
+intervention_coverages = [0, 20, 40, 60, 80]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
 new_inputs = False
 
@@ -31,12 +29,12 @@ new_inputs = False
 print("setting up")
 if run_type == "burnin":
     years = 15
-    exp_name = "MAP_II_Burnin_test_improvements"
+    sweep_name = "MAP_II_Burnin_3"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    exp_name = "MAP_II_Test_Demog_Het_Biting"
+    sweep_name = "MAP_II_All_Intervention_Sweep_2"
     serialize = False
     pull_from_serialization = True
 else:
@@ -49,7 +47,7 @@ SetupParser.default_block = location
 
 cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Simulation_Duration=int(365*years),
-                                    Config_Name=exp_name,
+                                    Config_Name=sweep_name,
                                     Birth_Rate_Dependence="FIXED_BIRTH_RATE",
                                     Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX",
                                     Num_Cores=1,
@@ -58,7 +56,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=1,
+                                    Enable_Default_Reporting=0,
                                     Enable_Demographics_Risk=1,
 
                                     # ento from prashanth
@@ -77,9 +75,6 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
 
 cb.update_params({"Disable_IP_Whitelist": 1,
                   "Enable_Property_Output": 0})
-
-# add hetero biting
-# change_biting_risk(cb, risk_config={'Risk_Distribution_Type': 'EXPONENTIAL_DURATION', 'Exponential_Mean': 1})
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
@@ -155,6 +150,19 @@ if __name__=="__main__":
 
         # temp for testing
         # df = df.query("Site_Name=='aba' &  Run_Number==7")
+
+        # split into suite of experiments
+        # em = ExperimentManagerFactory.init()
+        # s = em.create_suite(sweep_name)
+
+        # for site_name in sites["name"]:
+
+            # add experiment to suite
+            # exp_name = "{suite}_{site}".format(suite=sweep_name, site=site_name)
+            # em.create_experiment(exp_name, suite_id=s)
+
+            # df = df_all.query("Site_Name==@site_name")
+
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
@@ -187,6 +195,16 @@ if __name__=="__main__":
             for act_cov in intervention_coverages
 
         ])
+
+            # run_sim_args = {"config_builder": cb,
+            #                 "suite_id": s,
+            #                 "exp_name": exp_name,
+            #                 "exp_builder": builder}
+            #
+            # em = ExperimentManagerFactory.from_cb(cb)
+            # em.run_simulations(**run_sim_args)
+
+
     else:
         print("building burnin")
         builder = ModBuilder.from_list([[
@@ -200,12 +218,12 @@ if __name__=="__main__":
         ]
             for run_num in range(1)
             # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for hab_exp in [-1,0,1]
+            for hab_exp in [2]
             for site_name in  sites["name"]
         ])
 
     run_sim_args = {"config_builder": cb,
-                    "exp_name": exp_name,
+                    "exp_name": sweep_name,
                     "exp_builder": builder}
 
     em = ExperimentManagerFactory.from_cb(cb)
