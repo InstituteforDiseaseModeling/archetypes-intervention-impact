@@ -14,12 +14,14 @@ from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
 
 from malaria.reports.MalariaReport import add_summary_report, add_event_counter_report
+from simtools.Utilities.Experiments import retrieve_experiment
+
 from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
+burnin_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
 asset_exp_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -34,7 +36,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_All_Intervention_Sweep_2"
+    sweep_name = "MAP_II_test_het_biting"
     serialize = False
     pull_from_serialization = True
 else:
@@ -110,7 +112,7 @@ if __name__=="__main__":
         species_details = json.loads(f.read())
 
     print("retrieving asset experiment")
-    asset_expt = ExperimentDataStore.get_most_recent_experiment(asset_exp_id)
+    asset_expt = retrieve_experiment(asset_exp_id)
     asset_df = pd.DataFrame([x.tags for x in asset_expt.simulations])
 
     for site_name in sites["name"]:
@@ -143,7 +145,7 @@ if __name__=="__main__":
 
         # serialization
         print("retrieving burnin")
-        expt = ExperimentDataStore.get_most_recent_experiment(burnin_id)
+        expt = retrieve_experiment(burnin_id)
 
         df = pd.DataFrame([x.tags for x in expt.simulations])
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
@@ -151,17 +153,17 @@ if __name__=="__main__":
         # temp for testing
         # df = df.query("Site_Name=='aba' &  Run_Number==7")
 
-        # split into suite of experiments
-        # em = ExperimentManagerFactory.init()
-        # s = em.create_suite(sweep_name)
-
+        # # split into suite of experiments
+        # suite_em = ExperimentManagerFactory.init()
+        # s = suite_em.create_suite(sweep_name)
+        #
         # for site_name in sites["name"]:
-
-            # add experiment to suite
-            # exp_name = "{suite}_{site}".format(suite=sweep_name, site=site_name)
-            # em.create_experiment(exp_name, suite_id=s)
-
-            # df = df_all.query("Site_Name==@site_name")
+        #
+        #     # add experiment to suite
+        #     exp_name = "{suite}_{site}".format(suite=sweep_name, site=site_name)
+        #     # em.create_experiment(exp_name, suite_id=s)
+        #
+        #     df = df_all.query("Site_Name==@site_name")
 
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {

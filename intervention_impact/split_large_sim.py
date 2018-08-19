@@ -4,9 +4,9 @@ from simtools.ExperimentManager.ExperimentManagerFactory import ExperimentManage
 from simtools.SetupParser import SetupParser
 from simtools.Utilities.COMPSUtilities import get_experiment_by_id, get_simulations_from_big_experiments
 
-EXPERIMENT_ID = "3421c801-1b96-e811-a2c0-c4346bcb7275"
+EXPERIMENT_ID = "c6ddc170-19a1-e811-a2c0-c4346bcb7275"
 SIMULATIONS_PER_EXPERIMENT = 62500
-SUITE_NAME = "my_suite"
+SUITE_NAME = "MAP_Intervention_Sweep"
 
 
 if __name__ == "__main__":

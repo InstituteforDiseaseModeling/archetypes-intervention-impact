@@ -6,6 +6,7 @@ from simtools.SetupParser import SetupParser
 from simtools.Analysis.AnalyzeManager import AnalyzeManager
 from simtools.Analysis.BaseAnalyzers import BaseAnalyzer
 from simtools.Utilities.COMPSUtilities import exps_for_suite_id
+from simtools.Utilities.COMPSUtilities import COMPS_login
 
 
 class PfPRAnalyzer(BaseAnalyzer):
@@ -50,8 +51,15 @@ if __name__ == "__main__":
     run_type = "exp"
 
     if run_type=="exp":
-        exps = {"initial": {"initial_burnin_3": "b11481d8-dca0-e811-a2c0-c4346bcb7275"},
-                "interactions": {"no_ints_burnin_3":"1115d5ac-11a1-e811-a2c0-c4346bcb7275"}}
+        exps = {"interactions/version_2": {"MAP_Intervention_Sweep_0":"547b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           "MAP_Intervention_Sweep_1":"557b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           "MAP_Intervention_Sweep_2":"567b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           "MAP_Intervention_Sweep_3":"577b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           "MAP_Intervention_Sweep_4":"587b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           "MAP_Intervention_Sweep_5":"5a7b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           "MAP_Intervention_Sweep_6":"5b7b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           "MAP_Intervention_Sweep_7":"c6ddc170-19a1-e811-a2c0-c4346bcb7275"
+                                           }}
 
         for subfolder, int_list in exps.items():
             colname = "initial_prev" if subfolder == "initial" else "final_prev"
@@ -73,9 +81,10 @@ if __name__ == "__main__":
 
     elif run_type=="suite":
 
-        exps = exps_for_suite_id("d3949f66-ff9a-e811-a2c0-c4346bcb7275")
+        exps = exps_for_suite_id("537b9041-0fa3-e811-a2c0-c4346bcb7275")
 
-        for exp in [exps[7]]:
+        for exp in exps:
+            print(exp)
             am = AnalyzeManager(exp.id,
                                 analyzers=PfPRAnalyzer(expname=exp.name,
                                                        colname="final_prev",
@@ -89,4 +98,5 @@ if __name__ == "__main__":
                                                                         ]
                                                        ),
                                 force_analyze=True)
-            am.analyze()
+            # am.analyze()
+            print(am.experiments)
