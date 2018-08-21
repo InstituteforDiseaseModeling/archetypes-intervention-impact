@@ -51,19 +51,21 @@ if __name__ == "__main__":
     run_type = "exp"
 
     if run_type=="exp":
-        exps = {"interactions/version_2": {"MAP_Intervention_Sweep_0":"547b9041-0fa3-e811-a2c0-c4346bcb7275",
-                                           "MAP_Intervention_Sweep_1":"557b9041-0fa3-e811-a2c0-c4346bcb7275",
-                                           "MAP_Intervention_Sweep_2":"567b9041-0fa3-e811-a2c0-c4346bcb7275",
-                                           "MAP_Intervention_Sweep_3":"577b9041-0fa3-e811-a2c0-c4346bcb7275",
-                                           "MAP_Intervention_Sweep_4":"587b9041-0fa3-e811-a2c0-c4346bcb7275",
-                                           "MAP_Intervention_Sweep_5":"5a7b9041-0fa3-e811-a2c0-c4346bcb7275",
-                                           "MAP_Intervention_Sweep_6":"5b7b9041-0fa3-e811-a2c0-c4346bcb7275",
+        exps = {"interactions/version_2": {
+                                            "MAP_Intervention_Sweep_0":"547b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           # "MAP_Intervention_Sweep_1":"557b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           # "MAP_Intervention_Sweep_2":"567b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           # "MAP_Intervention_Sweep_3":"577b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           # "MAP_Intervention_Sweep_4":"587b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           # "MAP_Intervention_Sweep_5":"5a7b9041-0fa3-e811-a2c0-c4346bcb7275",
+                                           # "MAP_Intervention_Sweep_6":"5b7b9041-0fa3-e811-a2c0-c4346bcb7275",
                                            "MAP_Intervention_Sweep_7":"c6ddc170-19a1-e811-a2c0-c4346bcb7275"
                                            }}
 
         for subfolder, int_list in exps.items():
             colname = "initial_prev" if subfolder == "initial" else "final_prev"
             for int_name, exp_id in int_list.items():
+                print("exp id is " + exp_id)
                 am = AnalyzeManager(exp_id,
                                     analyzers=PfPRAnalyzer(expname=int_name,
                                                            colname=colname,
@@ -77,7 +79,8 @@ if __name__ == "__main__":
                                                                             ]
                                                            ),
                                     force_analyze=True)
-                am.analyze()
+                # am.analyze()
+                print(am.experiments)
 
     elif run_type=="suite":
 

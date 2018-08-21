@@ -39,11 +39,10 @@ rPR2R=function(PR, N=1){
 }
 
 PR2R = function(PR, N=100){
-  median(rPR2R(PR,N),na.rm=T)
+  if (PR==0) 0 else median(rPR2R(PR,N),na.rm=T)
 }
 
 
-# 
 # PR<-seq(0,1,length=100)
 # Ro<-rep(NA,length(PR))
 # test <- unlist(lapply(PR, PR2R))
