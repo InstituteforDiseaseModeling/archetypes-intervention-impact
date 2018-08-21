@@ -16,19 +16,15 @@ main_dir <- file.path(Sys.getenv("USERPROFILE"),
 
 initial <- fread(file.path(main_dir, "initial", "initial_burnin_3.csv"))
 
-test_0 <- fread(file.path(main_dir, "interactions", "MAP_Intervention_Sweep_0.csv"))
-test_1 <- fread(file.path(main_dir, "interactions", "MAP_Intervention_Sweep_1.csv"))
-test_7 <- fread(file.path(main_dir, "interactions", "MAP_Intervention_Sweep_7.csv"))
-
 
 # setnames(initial_longer, "initial_prev", "initial_prev_13yr")
-initial_compare <- merge(initial, initial_longer, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"))
+# initial_compare <- merge(initial, initial_longer, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"))
 # initial_compare[, prev_diff:=initial_prev_13yr - initial_prev]
 
-ggplot(initial_compare, aes(x=initial_prev, y=final_prev)) +
-  geom_point() +
-  geom_abline() +
-  facet_wrap(~Site_Name)
+# ggplot(initial_compare, aes(x=initial_prev, y=final_prev)) +
+#   geom_point() +
+#   geom_abline() +
+#   facet_wrap(~Site_Name)
 # 
 # ggplot(initial_compare[initial_prev<0.3], aes(x=prev_diff)) +
 #   geom_density(aes(fill=Site_Name, color=Site_Name), alpha=0.5) +
@@ -41,17 +37,11 @@ ggplot(initial_compare, aes(x=initial_prev, y=final_prev)) +
 #   geom_point() +
 #   facet_wrap(~Site_Name)
 # 
-# files <- list.files(file.path(main_dir, "interactions"), full.names = T)
-# 
-# all_data <- lapply(files, fread)
-# all_data <- rbindlist(all_data, fill=T)
+files <- list.files(file.path(main_dir, "interactions", "version_2"), full.names = T)
 
-# all_data <- fread(file.path(main_dir, "interactions", "test_no_ints.csv"))
-all_data <- fread(file.path(main_dir, "initial", "initial_longer_burnin.csv"))
-setnames(all_data, "initial_prev", "final_prev")
-all_data[, ITN_Coverage:=0]
-all_data[, IRS_Coverage:=0]
-all_data[, ACT_Coverage:=0]
+all_data <- lapply(files, fread)
+all_data <- rbindlist(all_data, fill=T)
+
 all_data[, Intervention:=""]
 
 
@@ -67,7 +57,7 @@ all_data[, Run_Number:=factor(Run_Number)]
 all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
 all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
 
-write.csv(all_data, file=file.path(main_dir, "interactions", "lookup_just_burnin.csv"), row.names = F)
+write.csv(all_data, file=file.path(main_dir, "interactions", "version_2", "lookup_full_interaction.csv"), row.names = F)
 
 
 
