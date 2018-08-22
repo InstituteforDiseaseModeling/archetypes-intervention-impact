@@ -83,8 +83,8 @@ def update_demog(demographics):
     demographics["Defaults"]["IndividualAttributes"]["MortalityDistribution"] = mort_defaults
 
     # impose heterogeneous biting risk here:
-    demographics["Defaults"]["IndividualAttributes"]["RiskDistributionFlag"] = 3
-    demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
+    # demographics["Defaults"]["IndividualAttributes"]["RiskDistributionFlag"] = 3
+    # demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
 
     return demographics
 
