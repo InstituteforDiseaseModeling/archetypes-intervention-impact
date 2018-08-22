@@ -10,13 +10,12 @@ theme_set(theme_minimal(base_size = 18))
 
 # main_dir <- file.path(Sys.getenv("USERPROFILE"), 
 #                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
-# data <- fread(file.path("data", "lookup_full_interactions.csv"))
-data <- fread(file.path("data", "lookup_just_burnin.csv"))
+data <- fread(file.path("data", "lookup_full_interactions_v2.csv"))
+# data <- fread(file.path("data", "lookup_just_burnin.csv"))
 
 data[, names:=gsub("[0-9]", "", Intervention)]
 
-int_choices = list("5"=0.05,
-                   "20"=0.2,
+int_choices = list("20"=0.2,
                    "40"=0.4,
                    "60"=0.6,
                    "80"=0.8)
@@ -106,7 +105,7 @@ server <- function(input, output){
     }
     
     # set color order
-    for_colors <- subset[x_Temporary_Larval_Habitat== unique(subset$x_Temporary_Larval_Habitat)[25] &
+    for_colors <- subset[x_Temporary_Larval_Habitat== unique(subset$x_Temporary_Larval_Habitat)[40] &
                            Run_Number==0 &
                            Site_Name==input$site[1] ]
     for_colors <- for_colors[order(mean_final, decreasing=T)]
@@ -121,7 +120,7 @@ server <- function(input, output){
   
   output$curves <- renderPlot({
     out_plot <- ggplot(plotData(), aes(x=mean_initial, y=mean_final, color=Intervention)) +
-                  geom_line(aes(linetype=names), size=1) +
+                  geom_line(aes(linetype=names), size=1.25) +
                   scale_linetype(guide="none") + 
                   geom_abline() + 
                   facet_wrap(~Site_Name) +

@@ -2,12 +2,13 @@
 library(data.table)
 library(raster)
 library(rasterVis)
+library(colorRamps)
 
 rm(list=ls())
 
 source("pr_to_r0.r")
 
-main_dir <- "/Users/bertozzivill/Desktop/apply_lut_temp"
+in_dir <- "Z:/cubes/Pf_results/MODEL_43/output_rasters/PfPR/Outputs/Summaries/"
 interventions <- c("ITN 0.4; ", "ITN 0.4; IRS 0.4; ", "ITN 0.4; ACT 0.6; ") # todo: remove final space from intervention name
 repro <- T
 
@@ -52,7 +53,7 @@ apply_LUT_to_raster<-function(splObj,inRaster, return_r0=F){
 }
 ##################################################################################################
 
-lut <- fread(file.path(main_dir, "lookup_full_interactions.csv"))
+lut <- fread(file.path("..", "shiny", "data", "lookup_full_interactions_v2.csv"))
 lut <- lut[Intervention %in% interventions]
 
 # view plots-- Karen's is weird at high prev but we shouldn't need it up there.
@@ -62,9 +63,13 @@ lut <- lut[Intervention %in% interventions]
 # }
 
 # read in rasters: PR and clustering
-pr_orig <- raster(file.path(main_dir, "global_PfPR.2016.tif"))
-masks <- raster(file.path(main_dir, "MAP_Regions_Pf_5k.tif"))
-cluster_map <- raster(file.path(main_dir, "clusters_joint_6.tif"))
+pr_orig <- raster(file.path("MODEL43.2015.PR.ALL.rmean.tif"))
+
+masks <- raster("MAP_Regions_Pf_5k.tif")
+cluster_map <- raster("clusters_joint_6.tif")
+# africa counterfactual is smaller than cluster map
+cluster_map <- crop(cluster_map, pr_orig)
+pr_orig <- crop(pr_orig, cluster_map)
 
 mask_values <- list("africa"=1,
                     "americas"=2,
@@ -92,6 +97,9 @@ for (continent in names(mask_values)){
       
       final_mask <- masks == mask_values[[continent]]
       final_mask <- trim(final_mask, values=F)
+      
+      # again, crop mask to smaller africa raster
+      final_mask <- crop(final_mask, pr_orig)
       
     }else{
       continent_mask <- masks == mask_values[[continent]]
