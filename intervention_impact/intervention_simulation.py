@@ -21,11 +21,11 @@ from sweep_functions import *
 
 # variables
 run_type = "burnin"  # set to "burnin" or "intervention"
-burnin_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
-asset_exp_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
+burnin_id = "0e5f7620-60a6-e811-a2c0-c4346bcb7275"
+asset_exp_id = "0e5f7620-60a6-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = True
+new_inputs = False
 
 # Serialization
 print("setting up")
@@ -36,7 +36,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_test_het_biting"
+    sweep_name = "MAP_II_Homo_Burnin_Example_Ints"
     serialize = False
     pull_from_serialization = True
 else:
@@ -100,6 +100,9 @@ if __name__=="__main__":
     # collect site-specific data to pass to builder functions
     COMPS_login("https://comps.idmod.org")
     sites = pd.read_csv("site_details.csv")
+
+    #temp for example
+    sites = sites.query("name=='kananga'")
 
     print("finding collection ids and vector details")
     # collection ids:
@@ -184,17 +187,17 @@ if __name__=="__main__":
                                        IP=[{"NetUsage":"LovesNets"}]
                       ),
                 ModFn(assign_net_ip, hates_net_prop),
-                ModFn(add_irs_group, coverage=irs_cov/100,
-                                     decay=180,
-                                     start_days=[365*start for start in range(years)]),
-                ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
+                # ModFn(add_irs_group, coverage=irs_cov/100,
+                #                      decay=180,
+                #                      start_days=[365*start for start in range(years)]),
+                # ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
 
             ]
                 for x in df.index
                 for itn_cov in intervention_coverages
                 for hates_net_prop in net_hating_props
-                for irs_cov in intervention_coverages
-                for act_cov in intervention_coverages
+                # for irs_cov in intervention_coverages
+                # for act_cov in intervention_coverages
 
             ])
 
@@ -218,9 +221,9 @@ if __name__=="__main__":
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"]),
         ]
-            for run_num in range(1)
+            for run_num in range(10)
             for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for site_name in  ["kananga"] #sites["name"]
+            for site_name in sites["name"]
         ])
 
     run_sim_args = {"config_builder": cb,
