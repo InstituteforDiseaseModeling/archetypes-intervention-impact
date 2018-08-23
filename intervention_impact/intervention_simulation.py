@@ -24,7 +24,7 @@ run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 asset_exp_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
-net_hating_props = [0.0, 0.1, 0.25, 0.5] # based on expert opinion from Caitlin
+net_hating_props = [0.1] # based on expert opinion from Caitlin
 new_inputs = False
 
 # Serialization
@@ -100,9 +100,6 @@ if __name__=="__main__":
     # collect site-specific data to pass to builder functions
     COMPS_login("https://comps.idmod.org")
     sites = pd.read_csv("site_details.csv")
-
-    #temp for example
-    sites = sites.query("name=='kananga'")
 
     print("finding collection ids and vector details")
     # collection ids:
@@ -187,17 +184,17 @@ if __name__=="__main__":
                                        IP=[{"NetUsage":"LovesNets"}]
                       ),
                 ModFn(assign_net_ip, hates_net_prop),
-                # ModFn(add_irs_group, coverage=irs_cov/100,
-                #                      decay=180,
-                #                      start_days=[365*start for start in range(years)]),
-                # ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
+                ModFn(add_irs_group, coverage=irs_cov/100,
+                                     decay=180,
+                                     start_days=[365*start for start in range(years)]),
+                ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
 
             ]
                 for x in df.index
                 for itn_cov in intervention_coverages
                 for hates_net_prop in net_hating_props
-                # for irs_cov in intervention_coverages
-                # for act_cov in intervention_coverages
+                for irs_cov in intervention_coverages
+                for act_cov in intervention_coverages
 
             ])
 
