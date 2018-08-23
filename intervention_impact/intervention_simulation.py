@@ -21,8 +21,8 @@ from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
-asset_exp_id = "713cef8f-b7a0-e811-a2c0-c4346bcb7275"
+burnin_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
+asset_exp_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
 new_inputs = False
@@ -31,12 +31,12 @@ new_inputs = False
 print("setting up")
 if run_type == "burnin":
     years = 15
-    sweep_name = "MAP_II_Burnin_3"
+    sweep_name = "MAP_II_Homo_Burnin_Example"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_test_het_biting"
+    sweep_name = "MAP_II_Corr_Nets_Example_Ints"
     serialize = False
     pull_from_serialization = True
 else:
@@ -218,10 +218,9 @@ if __name__=="__main__":
                                          species_details=species_details,
                                          vectors=site_info[site_name]["vectors"]),
         ]
-            for run_num in range(1)
-            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for hab_exp in [2]
-            for site_name in  sites["name"]
+            for run_num in range(10)
+            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for site_name in sites["name"]
         ])
 
     run_sim_args = {"config_builder": cb,
