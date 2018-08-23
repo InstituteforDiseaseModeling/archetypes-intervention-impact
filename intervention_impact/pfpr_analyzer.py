@@ -51,10 +51,10 @@ if __name__ == "__main__":
     run_type = "exp"
 
     if run_type=="exp":
-        exps = {"gates_examples": {"initial_homo_biting":"07b1c6c1-79a6-e811-a2c0-c4346bcb7275",
-                                   "itns_homo_biting":"c8b1e5b8-e4a6-e811-a2c0-c4346bcb7275",
-                                   "itns_corr_usage": "cde25227-f1a6-e811-a2c0-c4346bcb7275"
-                                   }}
+        exps = {"interactions/gates_examples": {"initial_homo_biting":"07b1c6c1-79a6-e811-a2c0-c4346bcb7275",
+                                               "itns_homo_biting":"c8b1e5b8-e4a6-e811-a2c0-c4346bcb7275",
+                                               "itns_corr_usage": "cde25227-f1a6-e811-a2c0-c4346bcb7275"
+                                               }}
 
         for subfolder, int_list in exps.items():
             for int_name, exp_id in int_list.items():
