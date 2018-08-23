@@ -21,10 +21,10 @@ from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "07b1c6c1-79a6-e811-a2c0-c4346bcb7275"
-asset_exp_id = "0e5f7620-60a6-e811-a2c0-c4346bcb7275"
+burnin_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
+asset_exp_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
-net_hating_props = [0.1] # based on expert opinion from Caitlin
+net_hating_props = [0.0, 0.1, 0.25, 0.5] # based on expert opinion from Caitlin
 new_inputs = False
 
 # Serialization
@@ -36,7 +36,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_Homo_Burnin_Example_Ints"
+    sweep_name = "MAP_II_Corr_Nets_Example_Ints"
     serialize = False
     pull_from_serialization = True
 else:
