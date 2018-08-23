@@ -20,8 +20,8 @@ from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
-burnin_id = "0e5f7620-60a6-e811-a2c0-c4346bcb7275"
+run_type = "intervention"  # set to "burnin" or "intervention"
+burnin_id = "07b1c6c1-79a6-e811-a2c0-c4346bcb7275"
 asset_exp_id = "0e5f7620-60a6-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
