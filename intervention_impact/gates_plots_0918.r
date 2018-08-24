@@ -35,97 +35,59 @@ all_nets <- rbind(het_nets, homo_nets)
 all_nets[, ITN_Coverage:=factor(ITN_Coverage)]
 all_nets[, net_type:=factor(net_type, levels=c("Homogeneous Biting", "Heterogeneous Biting"))]
 
-png(paste0(gates_dir, "/biting.png"), width=1000, height=600, res=170)
-ggplot(all_nets, aes(x=initial_prev, y=final_prev, color=ITN_Coverage)) +
+pdf(paste0(gates_dir, "/biting.pdf"))
+ggplot(all_nets[ITN_Coverage %in% c(0.2, 0.6)], aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5)+
-  geom_line(aes(group=interaction(ITN_Coverage, Run_Number)), alpha=0.25) +
-  geom_line(aes(x=mean_initial, y=mean_final), size=1.5) +
-  scale_color_manual(values=brewer.pal(7, "RdPu")[3:7]) +
+  # geom_line(aes(group=interaction(ITN_Coverage, Run_Number, net_type)), alpha=0.25) + todo: geom_ribbons
+  geom_line(aes(group=interaction(net_type, ITN_Coverage), color=interaction(net_type, ITN_Coverage)), size=1.5) +
+  # scale_color_manual(values=brewer.pal(7, "RdPu")[3:7], name="ITN Coverage") +
+  scale_color_brewer(type="qual", palette = "Paired") + 
   theme_minimal() +
   labs(x="Initial PfPR",
-       y="Final PfPR",
-       title="Impact of Heterogeneous Biting") +
-  facet_grid(~net_type)
-
+       y="Final PfPR") 
 graphics.off()
 
-# corr nets
-initial_corr_nets <- fread(file.path(main_dir, "..", "initial/initial_burnin_3.csv"))
-final_corr_nets <- fread(file.path(gates_dir, "itns_corr_usage.csv"))
-corr_nets <- merge(final_corr_nets, initial_corr_nets, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all.x=T)
-corr_nets[, ITN_Coverage:=factor(ITN_Coverage)]
-corr_nets[, Run_Number:=factor(Run_Number)]
-corr_nets[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ITN_Coverage, Hates_Nets)]
-corr_nets[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ITN_Coverage, Hates_Nets)]
-
-png(paste0(gates_dir, "/corr_nets.png"), width=1000, height=600, res=170)
-ggplot(corr_nets[Hates_Nets %in% c(0, 0.5)], aes(x=initial_prev, y=final_prev, color=ITN_Coverage)) +
-  geom_abline(size=1.5)+
-  geom_line(aes(group=interaction(ITN_Coverage, Run_Number)), alpha=0.25) +
-  geom_line(aes(x=mean_initial, y=mean_final), size=1.5) +
-  scale_color_manual(values=brewer.pal(7, "RdPu")[3:7]) +
-  theme_minimal() +
-  labs(x="Initial PfPR",
-       y="Final PfPR",
-       title="Impact of Non-Net-Using Population") +
-  facet_grid(~Hates_Nets)
-graphics.off()
 
 # Main takeaways: djibo, kananga, karen at 80% each
 takeaway_sites <- c("djibo", "kananga", "karen")
+takeaway_labels <- c("SE Asia", "Sahel", "Central Africa")
 
-combos <- data.table(expand.grid(ITN=c(0, 0.8), IRS=c(0, 0.8), ACT=c(0, 0.8)))
-combos[, label:=""]
-
-for (int in c("ITN", "IRS", "ACT")){
-  combos[get(int)!=0, label:= paste0(label, int, " ", get(int), "; ") ]
-}
-combos[label=="", label:="None"]
-
-takeaways <- full_sweep_data[(Intervention %in% combos$label) &
-                               (Site_Name %in% takeaway_sites)
-                             ]
-
-for_colors <- takeaways[x_Temporary_Larval_Habitat== unique(takeaways$x_Temporary_Larval_Habitat)[40] &
-                          Run_Number==0 &
-                          Site_Name==takeaway_sites[1] ]
-for_colors <- for_colors[order(mean_final, decreasing=T)]
-takeaways[, Intervention:= factor(Intervention, levels=for_colors$Intervention)]
-
+takeaways <- full_sweep_data[Site_Name %in% takeaway_sites]
+takeaways[, site:=factor(Site_Name, levels=takeaway_sites, labels=takeaway_labels)]
 
 # 1: Differing residual transmission, but same overall story
-takeaways[, site:=factor(Site_Name, levels=c("karen", "djibo", "kananga"), labels=c("Myanmar", "Burkina Faso", "DRC"))]
-png(paste0(gates_dir, "/resid_trans.png"), width=1300, height=600, res=170)
-ggplot(takeaways[Site_Name!="karen"], aes(x=initial_prev, y=final_prev, color=Intervention, linetype=Intervention)) +
-  #geom_abline(size=1.5)+
+# png(paste0(gates_dir, "/resid_trans.png"), width=1300, height=600, res=170)
+res_trans_ints <- c("ITN 0.6; " #, "IRS 0.6; ", "ITN 0.6; IRS 0.6; "
+                    )
+int_count <- length(res_trans_ints)
+subset <- takeaways[Intervention %in% res_trans_ints]
+subset[, Intervention:=factor(Intervention, levels=res_trans_ints)]
+ggplot(subset[Site_Name!="karen"], aes(x=mean_initial, y=mean_final)) +
+  geom_abline(size=1.5)+
   # geom_line(aes(group=interaction(Intervention, Run_Number)), alpha=0.25) +
-  geom_line(aes(x=mean_initial, y=mean_final), size=1.5) +
-  scale_color_manual(values=brewer.pal(9, "RdPu")[2:9]) + 
+  geom_line(aes(color=interaction(Intervention, site)), size=2) +
+  scale_color_manual(values=c(brewer.pal(5, "Reds")[2:(2+int_count-1)], brewer.pal(5, "Blues")[2:(2+int_count-1)])) + 
   theme_minimal() +
   labs(x="Initial PfPR",
-       y="Final PfPR",
-       title="Varying Residual Transmission in Sites") +
-  facet_grid(~site)
-graphics.off()
+       y="Final PfPR") 
+# graphics.off()
 
 # 2: Different relative effects in different places 
-int_subset <- c("ITN 0.8; ", "IRS 0.8; ", "ACT 0.8; ")
+int_subset <- c("ACT 0.4; ", "ITN 0.2; ACT 0.4; ", "IRS 0.4; ACT 0.6; ", "ITN 0.6; IRS 0.6; ")
 subset <- takeaways[Intervention %in% int_subset]
 subset[, Intervention:=factor(Intervention, levels=int_subset)]
 
-png(paste0(gates_dir, "/relative_imp_1.png"), width=1300, height=600, res=170)
-ggplot(subset, aes(x=initial_prev, y=final_prev, color=Intervention)) +
+# png(paste0(gates_dir, "/relative_imp_1.png"), width=1300, height=600, res=170)
+ggplot(subset, aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5, alpha=0.1)+
   # geom_line(aes(group=interaction(Intervention, Run_Number)), alpha=0.25) +
-  geom_line(aes(x=mean_initial, y=mean_final, linetype=Intervention), size=1.5) +
-  scale_color_manual(values=c("#252525", "#969696", "#dd3497")) +
-  scale_linetype_manual(values=c(3,2,1)) + 
+  geom_line(aes(color=interaction(Intervention)), size=1.5) +
+  scale_color_manual(values=c("#252525", "#969696", "#dd3497", "#fa9fb5")) + 
   theme_minimal() +
   labs(x="Initial PfPR",
-       y="Final PfPR",
-       title="Varying Best Intervention in Sites") +
+       y="Final PfPR") +
   facet_grid(~site)
-graphics.off()
+# graphics.off()
 
 int_subset <- c("ITN 0.8; ", "IRS 0.8; ", "ACT 0.8; ", "ITN 0.8; IRS 0.8; ")
 subset <- takeaways[Intervention %in% int_subset]
