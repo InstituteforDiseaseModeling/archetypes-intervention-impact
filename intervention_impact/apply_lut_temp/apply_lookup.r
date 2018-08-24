@@ -8,8 +8,7 @@ rm(list=ls())
 
 source("pr_to_r0.r")
 
-in_dir <- "Z:/cubes/Pf_results/MODEL_43/output_rasters/PfPR/Outputs/Summaries/"
-interventions <- c("ITN 0.4; ", "ITN 0.4; IRS 0.4; ", "ITN 0.4; ACT 0.6; ") # todo: remove final space from intervention name
+interventions <- c("ITN 0.8; ", "ITN 0.8; IRS 0.8; ", "ITN 0.8; IRS 0.8; ACT 0.8; ") # todo: remove final space from intervention name
 repro <- T
 
 #################################################################################################
@@ -85,7 +84,7 @@ cluster_list <- list("africa"= list("aba"=1,
                  "americas"=list("bajonapo"=1),
                  "asia" = list("karen"=1))
 
-pdf("rc_applied.pdf", width=9, height=6)
+
 
 for (continent in names(mask_values)){
   
@@ -149,17 +148,19 @@ for (continent in names(mask_values)){
   
   stacked_layers <- stack(raster_list)
   if (repro==T){
-    names(stacked_layers) <- c("R0 2016", interventions)
+    names(stacked_layers) <- c("R0 2015", interventions)
     breaks <- c(seq(0,1,length.out=50), seq(1,10, length.out = 26)[2:26], seq(10, 45, length.out = 26)[2:26])
-    print(levelplot(stacked_layers, par.settings=rasterTheme(blue2red(30)), at=breaks))
+    pdf("rc_applied.pdf", width=9, height=6)
+    print(levelplot(stacked_layers, par.settings=BuRdTheme, at=breaks, xlab=NULL, ylab=NULL, scales=list(draw=F)))
+    graphics.off()
   }else{
-    names(stacked_layers) <- c("PfPR 2016", interventions)
+    names(stacked_layers) <- c("PfPR 2015", interventions)
     print(levelplot(stacked_layers, par.settings=rasterTheme(brewer.pal(7, "BuPu"))))
   }
   
 }
 
-graphics.off()
+
 
 # map_plot <- levelplot(cluster_raster, att="ID", col.regions=brewer.pal(nclust, palette),
 #                       xlab=NULL, ylab=NULL, scales=list(draw=F))
