@@ -51,8 +51,9 @@ if __name__ == "__main__":
     run_type = "exp"
 
     if run_type=="exp":
-        exps = {"interactions/gates_examples": {"initial_homo_biting":"07b1c6c1-79a6-e811-a2c0-c4346bcb7275",
-                                               "itns_homo_biting":"c8b1e5b8-e4a6-e811-a2c0-c4346bcb7275",
+        exps = {"interactions/gates_examples": {
+                                               # "initial_homo_biting":"07b1c6c1-79a6-e811-a2c0-c4346bcb7275",
+                                               # "itns_homo_biting":"c8b1e5b8-e4a6-e811-a2c0-c4346bcb7275",
                                                "itns_corr_usage": "cde25227-f1a6-e811-a2c0-c4346bcb7275"
                                                }}
 
@@ -69,7 +70,8 @@ if __name__ == "__main__":
                                                                             "x_Temporary_Larval_Habitat",
                                                                             "ACT_Coverage",
                                                                             "IRS_Coverage",
-                                                                            "ITN_Coverage"
+                                                                            "ITN_Coverage",
+                                                                            "Hates_Nets"
                                                                             ]
                                                            ),
                                     force_analyze=True)
