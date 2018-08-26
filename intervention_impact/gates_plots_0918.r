@@ -9,7 +9,15 @@ gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
   hcl(h = hues, l = 65, c = 100)[1:n]
 }
-colors <- gg_color_hue(5)[2:5]
+
+jaline_colors <- list(purple="#AF81AD",
+                      red="#E9806C",
+                      orange="#F1B657",
+                      green="#B1D066",
+                      teal="#89CBBF",
+                      blue="#7EACD9",
+                      indigo="#BAB6CE"
+                      )
 
 main_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
@@ -62,26 +70,27 @@ summary_nets <- merge(summary_nets,
                       minmaxes_smooth, 
                       by=c("net_type", "ITN_Coverage", "x_Temporary_Larval_Habitat", "mean_initial"))
 
-
+biting_colors <- unname(unlist(jaline_colors[c("orange", "red", "green", "teal")]))
 # pdf(paste0(gates_dir, "/biting.pdf"))
 ggplot(summary_nets[ITN_Coverage %in% c(0.2, 0.6)], aes(x=mean_initial, y=mean_final,
                                                     fill=interaction(net_type, ITN_Coverage),
                                                     group=interaction(net_type, ITN_Coverage))) +
-  geom_abline(size=1.5)+
+  geom_abline(size=1.5, alpha=0.25)+
   # geom_ribbon(aes(ymin=min_final, ymax=max_final), alpha=0.75) + 
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max), alpha=0.25) +
   geom_line(aes(color=interaction(net_type, ITN_Coverage)), size=1.5) +
-  # scale_color_manual(values=brewer.pal(7, "RdPu")[3:7], name="ITN Coverage") +
-  scale_color_brewer(type="qual", palette = "Paired") + 
-  scale_fill_brewer(type="qual", palette = "Paired") + 
+  scale_color_manual(values=biting_colors, name="ITN Coverage") +
+  # scale_color_brewer(type="qual", palette = "Paired") + 
+  scale_fill_manual(values=biting_colors, guide=F) + 
   theme_minimal() +
+  coord_fixed() + 
   labs(x="Initial PfPR",
        y="Final PfPR") 
 # graphics.off()
 
 
 # Main takeaways: djibo, kananga, karen at 80% each
-takeaway_sites <- c("djibo", "kananga", "karen")
+takeaway_sites <- c("karen", "djibo", "kananga")
 takeaway_labels <- c("SE Asia", "Sahel", "Central Africa")
 
 takeaways <- full_sweep_data[Site_Name %in% takeaway_sites]
@@ -113,33 +122,40 @@ summary_result <- merge(summary_result,
 res_trans_ints <- c("ITN 0.6; " , "IRS 0.6; ", "ITN 0.6; IRS 0.6; "
   )
 int_count <- length(res_trans_ints)
+res_trans_colors <- unname(unlist(jaline_colors[c("red", "teal", "purple", "orange", "green", "indigo")]))
 subset <- summary_result[Intervention %in% res_trans_ints]
 subset[, Intervention:=factor(Intervention, levels=res_trans_ints)]
 ggplot(subset[site!="SE Asia"], aes(x=mean_initial, y=mean_final)) +
-  geom_abline(size=1.5)+
+  geom_abline(size=1.5, alpha=0.25)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=interaction(Intervention, site)), alpha=0.25) +
   geom_line(aes(color=interaction(Intervention, site)), size=2) +
-  scale_color_manual(values=c(brewer.pal(5, "Reds")[2:(2+int_count-1)], brewer.pal(5, "Blues")[2:(2+int_count-1)])) + 
-  scale_fill_manual(values=c(brewer.pal(5, "Reds")[2:(2+int_count-1)], brewer.pal(5, "Blues")[2:(2+int_count-1)])) + 
+  scale_color_manual(values=res_trans_colors) + 
+  scale_fill_manual(values=res_trans_colors) + 
   theme_minimal() +
+  coord_fixed() +
   labs(x="Initial PfPR",
-       y="Final PfPR") 
+       y="Final PfPR") +
+  facet_grid(~Intervention)
+
 # graphics.off()
 
 # 2: Different relative effects in different places 
-int_subset <- c("ACT 0.2; ", "ACT 0.6; ", "ITN 0.4; ACT 0.2; ", "IRS 0.4; ACT 0.2; ", "ITN 0.4; IRS 0.4; ACT 0.2; ")
+int_subset <- c("ACT 0.2; ", "ACT 0.6; " , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
+                )
 subset <- summary_result[Intervention %in% int_subset]
 subset[, Intervention:=factor(Intervention, levels=int_subset)]
-
+site_colors <- unname(unlist(jaline_colors[c("green", "blue", "green", "orange")]))
+build_site_colors <- c("#3f3f3f", "#696969", site_colors[3:4])
 
 # png(paste0(gates_dir, "/relative_imp_1.png"), width=1300, height=600, res=170)
-ggplot(subset, aes(x=mean_initial, y=mean_final, color=Intervention)) +
-  geom_abline(size=1.5, alpha=0.1)+
+ggplot(subset, aes(x=mean_initial, y=mean_final)) +
+  geom_abline(size=1.5)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Intervention), alpha=0.25) +
-  geom_line(size=1.5) +
-  scale_color_manual(values=brewer.pal(6, "PuRd")[2:6]) + 
-  scale_fill_manual(values=brewer.pal(6, "PuRd")[2:6]) + 
+  geom_line(aes(color=Intervention), size=1.5) +
+  scale_color_manual(values=build_site_colors) + 
+  scale_fill_manual(values=build_site_colors) + 
   theme_minimal() +
+  coord_fixed() + 
   labs(x="Initial PfPR",
        y="Final PfPR") +
   facet_grid(~site)
