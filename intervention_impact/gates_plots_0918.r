@@ -71,7 +71,7 @@ summary_nets <- merge(summary_nets,
                       by=c("net_type", "ITN_Coverage", "x_Temporary_Larval_Habitat", "mean_initial"))
 
 biting_colors <- unname(unlist(jaline_colors[c("orange", "red", "green", "teal")]))
-# pdf(paste0(gates_dir, "/biting.pdf"))
+pdf(paste0(gates_dir, "/biting_illustrator.pdf"))
 ggplot(summary_nets[ITN_Coverage %in% c(0.2, 0.6)], aes(x=mean_initial, y=mean_final,
                                                     fill=interaction(net_type, ITN_Coverage),
                                                     group=interaction(net_type, ITN_Coverage))) +
@@ -83,10 +83,11 @@ ggplot(summary_nets[ITN_Coverage %in% c(0.2, 0.6)], aes(x=mean_initial, y=mean_f
   # scale_color_brewer(type="qual", palette = "Paired") + 
   scale_fill_manual(values=biting_colors, guide=F) + 
   theme_minimal() +
+  theme(legend.position="bottom") + 
   coord_fixed() + 
   labs(x="Initial PfPR",
        y="Final PfPR") 
-# graphics.off()
+graphics.off()
 
 
 # Main takeaways: djibo, kananga, karen at 80% each
@@ -118,46 +119,80 @@ summary_result <- merge(summary_result,
                       by=c("site", "Intervention", "x_Temporary_Larval_Habitat", "mean_initial"))
 
 # 1: Differing residual transmission, but same overall story
-# png(paste0(gates_dir, "/resid_trans.png"), width=1300, height=600, res=170)
-res_trans_ints <- c("ITN 0.6; " , "IRS 0.6; ", "ITN 0.6; IRS 0.6; "
-  )
-int_count <- length(res_trans_ints)
-res_trans_colors <- unname(unlist(jaline_colors[c("red", "teal", "purple", "orange", "green", "indigo")]))
-subset <- summary_result[Intervention %in% res_trans_ints]
-subset[, Intervention:=factor(Intervention, levels=res_trans_ints)]
-ggplot(subset[site!="SE Asia"], aes(x=mean_initial, y=mean_final)) +
-  geom_abline(size=1.5, alpha=0.25)+
-  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=interaction(Intervention, site)), alpha=0.25) +
-  geom_line(aes(color=interaction(Intervention, site)), size=2) +
-  scale_color_manual(values=res_trans_colors) + 
-  scale_fill_manual(values=res_trans_colors) + 
-  theme_minimal() +
-  coord_fixed() +
-  labs(x="Initial PfPR",
-       y="Final PfPR") +
-  facet_grid(~Intervention)
+res_trans_ints <- c("ITN 0.6; " , "IRS 0.6; ", "ITN 0.6; IRS 0.6; ")
+res_trans_colors <- unname(unlist(jaline_colors[c("red", "orange", "teal", "green", "purple", "indigo")]))
 
-# graphics.off()
+idx <- 1
+for (int_name in res_trans_ints){
+  subset <- summary_result[Intervention ==int_name]
+  these_colors <- res_trans_colors[idx:(idx+1)]
+  idx <- idx + 2
+  # subset[, Intervention:=factor(Intervention, levels=res_trans_ints)]
+  
+  this_plot <- ggplot(subset[site!="SE Asia"], aes(x=mean_initial, y=mean_final)) +
+                  geom_abline(size=1.5, alpha=0.25)+
+                  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=site), alpha=0.25) +
+                  geom_line(aes(color=site), size=2) +
+                  scale_color_manual(values=these_colors, name="") + 
+                  scale_fill_manual(values=these_colors, name="") + 
+                  theme_minimal() +
+                  theme(legend.position="bottom") + 
+                  coord_fixed() +
+                  labs(x="Initial PfPR",
+                       y="Final PfPR") +
+                  facet_grid(~Intervention)
+  
+  pdf(paste0(gates_dir, "/res_trans_", floor(idx/2), ".pdf"))
+  print(this_plot)
+  graphics.off()
+  
+}
 
-# 2: Different relative effects in different places 
-int_subset <- c("ACT 0.2; ", "ACT 0.6; " , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
+
+# 2: Different relative effects in different places
+
+site_colors <- unname(unlist(jaline_colors[c("red", "orange", "green", "teal")]))
+build_site_colors <- c("#3f3f3f", "#696969", site_colors[3:4])
+
+
+int_subset <- c("ACT 0.2; ", "ACT 0.6; " # , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
                 )
 subset <- summary_result[Intervention %in% int_subset]
 subset[, Intervention:=factor(Intervention, levels=int_subset)]
-site_colors <- unname(unlist(jaline_colors[c("green", "blue", "green", "orange")]))
-build_site_colors <- c("#3f3f3f", "#696969", site_colors[3:4])
 
-# png(paste0(gates_dir, "/relative_imp_1.png"), width=1300, height=600, res=170)
+pdf(paste0(gates_dir, "/relative_imp_1.pdf"))
 ggplot(subset, aes(x=mean_initial, y=mean_final)) +
-  geom_abline(size=1.5)+
+  geom_abline(size=1.5, alpha=0.25)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Intervention), alpha=0.25) +
   geom_line(aes(color=Intervention), size=1.5) +
-  scale_color_manual(values=build_site_colors) + 
-  scale_fill_manual(values=build_site_colors) + 
+  scale_color_manual(values=site_colors, name="") + 
+  scale_fill_manual(values=site_colors, name="") + 
   theme_minimal() +
+  theme(legend.position="bottom") + 
   coord_fixed() + 
   labs(x="Initial PfPR",
        y="Final PfPR") +
   facet_grid(~site)
-# graphics.off()
+graphics.off()
 
+
+
+int_subset <- c("ACT 0.2; ", "ACT 0.6; " , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
+)
+subset <- summary_result[Intervention %in% int_subset]
+subset[, Intervention:=factor(Intervention, levels=int_subset)]
+
+pdf(paste0(gates_dir, "/relative_imp_2.pdf"))
+ggplot(subset, aes(x=mean_initial, y=mean_final)) +
+  geom_abline(size=1.5, alpha=0.25)+
+  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Intervention), alpha=0.25) +
+  geom_line(aes(color=Intervention), size=2) +
+  scale_color_manual(values=build_site_colors, name="") + 
+  scale_fill_manual(values=build_site_colors, name="") + 
+  theme_minimal() +
+  theme(legend.position="bottom") + 
+  coord_fixed() + 
+  labs(x="Initial PfPR",
+       y="Final PfPR") +
+  facet_grid(~site)
+graphics.off()

@@ -8,7 +8,7 @@ rm(list=ls())
 
 source("pr_to_r0.r")
 
-interventions <- c("ITN 0.8; ", "ITN 0.8; IRS 0.8; ", "ITN 0.8; IRS 0.8; ACT 0.8; ") # todo: remove final space from intervention name
+interventions <- c("ACT 0.2; ", "IRS 0.4; ACT 0.2; ", "ITN 0.6; IRS 0.6; ACT 0.6; ") # todo: remove final space from intervention name
 repro <- T
 
 #################################################################################################
@@ -150,6 +150,7 @@ for (continent in names(mask_values)){
   if (repro==T){
     names(stacked_layers) <- c("R0 2015", interventions)
     breaks <- c(seq(0,1,length.out=50), seq(1,10, length.out = 26)[2:26], seq(10, 45, length.out = 26)[2:26])
+    # theme <- rasterTheme(brewer.pal(7, "PRGn"))
     pdf("rc_applied.pdf", width=9, height=6)
     print(levelplot(stacked_layers, par.settings=BuRdTheme, at=breaks, xlab=NULL, ylab=NULL, scales=list(draw=F)))
     graphics.off()
@@ -160,6 +161,7 @@ for (continent in names(mask_values)){
   
 }
 
+writeRaster(stacked_layers, options="INTERLEAVE=BAND", "repro_numbers.tif", overwrite=T)
 
 
 # map_plot <- levelplot(cluster_raster, att="ID", col.regions=brewer.pal(nclust, palette),
