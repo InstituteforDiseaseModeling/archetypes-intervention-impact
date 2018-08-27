@@ -4,6 +4,7 @@ library(gridExtra)
 library(viridis)
 
 rm(list=ls())
+theme_set(theme_minimal(base_size = 18))
 
 gg_color_hue <- function(n) {
   hues = seq(15, 375, length = n + 1)
@@ -82,7 +83,6 @@ ggplot(summary_nets[ITN_Coverage %in% c(0.2, 0.6)], aes(x=mean_initial, y=mean_f
   scale_color_manual(values=biting_colors, name="ITN Coverage") +
   # scale_color_brewer(type="qual", palette = "Paired") + 
   scale_fill_manual(values=biting_colors, guide=F) + 
-  theme_minimal() +
   theme(legend.position="bottom") + 
   coord_fixed() + 
   labs(x="Initial PfPR",
@@ -135,9 +135,10 @@ for (int_name in res_trans_ints){
                   geom_line(aes(color=site), size=2) +
                   scale_color_manual(values=these_colors, name="") + 
                   scale_fill_manual(values=these_colors, name="") + 
-                  theme_minimal() +
                   theme(legend.position="bottom") + 
                   coord_fixed() +
+                  xlim(0, 0.85)+
+                  ylim(0, 0.8) + 
                   labs(x="Initial PfPR",
                        y="Final PfPR") +
                   facet_grid(~Intervention)
@@ -167,7 +168,6 @@ ggplot(subset, aes(x=mean_initial, y=mean_final)) +
   geom_line(aes(color=Intervention), size=1.5) +
   scale_color_manual(values=site_colors, name="") + 
   scale_fill_manual(values=site_colors, name="") + 
-  theme_minimal() +
   theme(legend.position="bottom") + 
   coord_fixed() + 
   labs(x="Initial PfPR",
@@ -189,7 +189,6 @@ ggplot(subset, aes(x=mean_initial, y=mean_final)) +
   geom_line(aes(color=Intervention), size=2) +
   scale_color_manual(values=build_site_colors, name="") + 
   scale_fill_manual(values=build_site_colors, name="") + 
-  theme_minimal() +
   theme(legend.position="bottom") + 
   coord_fixed() + 
   labs(x="Initial PfPR",
