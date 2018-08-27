@@ -4,7 +4,7 @@ library(gridExtra)
 library(MASS)
 
 rm(list=ls())
-
+theme_set(theme_minimal(base_size = 18))
 in_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/data/Burkina/INDIE/Fig2a_Guelbeogo_elife2018.csv")
 
@@ -45,13 +45,13 @@ histo <- data.table(xhist=c(min(h$breaks),h$breaks),
 xfit <- seq(0,max(histval),length=40)
 dist <- data.table(xfit=xfit,
                    yfit=dexp(xfit, rate=dist_fit$estimate))
-
+out_dir <- file.path(Sys.getenv("USERPROFILE"), 
+          "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions/gates_examples/")
+pdf(file.path(out_dir, "expbiting.pdf"), width=5, height=5)
 ggplot(histo, aes(x=xhist, y=yhist)) +
-  geom_bar(stat="identity") + 
-  geom_line(data=dist, aes(x=xfit, y=yfit), color="red", size=1) +
-  theme_minimal() +
+  geom_bar(stat="identity", fill="#AF81AD") + 
+  geom_line(data=dist, aes(x=xfit, y=yfit), color="#F1B657", size=1.5) +
   labs(x="Relative Risk",
-       y="Density",
-       title="Observed and Fitted Distribution, Biting Risk")
-
+       y="")
+graphics.off()
 
