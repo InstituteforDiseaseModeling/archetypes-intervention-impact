@@ -11,6 +11,7 @@ import shutil
 
 from dtk.tools.demographics.Node import Node, nodeid_from_lat_lon
 from simtools.SetupParser import SetupParser
+from input_file_generation.add_equilibrium_age_dist import equilibrium_age_distribution
 from input_file_generation.DemographicsGenerator import DemographicsGenerator
 from input_file_generation.ClimateGenerator import ClimateGenerator
 from simtools.Utilities.COMPSUtilities import COMPS_login
@@ -18,31 +19,6 @@ from input_file_generation.add_properties_to_demographics import generate_demogr
 
 sys.path.insert(0, os.path.pardir)
 from spatial import make_shapefile, extract_latlongs
-
-
-def custom_age_distribution(birth_rate, mort_scale, mort_value):
-    # we want to kill everyone over 100
-    age_vec = [365 * 0, 365 * 99.999, 365 * 100]
-    mort_vec = [mort_scale * mort_value, mort_scale * mort_value, 1]
-
-    max_yr = 120
-    day_to_year = 365
-
-    mvec_x = [-1] + age_vec + [max_yr * day_to_year + 1]
-    mvec_y = [mort_vec[0]] + mort_vec + [mort_vec[-1]]
-    m_x = np.arange(0, max_yr * day_to_year, 30)
-    mval = (1.0 - np.interp(m_x, xp=mvec_x, fp=mvec_y)) ** 30
-    popvec = birth_rate * np.cumprod(mval)
-
-    tpop = np.trapz(popvec, x=m_x)
-
-    npvec = popvec / tpop
-    cpvec = sp.cumtrapz(npvec, x=m_x, initial=0)
-
-    resval = np.around(np.linspace(0, max_yr * day_to_year))
-    distval = np.interp(resval, xp=m_x, fp=cpvec)
-
-    return resval, distval
 
 
 def update_demog(demographics):
@@ -55,7 +31,7 @@ def update_demog(demographics):
     mort_scale = mort_defaults["ResultScaleFactor"]
     mort_value = mort_defaults["ResultValues"][1][0]  # annual deaths per 1000, set to mirror birth rate in defaults
 
-    resval, distval = custom_age_distribution(birth_rate, mort_scale, mort_value)
+    resval, distval = equilibrium_age_distribution(birth_rate, mort_scale, mort_value)
     age_dist = {
                 "DistributionValues":
                 [
