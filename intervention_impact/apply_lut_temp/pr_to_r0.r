@@ -38,14 +38,20 @@ rPR2R=function(PR, N=1){
   rPR2R.F1(PR, N)*W + rPR2R.F2(PR,N)*(1-W)  
 }
 
-PR2R = function(PR, N=100){
-  if (PR==0) 0 else median(rPR2R(PR,N),na.rm=T)
+PR2R = function(PR, N=10000){
+  median(rPR2R(PR,N),na.rm=T)
+}
+
+R2spline <- function(){
+  PR<-seq(0,1,length=1002)[2:1001]
+  Ro<-rep(NA,length(PR))
+  Ro <- unlist(lapply(PR, PR2R))
+  splObj<-smooth.spline(PR, Ro)
+  plot(PR,Ro)
+  Xpred<-seq(0,1,length=100)
+  Ypred<-as.vector(as.matrix(predict(splObj,data.frame("X"=Xpred))$y))
+  lines(Xpred,Ypred,col=2)
+  return(splObj)
 }
 
 
-# PR<-seq(0,1,length=100)
-# Ro<-rep(NA,length(PR))
-# test <- unlist(lapply(PR, PR2R))
-# 
-# for(ii in 1:length(Ro)) Ro[ii]<-PR2R(PR[ii])
-# plot(PR,Ro)
