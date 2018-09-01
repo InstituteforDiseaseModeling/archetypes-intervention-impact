@@ -123,31 +123,28 @@ res_trans_ints <- c("ITN 0.6; " , "IRS 0.6; ", "ITN 0.6; IRS 0.6; ")
 res_trans_colors <- unname(unlist(jaline_colors[c("red", "orange", "teal", "green", "purple", "indigo")]))
 
 idx <- 1
-for (int_name in res_trans_ints){
-  subset <- summary_result[Intervention ==int_name]
+# for (int_name in res_trans_ints){
+  subset <- summary_result[Intervention %in% res_trans_ints]
   these_colors <- res_trans_colors[idx:(idx+1)]
   idx <- idx + 2
   # subset[, Intervention:=factor(Intervention, levels=res_trans_ints)]
   
-  this_plot <- ggplot(subset[site!="SE Asia"], aes(x=mean_initial, y=mean_final)) +
+  this_plot <- ggplot(subset[site!="SE Asia"], aes(x=mean_initial, y=mean_final, group=interaction(site,Intervention))) +
                   geom_abline(size=1.5, alpha=0.25)+
-                  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=site), alpha=0.25) +
-                  geom_line(aes(color=site), size=2) +
-                  scale_color_manual(values=these_colors, name="") + 
-                  scale_fill_manual(values=these_colors, name="") + 
+                  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=interaction(site, Intervention)), alpha=0.25) +
+                  geom_line(aes(color=interaction(site, Intervention)), size=2) +
+                  scale_color_manual(values=res_trans_colors, name="") + 
+                  scale_fill_manual(values=res_trans_colors, name="") + 
                   theme(legend.position="bottom") + 
                   coord_fixed() +
-                  xlim(0, 0.85)+
-                  ylim(0, 0.8) + 
                   labs(x="Initial PfPR",
-                       y="Final PfPR") +
-                  facet_grid(~Intervention)
+                       y="Final PfPR") 
   
-  pdf(paste0(gates_dir, "/res_trans_", floor(idx/2), ".pdf"))
+  pdf(paste0(gates_dir, "/res_trans_all.pdf"))
   print(this_plot)
   graphics.off()
   
-}
+# }
 
 
 # 2: Different relative effects in different places

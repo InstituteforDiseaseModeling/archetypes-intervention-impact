@@ -3,25 +3,30 @@ library(data.table)
 library(raster)
 library(rasterVis)
 library(colorRamps)
+library(MapSuite)
 
 rm(list=ls())
 
 source("pr_to_r0.r")
 
-interventions <- c("ACT 0.2; ", "IRS 0.4; ACT 0.2; ", "ITN 0.6; IRS 0.6; ACT 0.6; ") # todo: remove final space from intervention name
+
+interventions <- c("ACT 0.2; ", "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; ") # todo: remove final space from intervention name
 repro <- T
+if (repro){
+  print("getting repro spline")
+  repro_spline <- R2spline()
+}
 
 #################################################################################################
 get_splinefunction_from_LUT<-function(X,Y){
   
-  # plot(X,Y,type="b")
+  plot(X,Y,type="b")
   
-  #lmObj<- lm(Y~poly(X,ORDER,raw=TRUE))
   splObj<-smooth.spline(X, Y)
-  # 
-  # Xpred<-seq(0,1,length=100)
-  # Ypred<-as.vector(as.matrix(predict(splObj,data.frame("X"=Xpred))$y))
-  # lines(Xpred,Ypred,col=2)
+ 
+  Xpred<-seq(0,1,length=100)
+  Ypred<-as.vector(as.matrix(predict(splObj,data.frame("X"=Xpred))$y))
+  lines(Xpred,Ypred,col=2)
   return(splObj)
 }
 ##################################################################################################
@@ -35,11 +40,9 @@ apply_LUT_to_raster<-function(splObj,inRaster, return_r0=F){
   inVecNoNA<-inVec[!NAid]
   
   outVecNoNA<-predict(splObj,inVecNoNA)$y
-  outVecNoNA <- pmin(outVecNoNA, inVecNoNA)
-  outVecNoNA[outVecNoNA<0] <- 0
-  
-  if (return_r0){
-    outVecNoNA <- unlist(lapply(outVecNoNA, PR2R))
+  if (return_r0==F){
+    outVecNoNA <- pmin(outVecNoNA, inVecNoNA)
+    outVecNoNA[outVecNoNA<0] <- 0
   }
   
   outVec<-rep(NA,length(inVec))
@@ -113,8 +116,7 @@ for (continent in names(mask_values)){
   
   if (repro==T){
     print("finding r0 for raster")
-    null_spline <- get_splinefunction_from_LUT(seq(0,1,length=100), rep(1, 100))
-    r0 <-apply_LUT_to_raster(null_spline, this_pr_orig, return_r0 = T)
+    r0 <-apply_LUT_to_raster(repro_spline, this_pr_orig, return_r0=T)
     raster_list <- list(r0)
   }else{
     raster_list <- list(this_pr_orig)
@@ -130,7 +132,8 @@ for (continent in names(mask_values)){
       pr_masked <- mask(this_pr_orig, this_mask, maskvalue=maskvalue)
       this_lut <- unique(lut[Site_Name==site_name & Intervention==intervention, list(mean_initial, mean_final)])
       this_spline <- get_splinefunction_from_LUT(this_lut$mean_initial,this_lut$mean_final)
-      this_pr <- apply_LUT_to_raster(this_spline, pr_masked, return_r0 = T)
+      this_pr <- apply_LUT_to_raster(this_spline, pr_masked, return_r0 = F)
+      this_reptro <- apply_LUT_to_raster(repro_spline, this_pr, return_r0 = T)
     })
     
     if (length(final_prs)>1){
@@ -149,10 +152,9 @@ for (continent in names(mask_values)){
   stacked_layers <- stack(raster_list)
   if (repro==T){
     names(stacked_layers) <- c("R0 2015", interventions)
-    breaks <- c(seq(0,1,length.out=50), seq(1,10, length.out = 26)[2:26], seq(10, 45, length.out = 26)[2:26])
-    # theme <- rasterTheme(brewer.pal(7, "PRGn"))
+    breaks <- c(seq(-0.001, 5, length.out=50), seq(5, 10, length.out = 46)[2:46], seq(10, 75, length.out=6)[2:6])
     pdf("rc_applied.pdf", width=9, height=6)
-    print(levelplot(stacked_layers, par.settings=BuRdTheme, at=breaks, xlab=NULL, ylab=NULL, scales=list(draw=F)))
+    print(levelplot(stacked_layers, par.settings=rasterTheme(region=wpal("sky")), zscaleLog=T, xlab=NULL, ylab=NULL, scales=list(draw=F)))
     graphics.off()
   }else{
     names(stacked_layers) <- c("PfPR 2015", interventions)
