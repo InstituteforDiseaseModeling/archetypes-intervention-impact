@@ -20,11 +20,11 @@ from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
-burnin_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
-asset_exp_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
-intervention_coverages = [0, 20, 40, 60, 80]
-hs_daily_probs = [0.15, 0.3, 0.7]
+run_type = "intervention"  # set to "burnin" or "intervention"
+burnin_id = "8c066962-e6b5-e811-a2c0-c4346bcb7275"
+asset_exp_id = "8c066962-e6b5-e811-a2c0-c4346bcb7275"
+# intervention_coverages = [0, 20, 40, 60, 80]
+# hs_daily_probs = [0.15, 0.3, 0.7]
 
 int_scenarios = [{"act": 0,
                   "irs": 0,
@@ -50,7 +50,7 @@ int_scenarios = [{"act": 0,
                  ]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = True
+new_inputs = False
 
 # Serialization
 print("setting up")
@@ -205,7 +205,7 @@ if __name__=="__main__":
         ]
             for x in df.index
             for hates_net_prop in net_hating_props
-            for int_combo in intervention_coverages
+            for int_combo in int_scenarios
             # for daily_prob in hs_daily_probs
 
         ])

@@ -1,9 +1,16 @@
 library(data.table)
 library(ggplot2)
 
-files <- list.files(file.path(main_dir, "interactions", "version_2"), full.names = T)
-all_data <- lapply(files, fread)
-all_data <- rbindlist(all_data, fill=T)
+main_dir <- file.path(Sys.getenv("USERPROFILE"), 
+                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
+
+initial <- fread(file.path(main_dir, "../initial/initial_burnin_4.csv"))
+all_data <- fread(file.path(main_dir, "gates_examples", "gates_reruns_bugfix.csv"))
+
+# files <- list.files(file.path(main_dir, "version_2"), full.names = T)
+# all_data <- lapply(files, fread)
+# all_data <- rbindlist(all_data, fill=T)
+
 all_data[, Intervention:=""]
 
 
@@ -19,5 +26,5 @@ all_data[, Run_Number:=factor(Run_Number)]
 all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
 all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
 
-write.csv(all_data, file=file.path(main_dir, "interactions", "version_2", "lookup_full_interactions_v2.csv"), row.names = F)
+write.csv(all_data, file=file.path(main_dir, "gates_examples", "gates_bugfix_lookup.csv"), row.names = F)
 

@@ -24,7 +24,8 @@ main_dir <- file.path(Sys.getenv("USERPROFILE"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
 
 gates_dir <- file.path(main_dir, "gates_examples")
-full_sweep_path <- file.path(main_dir, "version_2", "lookup_full_interactions_v2.csv")
+full_sweep_path <- file.path(main_dir, "gates_examples", "gates_bugfix_lookup.csv")
+# full_sweep_path <- file.path(main_dir, "version_2", "lookup_full_interactions_v2.csv")
 
 get_smooth <- function(x, y){
   lo <- loess(y[y>0]~x[y>0])
@@ -36,61 +37,61 @@ get_smooth <- function(x, y){
 # setup: load all data, aggregate homo biting and corr net examples
 full_sweep_data <- fread(full_sweep_path)
 
-# homo biting
-initial_homo <- fread(file.path(gates_dir, "initial_homo_biting.csv"))
-final_homo <- fread(file.path(gates_dir, "itns_homo_biting.csv"))
-homo_nets <- merge(initial_homo, final_homo, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
-homo_nets[, Run_Number:=factor(Run_Number)]
-homo_nets[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ITN_Coverage)]
-homo_nets[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ITN_Coverage)]
-homo_nets[, net_type:="Homogeneous Biting"]
-het_nets <- full_sweep_data[Site_Name=="kananga" & IRS_Coverage==0 & ACT_Coverage==0,
-                            list(Site_Name, net_type="Heterogeneous Biting", Run_Number, x_Temporary_Larval_Habitat,
-                                 ITN_Coverage, initial_prev, final_prev, mean_initial, mean_final)]
-all_nets <- rbind(het_nets, homo_nets)
-all_nets[, ITN_Coverage:=factor(ITN_Coverage)]
-all_nets[, net_type:=factor(net_type, levels=c("Homogeneous Biting", "Heterogeneous Biting"))]
+# # homo biting
+# initial_homo <- fread(file.path(gates_dir, "initial_homo_biting.csv"))
+# final_homo <- fread(file.path(gates_dir, "itns_homo_biting.csv"))
+# homo_nets <- merge(initial_homo, final_homo, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
+# homo_nets[, Run_Number:=factor(Run_Number)]
+# homo_nets[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ITN_Coverage)]
+# homo_nets[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ITN_Coverage)]
+# homo_nets[, net_type:="Homogeneous Biting"]
+# het_nets <- full_sweep_data[Site_Name=="kananga" & IRS_Coverage==0 & ACT_Coverage==0,
+#                             list(Site_Name, net_type="Heterogeneous Biting", Run_Number, x_Temporary_Larval_Habitat,
+#                                  ITN_Coverage, initial_prev, final_prev, mean_initial, mean_final)]
+# all_nets <- rbind(het_nets, homo_nets)
+# all_nets[, ITN_Coverage:=factor(ITN_Coverage)]
+# all_nets[, net_type:=factor(net_type, levels=c("Homogeneous Biting", "Heterogeneous Biting"))]
+# 
+# minmaxes <- all_nets[, list(mean_initial=unique(mean_initial),
+#                             min_final=min(final_prev),
+#                             max_final=max(final_prev)),
+#                      by=list(net_type, x_Temporary_Larval_Habitat, ITN_Coverage)]
+# 
+# minmaxes_smooth <- lapply(unique(minmaxes$net_type), function(net){
+#   sub_list <- lapply(unique(minmaxes$ITN_Coverage), function(cov){
+#     subset <- minmaxes[net_type==net & ITN_Coverage==cov]
+#     subset[, smooth_min:= get_smooth(mean_initial, min_final)]
+#     subset[, smooth_max:= get_smooth(mean_initial, max_final)]
+#   })
+#   sub_list <- rbindlist(sub_list)
+# })
+# minmaxes_smooth <- rbindlist(minmaxes_smooth)
+# 
+# summary_nets <- unique(all_nets[, list(net_type, ITN_Coverage, x_Temporary_Larval_Habitat, mean_initial, mean_final)])
+# summary_nets <- merge(summary_nets, 
+#                       minmaxes_smooth, 
+#                       by=c("net_type", "ITN_Coverage", "x_Temporary_Larval_Habitat", "mean_initial"))
+# 
+# biting_colors <- unname(unlist(jaline_colors[c("orange", "red", "green", "teal")]))
+# pdf(paste0(gates_dir, "/biting_illustrator.pdf"))
+# ggplot(summary_nets[ITN_Coverage %in% c(0.2, 0.6)], aes(x=mean_initial, y=mean_final,
+#                                                     fill=interaction(net_type, ITN_Coverage),
+#                                                     group=interaction(net_type, ITN_Coverage))) +
+#   geom_abline(size=1.5, alpha=0.25)+
+#   # geom_ribbon(aes(ymin=min_final, ymax=max_final), alpha=0.75) + 
+#   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max), alpha=0.25) +
+#   geom_line(aes(color=interaction(net_type, ITN_Coverage)), size=1.5) +
+#   scale_color_manual(values=biting_colors, name="ITN Coverage") +
+#   # scale_color_brewer(type="qual", palette = "Paired") + 
+#   scale_fill_manual(values=biting_colors, guide=F) + 
+#   theme(legend.position="bottom") + 
+#   coord_fixed() + 
+#   labs(x="Initial PfPR",
+#        y="Final PfPR") 
+# graphics.off()
 
-minmaxes <- all_nets[, list(mean_initial=unique(mean_initial),
-                            min_final=min(final_prev),
-                            max_final=max(final_prev)),
-                     by=list(net_type, x_Temporary_Larval_Habitat, ITN_Coverage)]
 
-minmaxes_smooth <- lapply(unique(minmaxes$net_type), function(net){
-  sub_list <- lapply(unique(minmaxes$ITN_Coverage), function(cov){
-    subset <- minmaxes[net_type==net & ITN_Coverage==cov]
-    subset[, smooth_min:= get_smooth(mean_initial, min_final)]
-    subset[, smooth_max:= get_smooth(mean_initial, max_final)]
-  })
-  sub_list <- rbindlist(sub_list)
-})
-minmaxes_smooth <- rbindlist(minmaxes_smooth)
-
-summary_nets <- unique(all_nets[, list(net_type, ITN_Coverage, x_Temporary_Larval_Habitat, mean_initial, mean_final)])
-summary_nets <- merge(summary_nets, 
-                      minmaxes_smooth, 
-                      by=c("net_type", "ITN_Coverage", "x_Temporary_Larval_Habitat", "mean_initial"))
-
-biting_colors <- unname(unlist(jaline_colors[c("orange", "red", "green", "teal")]))
-pdf(paste0(gates_dir, "/biting_illustrator.pdf"))
-ggplot(summary_nets[ITN_Coverage %in% c(0.2, 0.6)], aes(x=mean_initial, y=mean_final,
-                                                    fill=interaction(net_type, ITN_Coverage),
-                                                    group=interaction(net_type, ITN_Coverage))) +
-  geom_abline(size=1.5, alpha=0.25)+
-  # geom_ribbon(aes(ymin=min_final, ymax=max_final), alpha=0.75) + 
-  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max), alpha=0.25) +
-  geom_line(aes(color=interaction(net_type, ITN_Coverage)), size=1.5) +
-  scale_color_manual(values=biting_colors, name="ITN Coverage") +
-  # scale_color_brewer(type="qual", palette = "Paired") + 
-  scale_fill_manual(values=biting_colors, guide=F) + 
-  theme(legend.position="bottom") + 
-  coord_fixed() + 
-  labs(x="Initial PfPR",
-       y="Final PfPR") 
-graphics.off()
-
-
-# Main takeaways: djibo, kananga, karen at 80% each
+# Main takeaways: djibo, kananga, karen 
 takeaway_sites <- c("karen", "djibo", "kananga")
 takeaway_labels <- c("SE Asia", "Sahel", "Central Africa")
 
@@ -138,11 +139,12 @@ idx <- 1
                   theme(legend.position="bottom") + 
                   coord_fixed() +
                   labs(x="Initial PfPR",
-                       y="Final PfPR") 
+                       y="Final PfPR") +
+    facet_grid(~Intervention)
   
-  pdf(paste0(gates_dir, "/res_trans_all.pdf"))
+  # pdf(paste0(gates_dir, "/res_trans_all.pdf"))
   print(this_plot)
-  graphics.off()
+ #  graphics.off()
   
 # }
 
