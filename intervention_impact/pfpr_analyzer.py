@@ -51,11 +51,9 @@ if __name__ == "__main__":
     run_type = "exp"
 
     if run_type=="exp":
-        exps = {"interactions/gates_examples": {
-                                               # "initial_homo_biting":"07b1c6c1-79a6-e811-a2c0-c4346bcb7275",
-                                               # "itns_homo_biting":"c8b1e5b8-e4a6-e811-a2c0-c4346bcb7275",
-                                               "itns_corr_usage": "cde25227-f1a6-e811-a2c0-c4346bcb7275"
-                                               }}
+        exps = {"initial": {"initial_burnin_4":"8c066962-e6b5-e811-a2c0-c4346bcb7275"},
+            "interactions/gates_examples": {"gates_reruns_bugfix": "5858cb46-f3b5-e811-a2c0-c4346bcb7275"
+                                }}
 
         for subfolder, int_list in exps.items():
             for int_name, exp_id in int_list.items():
@@ -70,33 +68,9 @@ if __name__ == "__main__":
                                                                             "x_Temporary_Larval_Habitat",
                                                                             "ACT_Coverage",
                                                                             "IRS_Coverage",
-                                                                            "ITN_Coverage",
-                                                                            "Hates_Nets"
+                                                                            "ITN_Coverage"
                                                                             ]
                                                            ),
                                     force_analyze=True)
                 print(am.experiments)
                 am.analyze()
-
-
-    elif run_type=="suite":
-
-        exps = exps_for_suite_id("537b9041-0fa3-e811-a2c0-c4346bcb7275")
-
-        for exp in exps:
-            print(exp)
-            am = AnalyzeManager(exp.id,
-                                analyzers=PfPRAnalyzer(expname=exp.name,
-                                                       colname="final_prev",
-                                                       outdir=os.path.join(out_dir, "interactions"),
-                                                       sweep_variables=["Site_Name",
-                                                                        "Run_Number",
-                                                                        "x_Temporary_Larval_Habitat",
-                                                                        "ACT_Coverage",
-                                                                        "IRS_Coverage",
-                                                                        "ITN_Coverage"
-                                                                        ]
-                                                       ),
-                                force_analyze=True)
-            # am.analyze()
-            print(am.experiments)

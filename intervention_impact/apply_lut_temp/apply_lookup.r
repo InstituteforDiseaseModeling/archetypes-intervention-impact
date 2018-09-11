@@ -9,8 +9,10 @@ rm(list=ls())
 
 source("pr_to_r0.r")
 
+main_dir <- file.path(Sys.getenv("USERPROFILE"), 
+                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
 
-interventions <- c("ACT 0.2; ", "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; ") # todo: remove final space from intervention name
+interventions <- c( "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; ") # todo: remove final space from intervention name
 repro <- T
 if (repro){
   print("getting repro spline")
@@ -55,7 +57,7 @@ apply_LUT_to_raster<-function(splObj,inRaster, return_r0=F){
 }
 ##################################################################################################
 
-lut <- fread(file.path("..", "shiny", "data", "lookup_full_interactions_v2.csv"))
+lut <- fread(file.path(main_dir, "gates_examples", "gates_bugfix_lookup.csv"))
 lut <- lut[Intervention %in% interventions]
 
 # view plots-- Karen's is weird at high prev but we shouldn't need it up there.
@@ -153,7 +155,7 @@ for (continent in names(mask_values)){
   if (repro==T){
     names(stacked_layers) <- c("R0 2015", interventions)
     breaks <- c(seq(-0.001, 5, length.out=50), seq(5, 10, length.out = 46)[2:46], seq(10, 75, length.out=6)[2:6])
-    pdf("rc_applied.pdf", width=9, height=6)
+    pdf("rc_applied_bugfix.pdf", width=9, height=6)
     print(levelplot(stacked_layers, par.settings=rasterTheme(region=wpal("sky")), zscaleLog=T, xlab=NULL, ylab=NULL, scales=list(draw=F)))
     graphics.off()
   }else{
