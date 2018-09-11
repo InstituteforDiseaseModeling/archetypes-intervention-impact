@@ -24,14 +24,7 @@ run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 asset_exp_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
-ucsf_vector_coverages = [{"itn": 0,
-                          "irs": 100},
-                         {"itn": 100,
-                          "irs": 0},
-                         {"itn": 50,
-                          "irs": 50},
-                         {"itn": 100,
-                          "irs": 100}]
+hs_daily_probs = [0.15, 0.3, 0.7]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
 new_inputs = False
 
@@ -39,12 +32,12 @@ new_inputs = False
 print("setting up")
 if run_type == "burnin":
     years = 15
-    sweep_name = "MAP_II_UCSF_vector_control"
+    sweep_name = "MAP_II_Burning_[insert_num]"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_Corr_Nets_Example_Ints"
+    sweep_name = "MAP_II_UCSF_health_seeking"
     serialize = False
     pull_from_serialization = True
 else:
@@ -155,63 +148,52 @@ if __name__=="__main__":
         print("retrieving burnin")
         expt = retrieve_experiment(burnin_id)
 
-        df_all = pd.DataFrame([x.tags for x in expt.simulations])
-        df_all["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
+        df = pd.DataFrame([x.tags for x in expt.simulations])
+        df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
         # df = df.query("Site_Name=='aba' &  Run_Number==7")
 
-        # split into suite of experiments
-        suite_em = ExperimentManagerFactory.init()
-        s = suite_em.create_suite(sweep_name)
+        builder = ModBuilder.from_list([[
+            ModFn(DTKConfigBuilder.update_params, {
+                "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
+                "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
+                "Run_Number": df["Run_Number"][x],
+                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
+            ModFn(set_site_id, asset_collection=site_info[df["Site_Name"][x]]["asset_collection"]),
+            ModFn(site_simulation_setup, site_name=df["Site_Name"][x],
+                                         species_details=species_details,
+                                         vectors=site_info[df["Site_Name"][x]]["vectors"]),
 
-        for site_name in sites["name"]:
+            ModFn(add_annual_itns, year_count=years,
+                                   n_rounds=1,
+                                   coverage= itn_cov / 100,
+                                   discard_halflife=180,
+                                   start_day=5,
+                                   IP=[{"NetUsage":"LovesNets"}]
+                  ),
+            ModFn(assign_net_ip, hates_net_prop),
+            # ModFn(add_irs_group, coverage= irs_cov/100,
+            #                      decay=180,
+            #                      start_days=[365*start for start in range(years)]),
+            ModFn(add_healthseeking_by_coverage, coverage=act_cov/100, rate=daily_prob),
 
-            # add experiment to suite
-            exp_name = "{suite}_{site}".format(suite=sweep_name, site=site_name)
-            # em.create_experiment(exp_name, suite_id=s)
+        ]
+            for x in df.index
+            for hates_net_prop in net_hating_props
+            for itn_cov in [80]
+            # for irs_cov in intervention_coverages
+            for act_cov in [80]
+            for daily_prob in hs_daily_probs
 
-            df = df_all.query("Site_Name==@site_name")
+        ])
 
-            builder = ModBuilder.from_list([[
-                ModFn(DTKConfigBuilder.update_params, {
-                    "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
-                    "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
-                    "Run_Number": df["Run_Number"][x],
-                    "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
-                ModFn(set_site_id, asset_collection=site_info[df["Site_Name"][x]]["asset_collection"]),
-                ModFn(site_simulation_setup, site_name=df["Site_Name"][x],
-                                             species_details=species_details,
-                                             vectors=site_info[df["Site_Name"][x]]["vectors"]),
+        run_sim_args = {"config_builder": cb,
+                        "exp_name": sweep_name,
+                        "exp_builder": builder}
 
-                ModFn(add_annual_itns, year_count=years,
-                                       n_rounds=1,
-                                       coverage= cov_combo["itn"] / 100,
-                                       discard_halflife=180,
-                                       start_day=5,
-                                       IP=[{"NetUsage":"LovesNets"}]
-                      ),
-                ModFn(assign_net_ip, hates_net_prop),
-                ModFn(add_irs_group, coverage= cov_combo["irs"]/100,
-                                     decay=180,
-                                     start_days=[365*start for start in range(years)]),
-                ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
-
-            ]
-                for x in df.index
-                for hates_net_prop in net_hating_props
-                for cov_combo in ucsf_vector_coverages
-                for act_cov in [80]
-
-            ])
-
-            run_sim_args = {"config_builder": cb,
-                            "suite_id": s,
-                            "exp_name": exp_name,
-                            "exp_builder": builder}
-
-            em = ExperimentManagerFactory.from_cb(cb)
-            em.run_simulations(**run_sim_args)
+        em = ExperimentManagerFactory.from_cb(cb)
+        em.run_simulations(**run_sim_args)
 
 
     else:
