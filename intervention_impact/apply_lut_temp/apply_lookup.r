@@ -10,7 +10,7 @@ rm(list=ls())
 source("pr_to_r0.r")
 
 
-interventions <- c("ACT 0.2; ", "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; ") # todo: remove final space from intervention name
+interventions <- c( "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; ") # todo: remove final space from intervention name
 repro <- T
 if (repro){
   print("getting repro spline")
