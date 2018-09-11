@@ -114,4 +114,4 @@ def add_healthseeking_by_coverage(cb, coverage=1.0, rate=0.15):
                        tsteps_btwn_repetitions=365,
                        broadcast_event_name="Received_Treatment")
 
-    return {"ACT_Coverage": coverage, "ACT_HS_Rate": rate}
+    return {"ACT_Coverage": coverage, "ACT_Daily_Prob": rate}
