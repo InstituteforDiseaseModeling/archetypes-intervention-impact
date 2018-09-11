@@ -24,6 +24,14 @@ run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 asset_exp_id = "b11481d8-dca0-e811-a2c0-c4346bcb7275"
 intervention_coverages = [0, 20, 40, 60, 80]
+ucsf_vector_coverages = [{"itn": 0,
+                          "irs": 100},
+                         {"itn": 100,
+                          "irs": 0},
+                         {"itn": 50,
+                          "irs": 50},
+                         {"itn": 100,
+                          "irs": 100}]
 net_hating_props = [0.1] # based on expert opinion from Caitlin
 new_inputs = False
 
@@ -31,7 +39,7 @@ new_inputs = False
 print("setting up")
 if run_type == "burnin":
     years = 15
-    sweep_name = "MAP_II_Homo_Burnin_Example"
+    sweep_name = "MAP_II_UCSF_vector_control"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -178,23 +186,22 @@ if __name__=="__main__":
 
                 ModFn(add_annual_itns, year_count=years,
                                        n_rounds=1,
-                                       coverage=itn_cov / 100,
+                                       coverage= cov_combo["itn"] / 100,
                                        discard_halflife=180,
                                        start_day=5,
                                        IP=[{"NetUsage":"LovesNets"}]
                       ),
                 ModFn(assign_net_ip, hates_net_prop),
-                ModFn(add_irs_group, coverage=irs_cov/100,
+                ModFn(add_irs_group, coverage= cov_combo["irs"]/100,
                                      decay=180,
                                      start_days=[365*start for start in range(years)]),
                 ModFn(add_healthseeking_by_coverage, coverage=act_cov/100),
 
             ]
                 for x in df.index
-                for itn_cov in intervention_coverages
                 for hates_net_prop in net_hating_props
-                for irs_cov in intervention_coverages
-                for act_cov in intervention_coverages
+                for cov_combo in ucsf_vector_coverages
+                for act_cov in [80]
 
             ])
 
