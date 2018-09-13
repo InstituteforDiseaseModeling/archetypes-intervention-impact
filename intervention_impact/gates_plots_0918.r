@@ -152,7 +152,6 @@ idx <- 1
 # 2: Different relative effects in different places
 
 site_colors <- unname(unlist(jaline_colors[c("red", "orange", "green", "teal")]))
-build_site_colors <- c("#3f3f3f", "#696969", site_colors[3:4])
 
 
 int_subset <- c("ACT 0.2; ", "ACT 0.6; " # , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
@@ -176,7 +175,7 @@ graphics.off()
 
 
 
-int_subset <- c("ACT 0.2; ", "ACT 0.6; " , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
+int_subset <- c("ACT 0.2; ", "ACT 0.4; " , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
 )
 subset <- summary_result[Intervention %in% int_subset]
 subset[, Intervention:=factor(Intervention, levels=int_subset)]
@@ -186,8 +185,8 @@ ggplot(subset, aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5, alpha=0.25)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Intervention), alpha=0.25) +
   geom_line(aes(color=Intervention), size=2) +
-  scale_color_manual(values=build_site_colors, name="") + 
-  scale_fill_manual(values=build_site_colors, name="") + 
+  scale_color_manual(values=site_colors, name="") + 
+  scale_fill_manual(values=site_colors, name="") + 
   theme(legend.position="bottom") + 
   coord_fixed() + 
   labs(x="Initial PfPR",
