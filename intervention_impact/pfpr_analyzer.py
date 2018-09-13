@@ -51,8 +51,8 @@ if __name__ == "__main__":
     run_type = "exp"
 
     if run_type=="exp":
-        exps = {"initial": {"initial_burnin_4":"8c066962-e6b5-e811-a2c0-c4346bcb7275"},
-            "interactions/gates_examples": {"gates_reruns_bugfix": "5858cb46-f3b5-e811-a2c0-c4346bcb7275"
+        exps = {# "initial": {"initial_burnin_4":"8c066962-e6b5-e811-a2c0-c4346bcb7275"},
+            "interactions": {"ucsf_hs_sweep": "af137e2f-94b5-e811-a2c0-c4346bcb7275"
                                 }}
 
         for subfolder, int_list in exps.items():
@@ -68,7 +68,8 @@ if __name__ == "__main__":
                                                                             "x_Temporary_Larval_Habitat",
                                                                             "ACT_Coverage",
                                                                             "IRS_Coverage",
-                                                                            "ITN_Coverage"
+                                                                            "ITN_Coverage",
+                                                                            "ACT_Daily_Prob"
                                                                             ]
                                                            ),
                                     force_analyze=True)
