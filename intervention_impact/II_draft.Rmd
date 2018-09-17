@@ -1,0 +1,63 @@
+---
+title: "Intervention Impact Draft"
+author: "Amelia Bertozzi-Villa"
+date: "9/16/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Introduction
+
+* The question of assessing optimal intervention packages is a long-standing goal of malaria modeling (Griffin, Walker, Penny, etc.). 
+* Modeling is key for informing likely best strategies for control and elimination at lower risk and cost than large trials. 
+* Statistical models are great but require a lot of data to fit, intervention impact is sometimes a nonintuitive output.
+* Mechanistic models are great, but require high-quality information about the world they are simulating, and are too big to run per-pixel.
+* We present a method that builds on Bhatt 2015 & EMOD's mechanistic model to present a geographically relevant but computationally tractable model for intervention impact for both current and potential future tools.
+* This type of analysis has been done for nets and IRS in SSA, but not for ACTs and not outside of Africa
+
+## Methods
+
+1. Split regions into clusters by seasonality of environment (specifically not seasonality of malaria, that's our output). For details of methods, see other paper.
+2. Select representative sites from each cluster
+* Describe rigorous way we do this-- maybe pull things near mean of covariate ranges & sensitivity test at the boundaries?
+* Wind up with x,y,z sintes in Africa, Asias, Americas
+* Map of clusters, sites, vector mixes.
+
+3. Demographic detailing of sites
+* country-specific birth rates
+* heterogeneous biting risk
+* 15-year immunity initialization
+
+4. Interventions: ACT, IRS, ITNs
+* describe model details of each campaign
+
+## Results
+1. Some proof of rigor of site selection
+2. Current tools: 
+* Most powerful packages across the board are:
+* Differences between sites drive xyz differences in outcomes and optimal packages
+* Rc calculation
+3. Future tools: similar
+
+## Discussion
+1. This strategy bridge a gap between mechanistic and statistical modeling
+* Integrates covariates into site selection
+* Harnessess mechanistic strength to test a wide range of scenarios
+* Geographically relevent, computationally tractable
+
+2. Useful for broad scoping of potentially useful interventions, not for direct local use. Open source interactive tool if people want to use it. 
+
+3. Easily extensible to other interventions, sites, demographic configurations, etc.
+
+### Weaknesses
+* No migration
+* Little population heterogeneity
+* Blanket application of many interventions to settings where they may not be appropriate
+* For interventions with little data, results are speculative
+* Not capturing socio-cultural differences within clusters, although one could use geopolitical boundaries when choosing intervention packages.
+
+## Conclusion
+This is exciting. 
