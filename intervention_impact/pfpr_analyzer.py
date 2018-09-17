@@ -1,29 +1,23 @@
-import pandas as pd
 import os
-import pdb
 
-from simtools.SetupParser import SetupParser
+import pandas as pd
 from simtools.Analysis.AnalyzeManager import AnalyzeManager
 from simtools.Analysis.BaseAnalyzers import BaseAnalyzer
+from simtools.SetupParser import SetupParser
 from simtools.Utilities.COMPSUtilities import exps_for_suite_id
-from simtools.Utilities.COMPSUtilities import COMPS_login
 
 
 class PfPRAnalyzer(BaseAnalyzer):
 
-
-    def __init__(self, expname, sweep_variables=["Run_Number"], outdir=".", colname=None):
-        super(PfPRAnalyzer, self).__init__()
-        self.sweep_variables = sweep_variables
-        self.filenames = ["output/MalariaSummaryReport_AnnualAverage.json"]
-        self.expname = expname
-        self.colname = self.expname if not colname else colname
-        self.outdir = outdir
-
+    def __init__(self, sweep_variables=None, working_dir="."):
+        super(PfPRAnalyzer, self).__init__(working_dir=working_dir,
+                                           filenames=["output/MalariaSummaryReport_AnnualAverage.json"])
+        self.sweep_variables = sweep_variables or ["Run_Number"]
 
     def select_simulation_data(self, data, simulation):
+        colname = "initial_prev" if simulation.experiment.exp_name == "initial" else "final_prev"
         channeldata = data[self.filenames[0]]["DataByTime"]["PfPR_2to10"]
-        simdata = pd.DataFrame({self.colname: channeldata})
+        simdata = pd.DataFrame({colname: channeldata})
         simdata = simdata[-2:-1]
 
         for sweep_var in self.sweep_variables:
@@ -31,16 +25,19 @@ class PfPRAnalyzer(BaseAnalyzer):
                 simdata[sweep_var] = simulation.tags[sweep_var]
         return simdata
 
-
     def finalize(self, all_data):
-        selected = [data for sim, data in all_data.items()]
-        if len(selected) == 0:
-            print("No data have been returned... Exiting...")
-            return
+        data_sets_per_experiment = {}
 
-        d = pd.concat(selected).reset_index(drop=True)
+        for simulation, associated_data in all_data.items():
+            experiment_name = simulation.experiment.exp_name
+            if experiment_name not in data_sets_per_experiment:
+                data_sets_per_experiment[experiment_name] = []
 
-        d.to_csv(os.path.join(self.outdir, "{name}.csv".format(name=self.expname)), index=False)
+            data_sets_per_experiment[experiment_name].append(associated_data)
+
+        for experiment_name, data_sets in data_sets_per_experiment.items():
+            d = pd.concat(data_sets).reset_index(drop=True)
+            d.to_csv(os.path.join(self.working_dir, "{name}.csv".format(name=experiment_name)), index=False)
 
 
 if __name__ == "__main__":
@@ -50,28 +47,37 @@ if __name__ == "__main__":
 
     run_type = "exp"
 
-    if run_type=="exp":
-        exps = {# "initial": {"initial_burnin_4":"8c066962-e6b5-e811-a2c0-c4346bcb7275"},
-            "interactions": {"ucsf_hs_sweep": "af137e2f-94b5-e811-a2c0-c4346bcb7275"
-                                }}
+    if run_type == "exp":
+        experiments = ["547b9041-0fa3-e811-a2c0-c4346bcb7275", "557b9041-0fa3-e811-a2c0-c4346bcb7275",
+                       "567b9041-0fa3-e811-a2c0-c4346bcb7275", "577b9041-0fa3-e811-a2c0-c4346bcb7275",
+                       "587b9041-0fa3-e811-a2c0-c4346bcb7275", "5a7b9041-0fa3-e811-a2c0-c4346bcb7275",
+                       "5b7b9041-0fa3-e811-a2c0-c4346bcb7275", "c6ddc170-19a1-e811-a2c0-c4346bcb7275"]
 
-        for subfolder, int_list in exps.items():
-            for int_name, exp_id in int_list.items():
-                print("exp id is " + exp_id)
-                colname = "initial_prev" if "initial" in int_name else "final_prev"
-                am = AnalyzeManager(exp_id,
-                                    analyzers=PfPRAnalyzer(expname=int_name,
-                                                           colname=colname,
-                                                           outdir=os.path.join(out_dir, subfolder),
-                                                           sweep_variables=["Site_Name",
-                                                                            "Run_Number",
-                                                                            "x_Temporary_Larval_Habitat",
-                                                                            "ACT_Coverage",
-                                                                            "IRS_Coverage",
-                                                                            "ITN_Coverage",
-                                                                            "ACT_Daily_Prob"
-                                                                            ]
-                                                           ),
-                                    force_analyze=True)
-                print(am.experiments)
-                am.analyze()
+        for exp_id in experiments:
+
+            am = AnalyzeManager(exp_list=exp_id, analyzers=[PfPRAnalyzer(working_dir=out_dir,
+                                                                              sweep_variables=["Site_Name",
+                                                                                               "Run_Number",
+                                                                                               "x_Temporary_Larval_Habitat",
+                                                                                               "ACT_Coverage",
+                                                                                               "IRS_Coverage",
+                                                                                               "ITN_Coverage"
+                                                                                               ])])
+
+            print(am.experiments)
+            am.analyze()
+
+
+    elif run_type == "suite":
+
+        exps = exps_for_suite_id("537b9041-0fa3-e811-a2c0-c4346bcb7275")
+        print(exps)
+        am = AnalyzeManager(exp_list=exps, analyzers=[PfPRAnalyzer(working_dir=out_dir,
+                                                                          sweep_variables=["Site_Name",
+                                                                                           "Run_Number",
+                                                                                           "x_Temporary_Larval_Habitat",
+                                                                                           "ACT_Coverage",
+                                                                                           "IRS_Coverage",
+                                                                                           "ITN_Coverage"
+                                                                                           ])])
+        am.analyze()
