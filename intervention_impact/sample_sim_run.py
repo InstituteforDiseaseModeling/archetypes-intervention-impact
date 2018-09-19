@@ -15,7 +15,7 @@ from malaria.reports.MalariaReport import add_summary_report, add_event_counter_
 
 # setup-- these variables change often. Unless you change the "builder" parameters below,
 # "years" should be at least 2!
-years = 10
+years = 25
 exp_name = "example_run"
 location = "HPC"
 SetupParser.default_block = location
@@ -99,76 +99,76 @@ def add_annual_itns(cb, year_count=1, coverage=0.8, discard_halflife=270, start_
 
 
 ### SLOW WAY: ---------------------------------------------------------------------------------------------------------
-# The slow way, set up your simulation as below and run using "dtk run sample_sim_run.py"
-
-# Here's where you define what will make one simulation different from another. In this case I run:
-# 10 random seeds
-# 20 initial larval habitat magnitudes
-# 4 intervention coverages
-# for a total of 800 simulations.
-
-# this simulation will let things run for two years, then deploy bednets annually at the specified coverage
-# for the remainder of the run.
-builder = ModBuilder.from_list([[
-    ModFn(DTKConfigBuilder.update_params, {
-        "Run_Number": run_num,
-        "x_Temporary_Larval_Habitat":10 ** hab_exp}),
-    ModFn(add_annual_itns, year_count=years-2,
-          coverage=itn_cov / 100,
-          discard_halflife=180,
-          start_day=760
-          ),
-]
-    for run_num in range(10)
-    for hab_exp in np.arange(0, 2, 0.1)
-    for itn_cov in [0, 20, 60, 80]
-])
-
-# finally, this pulls everything together for "dtk run" to pick up
-run_sim_args = {"config_builder": cb,
-                "exp_name": exp_name,
-                "exp_builder": builder}
-
+# # The slow way, set up your simulation as below and run using "dtk run sample_sim_run.py"
+#
+# # Here's where you define what will make one simulation different from another. In this case I run:
+# # 10 random seeds
+# # 20 initial larval habitat magnitudes
+# # 4 intervention coverages
+# # for a total of 800 simulations.
+#
+# # this simulation will let things run for two years, then deploy bednets annually at the specified coverage
+# # for the remainder of the run.
+# builder = ModBuilder.from_list([[
+#     ModFn(DTKConfigBuilder.update_params, {
+#         "Run_Number": run_num,
+#         "x_Temporary_Larval_Habitat":10 ** hab_exp}),
+#     ModFn(add_annual_itns, year_count=years-2,
+#           coverage=itn_cov / 100,
+#           discard_halflife=180,
+#           start_day=760
+#           ),
+# ]
+#     for run_num in range(10)
+#     for hab_exp in np.arange(0, 2, 0.1)
+#     for itn_cov in [0, 20, 60, 80]
+# ])
+#
+# # finally, this pulls everything together for "dtk run" to pick up
+# run_sim_args = {"config_builder": cb,
+#                 "exp_name": exp_name,
+#                 "exp_builder": builder}
+#
 
 ### --------------------------------------------------------------------------------------------------------------------
 
 ### BETTER WAY: ---------------------------------------------------------------------------------------------------------
-# # because of how dtk-tools interacts with COMPS, it is DRAMATICALLY FASTER to set up your script like
-# # this instead and simply call it using "python sample_sim_run.py" :
-#
-# if __name__=="__main__":
-#
-#     SetupParser.init()
-#
-#     # Here's where you define what will make one simulation different from another. In this case I run:
-#     # 10 random seeds
-#     # 20 initial larval habitat magnitudes
-#     # 4 intervention coverages
-#     # for a total of 800 simulations.
-#
-#     # this simulation will let things run for two years, then deploy bednets annually at the specified coverage
-#     # for the remainder of the run.
-#     builder = ModBuilder.from_list([[
-#         ModFn(DTKConfigBuilder.update_params, {
-#             "Run_Number": run_num,
-#             "x_Temporary_Larval_Habitat":10 ** hab_exp}),
-#         ModFn(add_annual_itns, year_count=years-2,
-#               coverage=itn_cov / 100,
-#               discard_halflife=180,
-#               start_day=760
-#               ),
-#     ]
-#         for run_num in range(10)
-#         for hab_exp in np.arange(0, 2, 0.1)
-#         for itn_cov in [0, 20, 60, 80]
-#     ])
-#
-#     # finally, this pulls everything together for "dtk run" to pick up
-#     run_sim_args = {"config_builder": cb,
-#                     "exp_name": exp_name,
-#                     "exp_builder": builder}
-#
-#     em = ExperimentManagerFactory.from_cb(cb)
-#     em.run_simulations(**run_sim_args)
+# because of how dtk-tools interacts with COMPS, it is DRAMATICALLY FASTER to set up your script like
+# this instead and simply call it using "python sample_sim_run.py" :
+
+if __name__=="__main__":
+
+    SetupParser.init()
+
+    # Here's where you define what will make one simulation different from another. In this case I run:
+    # 10 random seeds
+    # 20 initial larval habitat magnitudes
+    # 4 intervention coverages
+    # for a total of 800 simulations.
+
+    # this simulation will let things run for two years, then deploy bednets annually at the specified coverage
+    # for the remainder of the run.
+    builder = ModBuilder.from_list([[
+        ModFn(DTKConfigBuilder.update_params, {
+            "Run_Number": run_num,
+            "x_Temporary_Larval_Habitat":10 ** hab_exp}),
+        ModFn(add_annual_itns, year_count=years-2,
+              coverage=itn_cov / 100,
+              discard_halflife=180,
+              start_day=760
+              ),
+    ]
+        for run_num in range(1)
+        for hab_exp in [0,1,2]
+        for itn_cov in [20, 80]
+    ])
+
+    # finally, this pulls everything together for "dtk run" to pick up
+    run_sim_args = {"config_builder": cb,
+                    "exp_name": exp_name,
+                    "exp_builder": builder}
+
+    em = ExperimentManagerFactory.from_cb(cb)
+    em.run_simulations(**run_sim_args)
 
 ### --------------------------------------------------------------------------------------------------------------------
