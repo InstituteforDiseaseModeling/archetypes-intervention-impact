@@ -11,7 +11,6 @@ import shutil
 
 from dtk.tools.demographics.Node import Node, nodeid_from_lat_lon
 from simtools.SetupParser import SetupParser
-from input_file_generation.add_equilibrium_age_dist import equilibrium_age_distribution
 from input_file_generation.DemographicsGenerator import DemographicsGenerator
 from input_file_generation.ClimateGenerator import ClimateGenerator
 from simtools.Utilities.COMPSUtilities import COMPS_login
@@ -23,42 +22,7 @@ from spatial import make_shapefile, extract_latlongs
 
 def update_demog(demographics):
 
-    # update age distribution--  Assumes Birth_Rate_Dependence="FIXED_BIRTH_RATE" and
-    #                            Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX"
-
-    birth_rate = demographics["Nodes"][0]["NodeAttributes"]["BirthRate"]
-    mort_defaults = demographics["Defaults"]["IndividualAttributes"]["MortalityDistribution"]
-    mort_scale = mort_defaults["ResultScaleFactor"]
-    mort_value = mort_defaults["ResultValues"][1][0]  # annual deaths per 1000, set to mirror birth rate in defaults
-
-    resval, distval = equilibrium_age_distribution(birth_rate, mort_scale, mort_value)
-    age_dist = {
-                "DistributionValues":
-                [
-                    distval.tolist()
-                ],
-                "ResultScaleFactor": 1,
-                "ResultValues":
-                [
-                    resval.tolist()
-                ]
-              }
-
-    # make new age distribution key in demographics dict, remove other age distribution parameters
-    for key in ["AgeDistributionFlag", "AgeDistribution1", "AgeDistribution2"]:
-        del demographics["Defaults"]["IndividualAttributes"][key]
-
-    demographics["Defaults"]["IndividualAttributes"]["AgeDistribution"] = age_dist
-
-    # update mortality distribution to kill everyone over 100
-    mort_defaults["NumPopulationGroups"] = [2, 2]  # add second age bin
-    mort_defaults["PopulationGroups"][1] = [0, 100]  # add age value of second age bin
-    for val_list in mort_defaults["ResultValues"]:
-        val_list.append(999)
-
-    demographics["Defaults"]["IndividualAttributes"]["MortalityDistribution"] = mort_defaults
-
-    # impose heterogeneous biting risk here:
+    # impose heterogeneous biting risk:
     demographics["Defaults"]["IndividualAttributes"]["RiskDistributionFlag"] = 3
     demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
 
