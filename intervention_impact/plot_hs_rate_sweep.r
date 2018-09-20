@@ -33,10 +33,15 @@ all_data[, Health_Seeking_Time:=factor(ACT_Daily_Prob, labels=c("Two Weeks", "On
 all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ACT_Daily_Prob)]
 all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ACT_Daily_Prob)]
 
-means <- unique(all_data[, list(Site_Name, x_Temporary_Larval_Habitat, mean_initial, mean_final, ACT_Daily_Prob)])
+means <- unique(all_data[, list(Site_Name, x_Temporary_Larval_Habitat, mean_initial, mean_final, Health_Seeking_Time)])
 
-ggplot(means, aes(x=mean_initial, y=mean_final, color=ACT_Daily_Prob)) +
+site_colors <- unname(unlist(jaline_colors[c("red", "orange", "green")]))
+
+ggplot(means, aes(x=mean_initial, y=mean_final, color=Health_Seeking_Time)) +
   geom_line(size=1.25) + 
-  facet_wrap(~Site_Name)
+  facet_wrap(~Site_Name) +
+  scale_color_manual(values=site_colors) + 
+  labs(x="Initial PfPR",
+       y="Final PfPR")
 
-
+write.csv(means, file=file.path(main_dir, "interactions", "lookup_ucsf_hs_sweep.csv"))
