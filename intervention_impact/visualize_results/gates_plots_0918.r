@@ -23,9 +23,8 @@ jaline_colors <- list(purple="#AF81AD",
 main_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
 
-gates_dir <- file.path(main_dir, "gates_examples")
+gates_dir <- file.path(main_dir, "version_2_vector_bug/for_gates_review")
 full_sweep_path <- file.path(main_dir, "gates_examples", "gates_bugfix_lookup.csv")
-# full_sweep_path <- file.path(main_dir, "version_2", "lookup_full_interactions_v2.csv")
 
 get_smooth <- function(x, y){
   lo <- loess(y[y>0]~x[y>0])
