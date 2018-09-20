@@ -59,7 +59,7 @@ for species_name in vectors:
 site_name = "aba"
 site_dir = "sites/aba"
 cb.update_params({
-                "Demographics_Filenames": ["sites/{site}/demographics_{site}.json".format(site=site_name)],
+                "Demographics_Filenames": ["sites/{site}/demographics_{site}_test_new.json".format(site=site_name)],
                 "Air_Temperature_Filename": os.path.join(site_dir,
                                                          "air_temperature_daily.bin"),
                 "Land_Temperature_Filename": os.path.join(site_dir,
@@ -72,7 +72,8 @@ cb.update_params({
 )
 
 # add custom reporting
-add_summary_report(cb)
+add_summary_report(cb, age_bins=[1.0 / 12, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100,
+                                 110, 120])
 add_event_counter_report(cb, ["Bednet_Using"])
 
 # collection ids give a lot of speedup if you're using the same inputs over and over again--
