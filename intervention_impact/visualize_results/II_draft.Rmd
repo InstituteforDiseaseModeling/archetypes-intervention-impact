@@ -13,6 +13,14 @@ make_fig <- function(fname, dir=figure_dir){
   knitr::include_graphics(file.path(dir, fname))
 }
 ```
+## Abstract
+As more and more countries turn a serious eye to malaria elimination, the need grows for geographically informative predictions of intervention impact and the joint effects of multiple interventions at once. Tools previously developed for this purpose have either been extremely geographically broad (i.e. all of Africa) or highly localized (i.e. a single village or district), and have tended to focus on the impact of only one or two interventions, usually insecticide-treated nets (ITNs) and indoor residual spraying (IRS). We present a new tool that a) allows estimation of intervention impacts for any part of the malaria-transmitting world at a 5km-by-km resolution; b) predicts impact at a range of coverages for ITNs, IRS, and case management with artemisinin combination therapy (ACTs) as well as all interactions of those three interventions; and c) is easily extensible to inclusion of other interventions such as seasonal malaria chemoprophylaxis (SMC) or attractive toxic sugar baits (ATSBs). 
+
+We first use dimensionality reduction and clustering techniques on a range of spatiotemporally rich environmental, vectorial, and climactic variables to split malaria-transmitting areas of Africa, Asia, and the Americas into regions of different "typical seasonality". Next, we use a detailed agent-based mechanistic model to simulate the N-year impacts of 0-80% coverage of ITNs, IRS, and ACTs and all possible interactions thereof at 50 different initial prevalences for each seasonality type. Additionally, we explore a range of more experimental interventions and assess the effects of heterogeneous biting risk, correlated vs uncorrelated intervention coverage, and targeting interventions to the highest-risk individuals. 
+
+The results of this exercise are publicly available in an easy-to-use interactive visualization. We find that vector species mix (via anthrophophily and endophily) strongly influence the impact of indoor vector control, and that [other result]. Consistent with previous studies, we find that heterogeneous biting risk and correlated intervention coverage attenuate intervention impact. In a heterogeneous risk framework, targeting the highest-risk groups can lead to faster reductions in prevalence, but only if the targeted group receives interventions at specifically high coverage, which may be operationally infeasible. 
+
+[motivating conclusion about the strengths of this framework and encouragement to use the associated online tool.]
 
 ## Introduction
 
