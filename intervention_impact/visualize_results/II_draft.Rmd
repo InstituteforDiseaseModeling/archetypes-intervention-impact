@@ -7,6 +7,11 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+figure_dir <- file.path(Sys.getenv("HOME"), 
+                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions/version_2_vector_bug/for_gates_review/illustrator_edits")
+make_fig <- function(fname, dir=figure_dir){
+  knitr::include_graphics(file.path(dir, fname))
+}
 ```
 
 ## Introduction
@@ -20,27 +25,101 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## Methods
 
-1. Split regions into clusters by seasonality of environment (specifically not seasonality of malaria, that's our output). For details of methods, see other paper.
+### Clustering by seasonality and vector mix
+
+[Motivating intro paragraph]
+
+To start, imagine wanting to group pixels based on rainfall seasonality alone, using 12 rasters of mean monthly rainfall in Africa. With X 5x5 km pixels on that continent, one can construce a 12xX matrix of rainfall variables. Singular value decomposition (SVD), a relative of Principle Component Analysis, is a method for identifying the "most informative" (that is, most highly variable) axes that characterize high-dimensional datasets [todo: better SVD description]. Having identified the N axes that collectively describe most of the variation in the data, one can then re-project the original 12-dimensional matrix into N-dimensional space, where points close to each other should now have similar seasonality patterns. One can then run a clustering algorithm, such as K-means, on this dataset to identify discrete clusters of pixels with similar "seasonal profiles". Note that this method does not explicitly incorporate space, but relies on the likely very similar rainfall patterns between two neighboring pixels to yield largely contiguous clusters. 
+
+We performed SVD and K-means as described separately for Africa, Asia, and the Americas. For all continents we utilized both monthly rainfall and monthly temperature suitability index (TSI), a measure of how likely a mosquito is to survive in a pixel based on air temperature. [todo: much more detailed descriptions of MAP covariates]. In Africa, we were further able to cluster on (static, not monthly) metrics of relative abundance for the three dominant malaria vectors: the anophelines *arabiensis*, *funestus*, and *gambiae sensu strictu*. Thus, the resulting clusters are grouping based on similarity in *rainfall seasonality*, *temperature suitability seasonality*, and *relative vector abundance* simultaneously. In Asia and the Americas such abundance covariates were unavailable, so we instead clustered on a raster of dominant vector species [todo: confirm with Josh P that we can put a categorical variable like this into SVD]. We tested k-means with cluster counts from 3 to 7, using [some method] to determine the appropriate number of clusters for each pixel. 
+
+For each grouping determined by k-means, we selected the pixel closest to the centroid (in N-dimensional space) of the cluster as our "representative site". Additionally we included [x,y] sites in Mozambique and Zambia to check against highly calibrated EMOD models [todo: explain this in more detail].
+
+
+[todo: move this to other paper draft]
 2. Select representative sites from each cluster
 * Describe rigorous way we do this-- maybe pull things near mean of covariate ranges & sensitivity test at the boundaries?
 * Wind up with x,y,z sintes in Africa, Asias, Americas
 * Map of clusters, sites, vector mixes.
 
-3. Demographic detailing of sites
-* country-specific birth rates
-* heterogeneous biting risk
-* 15-year immunity initialization
+### EMOD, Site Details, and Intervention Parameters
 
-4. Interventions: ACT, IRS, ITNs
-* describe model details of each campaign
+**EMOD**
+[typical description of EMOD]
+
+**Site Details**
+We collected site-specific rainfall, temperature, and humidity metrics from [wherever COMPS pulls things from. Todo: I think it makes more sense to generate climate input file from MAP covariates, since we clustered on those]. We extracted site-specific vector proportions from MAP's relative vector abundance rasters for Africa. In Asia and the Americas, we assumed that the dominant vector species was the only vector present. We used national-level birth rates from the World Bank in [year] to characterize an age distribution for each site. Other than climate, vector mix, and birth rate, all sites were identical. 
+
+For every site, we ran every set of interventions on a range of initial PfPR2-10's from 0 to 85% [todo: go higher by using true prevalence instead of blood smear parasite prevalence?]. To estabilsh population-level immunity, we ran each simulation for 15 years prior to initiating any intervention. 
+
+We tested the impact of heterogeneous biting risk on intervention outcomes by simulating both homogeneous and exponentially distributed probability of being bitten.  
+
+**Interventions**
+
+*ACT model details*
+ "Coverage" refers to (non-age-dependent) probability of seeking care given a clinical case. Assume that, once someone has a clinical case and has decided to seek care, 90% of people reach care within 2 weeks and are treated with AL. Assume no drug resistance [todo: change this?]
+ 
+*ITN model details*
+"Coverage" refers to proportion of the population that recieves a net every year for the N years of intervention duration. Coverage and use are initially identical, but nets are discarded with a 180 day half-life. Also annual net distributions are correlated, such that after the initial distribution coverage never goes above [x].  
+
+*IRS model details* 
+"Coverage" refers to proporiton of the population whose houses are sprayed with an insecticide with 180 waning of killing efficacy. 
+
+*Experimental interventions*
+Larvicides, ATSBs, RTS,S? 
+
+*Other tests*
+Effect of:
+* Antimalarial resistance
+* Correlated ITN and IRS usage
+* Targeting most-bitten group for intervention, with and without lower coverage (given that they're hard to access). 
+
+All interventions (and intervention combinations) tested at coverages of 10-80% for N years. 
+
+### Possibly: curve-fitting using SINDY
+
+### Application to maps, population-at-risk
+
+*Africa* 
+Use 2015 intervention-deleted PfPR raster to calculate counterfactual PfPR's and reproductive numbers, use Afripop to calcluate populaton-at-risk. 
+
+*Non-Africa* 
+Not quite sure what our strategy is here, as there is no intervention-deleted counterfactual? To be discussed. 
+
 
 ## Results
-1. Some proof of rigor of site selection
-2. Current tools: 
-* Most powerful packages across the board are:
-* Differences between sites drive xyz differences in outcomes and optimal packages
-* Rc calculation
-3. Future tools: similar
+
+### Clustering and site selection
+
+`r make_fig("clusters_with_timeseries.png")`
+
+`r make_fig("vector_props_bugfix.png")`
+
+### Differential intervention impact correlated to indoor biting tendency
+
+`r make_fig("site_compare_4.png")`
+
+### Possible: differential intervention impact correlated to different climate/seasonality?
+
+### Impact of heterogeneous biting
+
+`r make_fig("het_biting_4.png")`
+
+### Impact of correlated ITN and IRS coverage
+
+### Impact of targeting most-at-risk
+
+### Impact of experimental interventions
+
+### Continent-level applications
+
+*Prevalence forecasts*
+
+*Reproductive number forecasts*
+`r make_fig("repro_maps.png")`
+
+*Population-at-risk forecasts*
+
 
 ## Discussion
 1. This strategy bridge a gap between mechanistic and statistical modeling
