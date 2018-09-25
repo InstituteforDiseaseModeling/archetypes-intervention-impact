@@ -28,43 +28,23 @@ def update_demog(demographics):
 
     return demographics
 
-def net_usage_overlay(site_name, hates_net_prop):
-
-    base_demog_path = os.path.join("sites", site_name, "demographics_{name}.json".format(name=site_name))
-    overlay_path = os.path.join("sites", site_name, "demographics_{name}_hatenets_{prop}.json".format(name=site_name,
-                                                                                                        prop=hates_net_prop))
-    with open(base_demog_path) as f:
-        demo = json.loads(f.read())
-
-    nodeid = demo["Nodes"][0]["NodeID"]
-
-    prop_by_node_dict = { 'node' : [nodeid, nodeid],
-                          'Property' : ['NetUsage', 'NetUsage'],
-                          'Property_Type' : ['IP', 'IP'],
-                          'Property_Value' : [ 'HatesNets',
-                                               'LovesNets'],
-                          'Initial_Distribution' : [hates_net_prop, 1-hates_net_prop]}
+def net_usage_overlay(base_demog_path, overlay_path):
 
     # base IPs and NPs
     IPs = [
         { 'Property' : 'NetUsage',
           'Values' : [ 'HatesNets',
                        'LovesNets'],
-          'Initial_Distribution' : [0, 1],
+          'Initial_Distribution' : [0.1, 0.9],
           'Transitions' : [] }
     ]
     NPs = [
     ]
 
-    df = pd.DataFrame(prop_by_node_dict)
-    if (not df.empty) and (not check_df_valid(df, IPs, NPs)):
-        print('properties by node df is invalid')
-        exit()
-    generate_demographics_properties(base_demog_path, overlay_path, IPs=IPs, NPs=NPs, df=df, as_overlay=True)
+    generate_demographics_properties(base_demog_path, overlay_path, IPs=IPs, NPs=NPs, as_overlay=True)
 
 
-
-def generate_input_files(res=30, pop=1000, overwrite=False):
+def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
 
     # setup
     # SetupParser.init()
@@ -74,7 +54,6 @@ def generate_input_files(res=30, pop=1000, overwrite=False):
                                      "map_intervention_impact", "seasonal_classification", "vectors")
 
     # specify directories
-    out_dir = os.path.join("sites", "all")
 
     if overwrite and os.path.isdir(out_dir):
         shutil.rmtree(out_dir)
@@ -118,3 +97,6 @@ def generate_input_files(res=30, pop=1000, overwrite=False):
     demo_f = open(demog_path, "w+")
     json.dump(demographics, demo_f, indent=4)
     demo_f.close()
+
+    overlay_path = os.path.join(out_dir, "demographics_net_overlay.json")
+    net_usage_overlay(demog_path, overlay_path)

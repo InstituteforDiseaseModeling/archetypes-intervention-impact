@@ -15,15 +15,14 @@ def assign_net_ip(cb, hates_net_prop):
           trigger_condition_list=["Births"])
     return {"Hates_Nets": hates_net_prop}
 
-def site_simulation_setup(cb, site_name, species_details, vectors, max_larval_capacity=4e8):
+def simulation_setup(cb, species_details, max_larval_capacity=4e8):
 
-    site_dir = os.path.join("sites", site_name)
+    site_dir = os.path.join("sites", "all")
 
     # directories
-    # todo: do I need this if I specify an asset collection?
     cb.update_params({
-                    "Demographics_Filenames": ["sites/{site}/demographics_{site}.json".format(site=site_name),
-                                               "sites/{site}/demographics_{site}_hatenets_0.json".format(site=site_name)],
+                    "Demographics_Filenames": [os.path.join(site_dir, "demographics.json"),
+                                               os.path.join(site_dir, "demographics_net_overlay.json")],
                     "Air_Temperature_Filename": os.path.join(site_dir,
                                                              "air_temperature_daily.bin"),
                     "Land_Temperature_Filename": os.path.join(site_dir,
@@ -35,26 +34,20 @@ def site_simulation_setup(cb, site_name, species_details, vectors, max_larval_ca
                     }
     )
 
-    # Find vector proportions for each vector in our site
-    set_params_by_species(cb.params, [name for name in vectors.keys()])
+    # Find vector proportions for each vector TODO: add node-specific and habitat-specific multiplier to demog overlay
+    set_params_by_species(cb.params, [name for name in species_details.keys()])
 
-    for species_name, species_prop in vectors.items():
+    for species_name, species_modifications in species_details.items():
         set_species_param(cb, species_name, "Adult_Life_Expectancy", 20)
         set_species_param(cb, species_name, "Vector_Sugar_Feeding_Frequency", "VECTOR_SUGAR_FEEDING_NONE")
 
-        species_modifications = species_details[species_name]
-
         for param, val in species_modifications.items():
             if param == "habitat_split":
-                new_vals = {hab: hab_prop * species_prop * max_larval_capacity for hab, hab_prop in val.items()}
+                new_vals = {hab: hab_prop * max_larval_capacity for hab, hab_prop in val.items()}
                 set_species_param(cb, species_name, "Larval_Habitat_Types", new_vals)
             else:
                 set_species_param(cb, species_name, param, val)
 
-    return_params = {"{species}_proportion".format(species=species): prop for species, prop in vectors.items()}
-    return_params["Site_Name"] = site_name
-
-    return return_params
 
 
 # itns
