@@ -1,0 +1,27 @@
+{
+    "Defaults": {
+        "IndividualProperties": [
+            {
+                "Initial_Distribution": [
+                    0,
+                    1
+                ],
+                "Property": "NetUsage",
+                "Transitions": [],
+                "Values": [
+                    "HatesNets",
+                    "LovesNets"
+                ]
+            }
+        ]
+    },
+    "Metadata": {
+        "Author": "idm",
+        "DateCreated": "2018-09-24 21:49:17.948001",
+        "IdReference": "Gridded world grump30arcsec",
+        "NodeCount": 8,
+        "Resolution": 30,
+        "Tool": "dtk-tools"
+    },
+    "Nodes": []
+}

@@ -20,7 +20,7 @@ from generate_input_files import generate_input_files, net_usage_overlay
 from sweep_functions import *
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "8c066962-e6b5-e811-a2c0-c4346bcb7275"
 asset_exp_id = "8c066962-e6b5-e811-a2c0-c4346bcb7275"
 # intervention_coverages = [0, 20, 40, 60, 80]
@@ -50,7 +50,7 @@ int_scenarios = [{"act": 0,
                  ]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = False
+new_inputs = True
 
 # Serialization
 print("setting up")
@@ -110,7 +110,7 @@ if serialize:
 add_summary_report(cb)
 # add_event_counter_report(cb, ["Bednet_Using"])
 
-def set_site_id(cb, asset_collection, use_assets=True):
+def set_asset_id(cb, asset_collection, use_assets=True):
 
     if use_assets:
         cb.set_input_collection(asset_collection)
@@ -131,39 +131,25 @@ if __name__=="__main__":
     cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
     cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
 
-    site_info = {}
+    site_input_dir = os.path.join("sites", "all")
 
     with open("species_details.json") as f:
         species_details = json.loads(f.read())
 
-    print("retrieving asset experiment")
-    asset_expt = retrieve_experiment(asset_exp_id)
-    asset_df = pd.DataFrame([x.tags for x in asset_expt.simulations])
+    if asset_exp_id:
+        print("retrieving asset experiment")
+        asset_expt = retrieve_experiment(asset_exp_id)
+        asset_df = pd.DataFrame([x.tags for x in asset_expt.simulations])
+        set_asset_id(cb, asset_expt)
 
-    for site_name in sites["name"]:
-        site_dir = os.path.join("sites", site_name)
-        site_info[site_name] = {}
+    if new_inputs:
+        print("generating input files")
+        generate_input_files(site_input_dir, pop=2000, overwrite=True)
 
-        # input files
-        if new_inputs:
-            print("generating input files for " + site_name)
-            generate_input_files(site_name, pop=3000, overwrite=True)
+    # Find vector proportions for each vector in our site todo:use this for demog setup
+    vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
 
-        # make sure net overlay exists
-        overlay_fname = "demographics_{name}_hatenets_0.json".format(name=site_name)
-        if not os.path.isfile(os.path.join("sites", site_name, overlay_fname)):
-            net_usage_overlay(site_name, hates_net_prop=0)
-
-        # asset collections
-        site_info[site_name]["asset_collection"] = get_asset_collection(
-            asset_df.query('Site_Name==@site_name')['input_collection_id'].unique()[0])
-
-        # Find vector proportions for each vector in our site
-        vectors = pd.read_csv(os.path.join(site_dir, "vector_proportions.csv"))
-        site_info[site_name]["vectors"] = {row.species: row.proportion for row in vectors.itertuples() if
-                                           row.proportion > 0}
-
-    # builders
+    simulation_setup(cb, species_details)
 
     if pull_from_serialization:
         print("building from pickup")
@@ -184,10 +170,6 @@ if __name__=="__main__":
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
                 "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
-            ModFn(set_site_id, asset_collection=site_info[df["Site_Name"][x]]["asset_collection"]),
-            ModFn(site_simulation_setup, site_name=df["Site_Name"][x],
-                                         species_details=species_details,
-                                         vectors=site_info[df["Site_Name"][x]]["vectors"]),
 
             ModFn(add_annual_itns, year_count=years,
                                    n_rounds=1,
@@ -224,14 +206,9 @@ if __name__=="__main__":
             ModFn(DTKConfigBuilder.update_params, {
                 "Run_Number": run_num,
                 "x_Temporary_Larval_Habitat":10 ** hab_exp}),
-            ModFn(set_site_id, asset_collection=site_info[site_name]["asset_collection"], use_assets=not new_inputs),
-            ModFn(site_simulation_setup, site_name=site_name,
-                                         species_details=species_details,
-                                         vectors=site_info[site_name]["vectors"]),
         ]
             for run_num in range(10)
             for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for site_name in sites["name"]
         ])
 
     run_sim_args = {"config_builder": cb,
