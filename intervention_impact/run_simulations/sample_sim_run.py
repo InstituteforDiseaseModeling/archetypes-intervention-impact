@@ -15,7 +15,7 @@ from malaria.reports.MalariaReport import add_summary_report, add_event_counter_
 
 # setup-- these variables change often. Unless you change the "builder" parameters below,
 # "years" should be at least 2!
-years = 25
+years = 15
 exp_name = "example_run"
 location = "HPC"
 SetupParser.default_block = location
@@ -59,7 +59,7 @@ for species_name in vectors:
 site_name = "aba"
 site_dir = "sites/aba"
 cb.update_params({
-                "Demographics_Filenames": ["sites/{site}/demographics_{site}_test_new.json".format(site=site_name)],
+                "Demographics_Filenames": ["sites/{site}/demographics_{site}.json".format(site=site_name)],
                 "Air_Temperature_Filename": os.path.join(site_dir,
                                                          "air_temperature_daily.bin"),
                 "Land_Temperature_Filename": os.path.join(site_dir,
