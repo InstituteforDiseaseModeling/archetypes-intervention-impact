@@ -1,4 +1,5 @@
 import os
+import pdb
 
 import pandas as pd
 from simtools.Analysis.AnalyzeManager import AnalyzeManager
@@ -16,9 +17,12 @@ class PfPRAnalyzer(BaseAnalyzer):
 
     def select_simulation_data(self, data, simulation):
         colname = "initial_prev" if simulation.experiment.exp_name == "initial" else "final_prev"
-        channeldata = data[self.filenames[0]]["DataByTime"]["PfPR_2to10"]
-        simdata = pd.DataFrame({colname: channeldata})
-        simdata = simdata[-2:-1]
+        age_bins = data[self.filenames[0]]["Metadata"]["Age Bins"]
+        channeldata = data[self.filenames[0]]["DataByTimeAndAgeBins"]["Average Population by Age Bin"]
+        simdata = pd.DataFrame(channeldata).transpose()
+        simdata["age"] = age_bins
+        print(simdata)
+
 
         for sweep_var in self.sweep_variables:
             if sweep_var in simulation.tags.keys():
@@ -48,10 +52,7 @@ if __name__ == "__main__":
     run_type = "exp"
 
     if run_type == "exp":
-        experiments = ["547b9041-0fa3-e811-a2c0-c4346bcb7275", "557b9041-0fa3-e811-a2c0-c4346bcb7275",
-                       "567b9041-0fa3-e811-a2c0-c4346bcb7275", "577b9041-0fa3-e811-a2c0-c4346bcb7275",
-                       "587b9041-0fa3-e811-a2c0-c4346bcb7275", "5a7b9041-0fa3-e811-a2c0-c4346bcb7275",
-                       "5b7b9041-0fa3-e811-a2c0-c4346bcb7275", "c6ddc170-19a1-e811-a2c0-c4346bcb7275"]
+        experiments = ["6e91248b-dbbd-e811-a2bd-c4346bcb1555"]
 
         for exp_id in experiments:
 
@@ -62,7 +63,8 @@ if __name__ == "__main__":
                                                                                                "ACT_Coverage",
                                                                                                "IRS_Coverage",
                                                                                                "ITN_Coverage"
-                                                                                               ])],)
+                                                                                               ])],
+                                force_analyze=True)
 
             print(am.experiments)
             am.analyze()

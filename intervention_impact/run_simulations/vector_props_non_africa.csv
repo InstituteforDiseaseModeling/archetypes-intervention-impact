@@ -1,4 +1,4 @@
-species,bajonapo,karen
-darlingi,1,0
-maculatus,0,60
-minimus,0,40
+name,darlingi,minimus,maculatus
+bajonapo,1,0,0
+karen,0,0.6,0.4
+
