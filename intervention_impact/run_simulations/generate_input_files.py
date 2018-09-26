@@ -30,13 +30,11 @@ def update_demog(demographics, vectors, tot_vector_count=20000):
     vectors = pd.melt(vectors, id_vars=["name", "node_id"], var_name="species", value_name="proportion")
     vectors["count"] = vectors["proportion"] * tot_vector_count
 
-    node_ids = pd.DataFrame(columns=["facility_id", "node_id"])
-
     for node in demographics["Nodes"]:
         node_id = node["NodeID"]
 
         node["NodeAttributes"]["InitialVectorsPerSpecies"] = {row["species"]:round(row["count"])
-                                                              for idx, row in vectors.query("node_id==@node_id & count>0").iterrows()}
+                                                              for idx, row in vectors.query("node_id==@node_id").iterrows()}
 
     return demographics
 

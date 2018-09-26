@@ -12,7 +12,10 @@
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 2817,
                     "funestus": 8046,
-                    "gambiae": 9137
+                    "gambiae": 9137,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
                 }
             },
             "IndividualAttributes": {
@@ -179,7 +182,10 @@
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 3477,
                     "funestus": 8693,
-                    "gambiae": 7831
+                    "gambiae": 7831,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
                 }
             },
             "IndividualAttributes": {
@@ -345,7 +351,11 @@
                 "BirthRate": 0.10663013698630137,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 16795,
-                    "funestus": 3205
+                    "funestus": 3205,
+                    "gambiae": 0,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
                 }
             },
             "IndividualAttributes": {
@@ -510,8 +520,12 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.11583561643835617,
                 "InitialVectorsPerSpecies": {
+                    "arabiensis": 0,
                     "funestus": 22,
-                    "gambiae": 19978
+                    "gambiae": 19978,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
                 }
             },
             "IndividualAttributes": {
@@ -677,7 +691,11 @@
                 "BirthRate": 0.10672054794520548,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 18437,
-                    "funestus": 1563
+                    "funestus": 1563,
+                    "gambiae": 0,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
                 }
             },
             "IndividualAttributes": {
@@ -842,7 +860,12 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.08706575342465753,
                 "InitialVectorsPerSpecies": {
-                    "arabiensis": 20000
+                    "arabiensis": 20000,
+                    "funestus": 0,
+                    "gambiae": 0,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
                 }
             },
             "IndividualAttributes": {
@@ -1007,6 +1030,10 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.04875068493150685,
                 "InitialVectorsPerSpecies": {
+                    "arabiensis": 0,
+                    "funestus": 0,
+                    "gambiae": 0,
+                    "darlingi": 0,
                     "minimus": 12000,
                     "maculatus": 8000
                 }
@@ -1173,7 +1200,12 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.05527397260273973,
                 "InitialVectorsPerSpecies": {
-                    "darlingi": 20000
+                    "arabiensis": 0,
+                    "funestus": 0,
+                    "gambiae": 0,
+                    "darlingi": 20000,
+                    "minimus": 0,
+                    "maculatus": 0
                 }
             },
             "IndividualAttributes": {
@@ -1396,7 +1428,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "Gridded world grump30arcsec",
-        "DateCreated": "2018-09-26 15:48:52.409626",
+        "DateCreated": "2018-09-26 15:55:34.504175",
         "NodeCount": 8,
         "Resolution": 30
     }
