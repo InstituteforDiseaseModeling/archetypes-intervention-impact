@@ -8,7 +8,8 @@
                 "InitialPopulation": 1000,
                 "FacilityName": 393220,
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10653972602739727
+                "BirthRate": 0.10653972602739727,
+                "InitialVectorsPerSpecies": {}
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -170,7 +171,8 @@
                 "InitialPopulation": 1000,
                 "FacilityName": 393220,
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.09945205479452054
+                "BirthRate": 0.09945205479452054,
+                "InitialVectorsPerSpecies": {}
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -332,7 +334,8 @@
                 "InitialPopulation": 1000,
                 "FacilityName": 327684,
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10663013698630137
+                "BirthRate": 0.10663013698630137,
+                "InitialVectorsPerSpecies": {}
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -494,7 +497,8 @@
                 "InitialPopulation": 1000,
                 "FacilityName": 393219,
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.11583561643835617
+                "BirthRate": 0.11583561643835617,
+                "InitialVectorsPerSpecies": {}
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -656,7 +660,8 @@
                 "InitialPopulation": 1000,
                 "FacilityName": 458755,
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10672054794520548
+                "BirthRate": 0.10672054794520548,
+                "InitialVectorsPerSpecies": {}
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -818,7 +823,8 @@
                 "InitialPopulation": 1000,
                 "FacilityName": 458756,
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.08706575342465753
+                "BirthRate": 0.08706575342465753,
+                "InitialVectorsPerSpecies": {}
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -980,7 +986,8 @@
                 "InitialPopulation": 1000,
                 "FacilityName": 589828,
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.04875068493150685
+                "BirthRate": 0.04875068493150685,
+                "InitialVectorsPerSpecies": {}
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -1142,7 +1149,8 @@
                 "InitialPopulation": 1000,
                 "FacilityName": 196611,
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.05527397260273973
+                "BirthRate": 0.05527397260273973,
+                "InitialVectorsPerSpecies": {}
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -1364,7 +1372,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "Gridded world grump30arcsec",
-        "DateCreated": "2018-09-24 21:49:17.948001",
+        "DateCreated": "2018-09-26 14:29:49.065435",
         "NodeCount": 8,
         "Resolution": 30
     }

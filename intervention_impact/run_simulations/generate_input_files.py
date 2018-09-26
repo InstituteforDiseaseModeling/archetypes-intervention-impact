@@ -10,7 +10,7 @@ import json
 import shutil
 
 from dtk.tools.demographics.Node import Node, nodeid_from_lat_lon
-from simtools.SetupParser import SetupParser
+# from simtools.SetupParser import SetupParser
 from input_file_generation.DemographicsGenerator import DemographicsGenerator
 from input_file_generation.ClimateGenerator import ClimateGenerator
 from simtools.Utilities.COMPSUtilities import COMPS_login
@@ -20,11 +20,23 @@ sys.path.insert(0, '../..')
 from spatial import make_shapefile, extract_latlongs
 
 
-def update_demog(demographics):
+def update_demog(demographics, tot_vectors=20000):
 
     # impose heterogeneous biting risk:
     demographics["Defaults"]["IndividualAttributes"]["RiskDistributionFlag"] = 3
     demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
+
+    # add node-specific vectors
+    # todo: pass as kwarg instead of reading in file
+    vectors = pd.read_csv("sites/all/vector_proportions.csv")
+    vectors = pd.melt(vectors, id_vars=["name", "node_id"], var_name="species", value_name="proportion")
+    vectors["count"] = vectors["proportion"] * tot_vectors
+
+    for node in demographics["Nodes"]:
+        node_id = node["NodeID"]
+
+        node["NodeAttributes"]["InitialVectorsPerSpecies"] = {row["species"]:round(row["count"])
+                                                              for row in vectors.query("node_id==@node_id & count>0").iterrows()}
 
     return demographics
 
@@ -75,9 +87,7 @@ def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
         africa_sites[species] = species_prop
 
     non_africa_sites = pd.read_csv("vector_props_non_africa.csv")
-    all_sites = africa_sites.append(non_africa_sites, sort=False).fillna(0)
-
-    all_sites.to_csv(os.path.join(out_dir, "vector_proportions.csv"), index=False)
+    all_vectors = africa_sites.append(non_africa_sites, sort=False).fillna(0)
 
 
     print("generating input files")
@@ -90,8 +100,13 @@ def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
                   this_site["node_id"], extra_attributes = {"Country": this_site["birth_rate_country"]})
              for ix, this_site in sites.iterrows()]
 
+    all_vectors = pd.merge(sites[["name", "node_id"]], all_vectors)
+    all_vectors.to_csv(os.path.join(out_dir, "vector_proportions.csv"), index=False)
+
     site_demog = DemographicsGenerator(nodes, res_in_arcsec=res,
-                                       update_demographics=update_demog)
+                                       update_demographics=update_demog,
+                                       kwargs= {"tot_vectors":10000})
+
     demographics = site_demog.generate_demographics()
 
     demo_f = open(demog_path, "w+")
@@ -100,3 +115,6 @@ def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
 
     overlay_path = os.path.join(out_dir, "demographics_net_overlay.json")
     net_usage_overlay(demog_path, overlay_path)
+
+if __name__=="__main__":
+    generate_input_files("sites/all")
