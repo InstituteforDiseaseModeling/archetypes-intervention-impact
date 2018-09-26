@@ -6,9 +6,17 @@
                 "Latitude": 5.43,
                 "Longitude": 7.58,
                 "InitialPopulation": 1000,
-                "FacilityName": 393220,
+                "FacilityName": "aba",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10653972602739727
+                "BirthRate": 0.10653972602739727,
+                "InitialVectorsPerSpecies": {
+                    "arabiensis": 2817,
+                    "funestus": 8046,
+                    "gambiae": 9137,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
+                }
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -168,9 +176,17 @@
                 "Latitude": 6.92,
                 "Longitude": 13.05,
                 "InitialPopulation": 1000,
-                "FacilityName": 393220,
+                "FacilityName": "martae",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.09945205479452054
+                "BirthRate": 0.09945205479452054,
+                "InitialVectorsPerSpecies": {
+                    "arabiensis": 3477,
+                    "funestus": 8693,
+                    "gambiae": 7831,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
+                }
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -330,9 +346,17 @@
                 "Latitude": 14.1,
                 "Longitude": -1.65,
                 "InitialPopulation": 1000,
-                "FacilityName": 327684,
+                "FacilityName": "djibo",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10663013698630137
+                "BirthRate": 0.10663013698630137,
+                "InitialVectorsPerSpecies": {
+                    "arabiensis": 16795,
+                    "funestus": 3205,
+                    "gambiae": 0,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
+                }
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -492,9 +516,17 @@
                 "Latitude": -6.188,
                 "Longitude": 21.57,
                 "InitialPopulation": 1000,
-                "FacilityName": 393219,
+                "FacilityName": "kananga",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.11583561643835617
+                "BirthRate": 0.11583561643835617,
+                "InitialVectorsPerSpecies": {
+                    "arabiensis": 0,
+                    "funestus": 22,
+                    "gambiae": 19978,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
+                }
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -654,9 +686,17 @@
                 "Latitude": -24.896,
                 "Longitude": 32.5,
                 "InitialPopulation": 1000,
-                "FacilityName": 458755,
+                "FacilityName": "moine",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10672054794520548
+                "BirthRate": 0.10672054794520548,
+                "InitialVectorsPerSpecies": {
+                    "arabiensis": 18437,
+                    "funestus": 1563,
+                    "gambiae": 0,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
+                }
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -816,9 +856,17 @@
                 "Latitude": 5.91,
                 "Longitude": 43.6,
                 "InitialPopulation": 1000,
-                "FacilityName": 458756,
+                "FacilityName": "gode",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.08706575342465753
+                "BirthRate": 0.08706575342465753,
+                "InitialVectorsPerSpecies": {
+                    "arabiensis": 20000,
+                    "funestus": 0,
+                    "gambiae": 0,
+                    "darlingi": 0,
+                    "minimus": 0,
+                    "maculatus": 0
+                }
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -978,9 +1026,17 @@
                 "Latitude": 17.4116,
                 "Longitude": 98.0511,
                 "InitialPopulation": 1000,
-                "FacilityName": 589828,
+                "FacilityName": "karen",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.04875068493150685
+                "BirthRate": 0.04875068493150685,
+                "InitialVectorsPerSpecies": {
+                    "arabiensis": 0,
+                    "funestus": 0,
+                    "gambiae": 0,
+                    "darlingi": 0,
+                    "minimus": 12000,
+                    "maculatus": 8000
+                }
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -1140,9 +1196,17 @@
                 "Latitude": -0.7292,
                 "Longitude": -75.6459,
                 "InitialPopulation": 1000,
-                "FacilityName": 196611,
+                "FacilityName": "bajonapo",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.05527397260273973
+                "BirthRate": 0.05527397260273973,
+                "InitialVectorsPerSpecies": {
+                    "arabiensis": 0,
+                    "funestus": 0,
+                    "gambiae": 0,
+                    "darlingi": 20000,
+                    "minimus": 0,
+                    "maculatus": 0
+                }
             },
             "IndividualAttributes": {
                 "MortalityDistribution": {
@@ -1364,7 +1428,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "Gridded world grump30arcsec",
-        "DateCreated": "2018-09-24 21:49:17.948001",
+        "DateCreated": "2018-09-26 15:55:34.504175",
         "NodeCount": 8,
         "Resolution": 30
     }

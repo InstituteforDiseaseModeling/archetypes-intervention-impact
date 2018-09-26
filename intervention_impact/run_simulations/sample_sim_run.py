@@ -15,7 +15,7 @@ from malaria.reports.MalariaReport import add_summary_report, add_event_counter_
 
 # setup-- these variables change often. Unless you change the "builder" parameters below,
 # "years" should be at least 2!
-years = 15
+years = 2
 exp_name = "example_run"
 location = "HPC"
 SetupParser.default_block = location
@@ -32,6 +32,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
                                     Enable_Default_Reporting=1,
+                                    Enable_Vector_Species_Report=1,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
