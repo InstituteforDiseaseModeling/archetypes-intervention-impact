@@ -26,6 +26,9 @@ def update_demog(demographics, vectors, tot_vector_count=20000):
     demographics["Defaults"]["IndividualAttributes"]["RiskDistributionFlag"] = 3
     demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
 
+    # make idref line up with custom climate
+    demographics["Metadata"]["IdReference"] = "refid"
+
     # add node-specific vectors
     vectors = pd.melt(vectors, id_vars=["name", "node_id"], var_name="species", value_name="proportion")
     vectors["count"] = vectors["proportion"] * tot_vector_count

@@ -14,6 +14,7 @@ from simtools.DataAccess.ExperimentDataStore import ExperimentDataStore
 from simtools.Utilities.COMPSUtilities import COMPS_login
 
 from malaria.reports.MalariaReport import add_summary_report, add_event_counter_report
+from dtk.utils.reports.VectorReport import add_vector_stats_report
 from simtools.Utilities.Experiments import retrieve_experiment
 
 from generate_input_files import generate_input_files, net_usage_overlay
@@ -86,7 +87,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
                                     Enable_Default_Reporting=1,
                                     Enable_Demographics_Risk=1,
-                                    Enable_Vector_Species_Report=1,
+                                    Enable_Vector_Species_Report=0,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
@@ -111,6 +112,7 @@ if serialize:
 # reporting
 add_summary_report(cb)
 # add_event_counter_report(cb, ["Bednet_Using"])
+add_vector_stats_report(cb)
 
 def set_asset_id(cb, asset_collection, use_assets=True):
 
@@ -131,7 +133,7 @@ if __name__=="__main__":
     print("finding collection ids and vector details")
     # collection ids:
     cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
-    cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
+    # cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
 
     site_input_dir = os.path.join("sites", "all")
 

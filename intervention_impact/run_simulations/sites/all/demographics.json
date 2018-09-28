@@ -1427,8 +1427,8 @@
     "Metadata": {
         "Author": "idm",
         "Tool": "dtk-tools",
-        "IdReference": "Gridded world grump30arcsec",
-        "DateCreated": "2018-09-27 19:29:00.249609",
+        "IdReference": "refid",
+        "DateCreated": "2018-09-28 10:40:50.651938",
         "NodeCount": 8,
         "Resolution": 30
     }
