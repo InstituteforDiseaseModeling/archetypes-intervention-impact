@@ -2,8 +2,10 @@ import pandas as pd
 import json
 
 import os
+import pdb
 
 from dtk.vector.species import set_params_by_species, set_species_param
+from dtk.interventions.habitat_scale import scale_larval_habitats
 from dtk.interventions.health_seeking import add_health_seeking
 from dtk.interventions.irs import add_IRS
 from dtk.interventions.itn_age_season import add_ITN_age_season
@@ -15,7 +17,7 @@ def assign_net_ip(cb, hates_net_prop):
           trigger_condition_list=["Births"])
     return {"Hates_Nets": hates_net_prop}
 
-def simulation_setup(cb, species_details, max_larval_capacity=4e8):
+def simulation_setup(cb, species_details, site_vector_props, max_larval_capacity=4e8):
 
     site_dir = os.path.join("sites", "all")
 
@@ -37,6 +39,8 @@ def simulation_setup(cb, species_details, max_larval_capacity=4e8):
     # Find vector proportions for each vector TODO: add node-specific and habitat-specific multiplier to demog overlay
     set_params_by_species(cb.params, [name for name in species_details.keys()])
 
+    larval_habs_per_site = {"NodeID": site_vector_props["node_id"]}
+
     for species_name, species_modifications in species_details.items():
         set_species_param(cb, species_name, "Adult_Life_Expectancy", 20)
         set_species_param(cb, species_name, "Vector_Sugar_Feeding_Frequency", "VECTOR_SUGAR_FEEDING_NONE")
@@ -45,9 +49,12 @@ def simulation_setup(cb, species_details, max_larval_capacity=4e8):
             if param == "habitat_split":
                 new_vals = {hab: hab_prop * max_larval_capacity for hab, hab_prop in val.items()}
                 set_species_param(cb, species_name, "Larval_Habitat_Types", new_vals)
+                larval_habs_per_site.update({".".join([species_name, hab]): site_vector_props[species_name]
+                                             for hab in val.keys()})
             else:
                 set_species_param(cb, species_name, param, val)
 
+    scale_larval_habitats(cb, pd.DataFrame(larval_habs_per_site))
 
 
 # itns

@@ -23,6 +23,7 @@ from sweep_functions import *
 run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "8c066962-e6b5-e811-a2c0-c4346bcb7275"
 asset_exp_id = "8c066962-e6b5-e811-a2c0-c4346bcb7275"
+asset_exp_id = None
 # intervention_coverages = [0, 20, 40, 60, 80]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
@@ -55,8 +56,8 @@ new_inputs = True
 # Serialization
 print("setting up")
 if run_type == "burnin":
-    years = 15
-    sweep_name = "MAP_II_Burnin_3"
+    years = 3
+    sweep_name = "MAP_II_New_Setup_Test"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -83,8 +84,9 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=0,
+                                    Enable_Default_Reporting=1,
                                     Enable_Demographics_Risk=1,
+                                    Enable_Vector_Species_Report=1,
 
                                     # ento from prashanth
                                     Antigen_Switch_Rate=pow(10, -9.116590124),
@@ -146,10 +148,9 @@ if __name__=="__main__":
         print("generating input files")
         generate_input_files(site_input_dir, pop=2000, overwrite=True)
 
-    # Find vector proportions for each vector in our site todo:use this for demog setup
-    vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
-
-    simulation_setup(cb, species_details)
+    # Find vector proportions for each vector in our site
+    site_vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
+    simulation_setup(cb, species_details, site_vectors)
 
     if pull_from_serialization:
         print("building from pickup")
@@ -188,7 +189,6 @@ if __name__=="__main__":
             for x in df.index
             for hates_net_prop in net_hating_props
             for int_combo in int_scenarios
-            # for daily_prob in hs_daily_probs
 
         ])
 
@@ -207,8 +207,9 @@ if __name__=="__main__":
                 "Run_Number": run_num,
                 "x_Temporary_Larval_Habitat":10 ** hab_exp}),
         ]
-            for run_num in range(10)
-            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for run_num in range(2)
+            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for hab_exp in [0, 1, 2]
         ])
 
     run_sim_args = {"config_builder": cb,

@@ -65,8 +65,8 @@ def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
 
     # specify directories
 
-    if overwrite and os.path.isdir(out_dir):
-        shutil.rmtree(out_dir)
+    # if overwrite and os.path.isdir(out_dir):
+    #     shutil.rmtree(out_dir)
 
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
