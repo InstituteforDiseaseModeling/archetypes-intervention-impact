@@ -5,10 +5,10 @@
             "NodeAttributes": {
                 "Latitude": 5.43,
                 "Longitude": 7.58,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": "aba",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10653972602739727,
+                "BirthRate": 0.21307945205479453,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 2817,
                     "funestus": 8046,
@@ -175,10 +175,10 @@
             "NodeAttributes": {
                 "Latitude": 6.92,
                 "Longitude": 13.05,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": "martae",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.09945205479452054,
+                "BirthRate": 0.1989041095890411,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 3477,
                     "funestus": 8693,
@@ -345,10 +345,10 @@
             "NodeAttributes": {
                 "Latitude": 14.1,
                 "Longitude": -1.65,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": "djibo",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10663013698630137,
+                "BirthRate": 0.21326027397260275,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 16795,
                     "funestus": 3205,
@@ -515,10 +515,10 @@
             "NodeAttributes": {
                 "Latitude": -6.188,
                 "Longitude": 21.57,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": "kananga",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.11583561643835617,
+                "BirthRate": 0.23167123287671235,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 0,
                     "funestus": 22,
@@ -685,10 +685,10 @@
             "NodeAttributes": {
                 "Latitude": -24.896,
                 "Longitude": 32.5,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": "moine",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.10672054794520548,
+                "BirthRate": 0.21344109589041096,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 18437,
                     "funestus": 1563,
@@ -855,10 +855,10 @@
             "NodeAttributes": {
                 "Latitude": 5.91,
                 "Longitude": 43.6,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": "gode",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.08706575342465753,
+                "BirthRate": 0.17413150684931505,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 20000,
                     "funestus": 0,
@@ -1025,10 +1025,10 @@
             "NodeAttributes": {
                 "Latitude": 17.4116,
                 "Longitude": 98.0511,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": "karen",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.04875068493150685,
+                "BirthRate": 0.0975013698630137,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 0,
                     "funestus": 0,
@@ -1195,10 +1195,10 @@
             "NodeAttributes": {
                 "Latitude": -0.7292,
                 "Longitude": -75.6459,
-                "InitialPopulation": 1000,
+                "InitialPopulation": 2000,
                 "FacilityName": "bajonapo",
                 "LarvalHabitatMultiplier": 1.0,
-                "BirthRate": 0.05527397260273973,
+                "BirthRate": 0.11054794520547946,
                 "InitialVectorsPerSpecies": {
                     "arabiensis": 0,
                     "funestus": 0,
@@ -1428,7 +1428,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "Gridded world grump30arcsec",
-        "DateCreated": "2018-09-26 15:55:34.504175",
+        "DateCreated": "2018-09-27 19:29:00.249609",
         "NodeCount": 8,
         "Resolution": 30
     }
