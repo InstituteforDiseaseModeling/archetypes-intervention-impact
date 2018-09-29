@@ -23,8 +23,8 @@ from sweep_functions import *
 # variables
 run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "8c066962-e6b5-e811-a2c0-c4346bcb7275"
-asset_exp_id = "8c066962-e6b5-e811-a2c0-c4346bcb7275"
-asset_exp_id = None
+asset_exp_id = "26d67813-96c3-e811-a2bd-c4346bcb1555"
+
 # intervention_coverages = [0, 20, 40, 60, 80]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
@@ -52,13 +52,13 @@ int_scenarios = [{"act": 0,
                  ]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = True
+new_inputs = False
 
 # Serialization
 print("setting up")
 if run_type == "burnin":
-    years = 3
-    sweep_name = "MAP_II_New_Setup_Test"
+    years = 15
+    sweep_name = "MAP_II_New_Setup_Burnin"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -85,7 +85,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=1,
+                                    Enable_Default_Reporting=0,
                                     Enable_Demographics_Risk=1,
                                     Enable_Vector_Species_Report=0,
 
@@ -109,18 +109,6 @@ cb.update_params({"Disable_IP_Whitelist": 1,
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
 
-# reporting
-add_summary_report(cb)
-# add_event_counter_report(cb, ["Bednet_Using"])
-add_vector_stats_report(cb)
-
-def set_asset_id(cb, asset_collection, use_assets=True):
-
-    if use_assets:
-        cb.set_input_collection(asset_collection)
-        return {"Input_collection": str(asset_collection.id)}
-    else:
-        return {"Input_collection": "None"}
 
 if __name__=="__main__":
 
@@ -131,10 +119,6 @@ if __name__=="__main__":
     sites = pd.read_csv("site_details.csv")
 
     print("finding collection ids and vector details")
-    # collection ids:
-    cb.set_exe_collection("66483753-b884-e811-a2c0-c4346bcb7275")
-    # cb.set_dll_collection("65483753-b884-e811-a2c0-c4346bcb7275")
-
     site_input_dir = os.path.join("sites", "all")
 
     with open("species_details.json") as f:
@@ -143,8 +127,10 @@ if __name__=="__main__":
     if asset_exp_id:
         print("retrieving asset experiment")
         asset_expt = retrieve_experiment(asset_exp_id)
-        asset_df = pd.DataFrame([x.tags for x in asset_expt.simulations])
-        set_asset_id(cb, asset_expt)
+        template_asset = asset_expt.simulations[0].tags
+        cb.set_exe_collection(template_asset["exe_collection_id"])
+        cb.set_dll_collection(template_asset["dll_collection_id"])
+        cb.set_input_collection(template_asset["input_collection_id"])
 
     if new_inputs:
         print("generating input files")
@@ -153,6 +139,18 @@ if __name__=="__main__":
     # Find vector proportions for each vector in our site
     site_vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
     simulation_setup(cb, species_details, site_vectors)
+
+    # reporting
+    for idx, row in site_vectors.iterrows():
+        add_summary_report(cb,
+                           age_bins = list(range(10, 130, 10)),
+                           nodes={
+                               "class": "NodeSetNodeList",
+                               "Node_List": [int(row["node_id"])]
+                           },
+                           description = row["name"])
+    # add_event_counter_report(cb, ["Bednet_Using"])
+    # add_vector_stats_report(cb)
 
     if pull_from_serialization:
         print("building from pickup")
@@ -209,9 +207,9 @@ if __name__=="__main__":
                 "Run_Number": run_num,
                 "x_Temporary_Larval_Habitat":10 ** hab_exp}),
         ]
-            for run_num in range(2)
-            # for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for hab_exp in [0, 1, 2]
+            for run_num in range(10)
+            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            # for hab_exp in [0, 1, 2]
         ])
 
     run_sim_args = {"config_builder": cb,
