@@ -52,7 +52,7 @@ int_scenarios = [{"act": 0,
                  ]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = True
+new_inputs = False
 
 # Serialization
 print("setting up")
@@ -109,10 +109,6 @@ cb.update_params({"Disable_IP_Whitelist": 1,
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
 
-# reporting
-add_summary_report(cb)
-# add_event_counter_report(cb, ["Bednet_Using"])
-add_vector_stats_report(cb)
 
 def set_asset_id(cb, asset_collection, use_assets=True):
 
@@ -153,6 +149,15 @@ if __name__=="__main__":
     # Find vector proportions for each vector in our site
     site_vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
     simulation_setup(cb, species_details, site_vectors)
+
+    # reporting
+    add_summary_report(cb,
+                       nodes={
+                           "class": "NodeSetNodeList",
+                           "Node_List": [int(x) for x in site_vectors['node_id']]
+                       })
+    # add_event_counter_report(cb, ["Bednet_Using"])
+    add_vector_stats_report(cb)
 
     if pull_from_serialization:
         print("building from pickup")
