@@ -5,6 +5,9 @@ account: abertozzivilla
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 394674
-bundleId: 1549360
+bundleId: 1618881
 url: https://abertozzivilla.shinyapps.io/shiny/
-when: 1534969173.13161
+when: 1538513062.72063
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: data/lookup_full_interactions.csv|data/lookup_full_interactions_v2.csv
