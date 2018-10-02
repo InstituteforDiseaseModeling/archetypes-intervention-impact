@@ -8,10 +8,7 @@ library(ggplot2)
 
 theme_set(theme_minimal(base_size = 18))
 
-# main_dir <- file.path(Sys.getenv("USERPROFILE"), 
-#                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables")
-data <- fread(file.path("data", "lookup_full_interactions_v2.csv"))
-# data <- fread(file.path("data", "lookup_just_burnin.csv"))
+data <- fread(file.path("data", "lookup_full_interactions_v3.csv"))
 
 data[, names:=gsub("[0-9]", "", Intervention)]
 
@@ -38,7 +35,7 @@ ui <- fluidPage(
                                            "Karen (Myanmar)"="karen",
                                            "Martae (Cameroon)" = "martae",
                                            "Moine (Mozambique)"="moine"),
-                              selected=c("aba", "kananga", "moine"))
+                              selected=c("djibo", "kananga", "karen"))
            ),
     column(2, 
            checkboxGroupInput("ITN",
@@ -92,6 +89,7 @@ server <- function(input, output){
         combos[get(int)!=0, label:= paste0(label, int, " ", get(int), "; ") ]
       }
       combos[label=="", label:="None"]
+      combos[, label:=gsub(" $", "", label)]
       
       subset <- data[(Intervention %in% combos$label) &
                       (Site_Name %in% input$site)
