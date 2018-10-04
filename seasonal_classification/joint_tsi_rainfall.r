@@ -22,11 +22,7 @@ source("classify_functions.r")
 base_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
-cov_dirs <- list(tsi="Z:/mastergrids/Other_Global_Covariates/TemperatureSuitability/TSI_Pf_Dynamic/5km/Synoptic/",
-                 rainfall="Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic")
 continents <- c("africa", "asia", "americas")
-
-continents <- c("asia")
 
 for (continent in continents){
   main_dir <- file.path(base_dir, continent)

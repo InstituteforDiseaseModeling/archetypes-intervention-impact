@@ -15,9 +15,10 @@ library(raster)
 library(data.table)
 library(stringr)
 
-get_mask <- function(continent, main_dir, mask_dir){
-  out_fname <- file.path(main_dir, "mask.tif")
+get_mask <- function(continent, out_dir, mask_dir){
+  out_fname <- file.path(out_dir, "mask.tif")
   if (file.exists(out_fname)){
+    print("loading saved mask")
     clipped_mask <- raster(out_fname)
   }else{
     print("generating mask")
@@ -38,43 +39,46 @@ get_mask <- function(continent, main_dir, mask_dir){
   return(clipped_mask)
 }
 
-extract_month <- function(month, main_dir, cov, mask_raster){
+extract_values <- function(raster_in_dir, raster_out_dir, mask){
+  full <- raster(raster_in_dir)
+  vals <- crop(full, mask)
+  if (!compareRaster(vals, mask, stopiffalse = F)){
+    mask <- crop(mask, vals) # ensure that extents are the same 
+  }
+  vals <- mask(vals, mask, maskvalue=FALSE)
+  writeRaster(vals, raster_out_dir)
+  return(vals)
+}
+
+extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster){
   
-  print(paste("loading", names(cov), "for month", month))
+  print(paste("loading", cov$cov, "for", cov$variable, sweep_value))
   
   # find dataset to extract
-  in_dir <- file.path(cov[[1]])
+  in_dir <- cov$dir
   files <- list.files(in_dir)
-  monthval <-  str_pad(toString(month), 2, pad=0)
-  pattern <- paste0(".*\\.", monthval, "\\..*.tif$")
+  pattern <- gsub("VAR", sweep_value, cov$pattern)
   fname_idx <- which(str_detect(files, pattern))
   in_fname <- files[fname_idx]
-  if (length(in_fname)>1){
-    # try extracting mean value
-    in_fname <- in_fname[in_fname %like% "mean" | in_fname %like% "Mean"]
-    
-    if (length(in_fname)!=1){ # break if there are further issues
-      stop(paste("multiple potential input rasters: ", in_fname))
-    }
+  if (length(in_fname)!=1){ # break if there are further issues
+    stop(paste("multiple potential input rasters: ", in_fname))
   }
-  
-  out_fname = file.path(main_dir, "rasters", paste0(names(cov), "_month_", month, ".tif"))
+
+  out_fname <- file.path(out_dir, paste0(cov$cov, "_", cov$variable, "_", sweep_value, ".tif"))
   
   if (file.exists(out_fname)){
     vals <- raster(out_fname)
   }else{
     print("clipping global raster")
-    full <- raster(file.path(cov[[1]], in_fname))
-    vals <- crop(full, mask_raster)
-    # mask_raster <- crop(mask_raster, vals) # ensure that extents of two rasters are the same
-    vals <- mask(vals, mask_raster, maskvalue=FALSE)
-    writeRaster(vals, out_fname)
+    vals <- extract_values(raster_in_dir=file.path(cov$dir, in_fname), raster_out_dir=out_fname, mask = mask_raster)
   }
+  plot(vals)
   vals <- as.matrix(vals)
-  vals <- data.table(month=month, 
+  vals <- data.table(cov = cov$cov,
+                     variable_name = cov$variable,
+                     variable_val = sweep_value, 
                      id = which(!is.na(vals)),
-                     val = vals[!is.na(vals)])
-  setnames(vals, "val", names(cov))
+                     value = vals[!is.na(vals)])
   
   return(vals)
   

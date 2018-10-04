@@ -5,8 +5,8 @@
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # May 2018
 # 
-# For a given covariate and continent of interest, this script extracts covariate-specific (currently: presumed monthly)
-# data from global rasters, transforms it into a panel dataset, and runs SVD on this dataset for further clustering analyses.  
+# For a given covariate and continent of interest, this script extracts covariate-specific
+# data from global rasters, transforms it into a panel dataset, and saves it for further clustering analyses.  
 # 
 # For a detailed project write-up see
 # https://paper.dropbox.com/doc/Cluster-MAP-pixels-by-seasonality-zga4UM1DnBx8pc11rStOS
@@ -24,53 +24,38 @@ source("classify_functions.r")
 base_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
-cov_dirs <- list(tsi="Z:/mastergrids/Other_Global_Covariates/TemperatureSuitability/TSI_Pf_Dynamic/5km/Synoptic/",
-                 rainfall="Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic")
-continents <- c("africa", "asia", "americas")
 
-continents <- c("asia")
+overwrite <- F
+cov_details <- fread("clustering_covariates.csv")
 
-for (idx in 1:length(cov_dirs)){
+for (idx in 1:nrow(cov_details)){
   
-  this_cov <- cov_dirs[idx]
+  this_cov <- cov_details[idx]
+  continents <- strsplit(this_cov$continents, "/")[[1]]
   
   for(continent in continents){
     
-    print(paste("running extraction and svd  for", names(this_cov), "in", continent))
+    print(paste("running extraction for", this_cov$cov, "in", continent))
     
-    main_dir <- file.path(base_dir, continent)
-    all_vals_fname <- file.path(main_dir, paste0(names(this_cov), "_vals.csv"))
+    main_dir <- file.path(base_dir, continent, "rasters")
+    dir.create(main_dir, showWarnings=F, recursive=T)
+    all_vals_fname <- file.path(main_dir, paste0(this_cov$cov, "_vals.csv"))
     
     ## find values
-    if (file.exists(all_vals_fname)){
-      print("loading extracted values")
-      all_vals <- fread(all_vals_fname)
+    if (file.exists(all_vals_fname) & overwrite==F){
+      print("values already extracted")
     }else{
+      
+      print("clipping mask")
+      mask <- get_mask(continent, out_dir=main_dir, mask_dir)
+      
       print("extracting from raster")
-      mask <- get_mask(continent, file.path(main_dir, "rasters"), mask_dir)
+      all_vals <- lapply(strsplit(this_cov$values, "/")[[1]], extract_by_pattern, main_dir, this_cov, mask)
+      all_vals <- rbindlist(all_vals)
       
       print("saving extracted values")
-      all_vals <- lapply(1:12, extract_month, main_dir, this_cov, mask)
-      all_vals <- rbindlist(all_vals)
       write.csv(all_vals, file=all_vals_fname, row.names=F)
     }
-    
-    # svd
-    svd_out_fname <- file.path(main_dir, paste0("svd_out_", names(this_cov), ".rdata"))
-    if (file.exists(svd_out_fname)){
-      print("loading svd outputs")
-      load(svd_out_fname)
-    }else{
-      print("running svd")
-      for_svd <- dcast(all_vals, month ~ id)
-      svd_out <- svd(for_svd[, 2:ncol(for_svd)])
-      save(svd_out, file=svd_out_fname)
-    }
-
-    png(file=file.path(main_dir, "figures", paste0("svd_out_", names(this_cov), "_plot.png")))
-      plot(svd_out$d^2/sum(svd_out$d^2), xlim = c(0, 15), type = "b", pch = 16, xlab = "singular vectors",
-           ylab = "variance explained")
-    graphics.off()
     
   }
 
