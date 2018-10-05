@@ -24,26 +24,22 @@ base_dir <- file.path(Sys.getenv("USERPROFILE"),
 mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
 continents <- c("africa", "asia", "americas")
 cov_details <- fread("clustering_covariates.csv")
-
-drop_na_cols = function(DT) {
-  # or by number (slightly faster than by name) :
-  for (j in seq_len(ncol(DT)))
-    set(DT,which(is.na(DT[[j]])),j,0)
-}
+overwrite <- F
 
 for (continent in continents){
-  main_dir <- file.path(base_dir, continent, "rasters")
+  print(paste("running svd on", continent))
+  main_dir <- file.path(base_dir, continent)
   
   these_covs <- cov_details[continents %like% continent]
   full_label <- paste(these_covs$cov, collapse="_")
   
   # load datasets, merge
-  all_vals_fname <- file.path(main_dir, paste0(full_label, ".csv"))
+  all_vals_fname <- file.path(main_dir, paste0(full_label, "_vals.csv"))
   if (file.exists(all_vals_fname)){
     print("loading extracted values")
     all_vals <- fread(all_vals_fname)
   }else{
-    
+    print("appending datasets")
     all_vals <- lapply(these_covs$cov, function(cov_name){
       vals <- fread(file.path(main_dir, paste0(cov_name, "_vals.csv")))
     })
@@ -52,8 +48,8 @@ for (continent in continents){
   }
   
   # svd
-  svd_out_fname <- file.path(main_dir, "..", paste0(full_label, "_svd.rdata"))
-  if (file.exists(svd_out_fname)){
+  svd_out_fname <- file.path(main_dir, paste0(full_label, "_svd.rdata"))
+  if (file.exists(svd_out_fname & overwrite==F)){
     print("loading svd outputs")
     load(svd_out_fname)
   }else{
