@@ -15,7 +15,7 @@ library(raster)
 library(data.table)
 library(stringr)
 
-get_mask <- function(continent, out_dir, mask_dir){
+get_mask <- function(continent, out_dir, mask_dir, extra_crop_dir=NULL){
   out_fname <- file.path(out_dir, "mask.tif")
   if (file.exists(out_fname)){
     print("loading saved mask")
@@ -28,11 +28,10 @@ get_mask <- function(continent, out_dir, mask_dir){
     mask <- raster(mask_dir)
     clipped_mask <- mask == mask_vals[[continent]]
     clipped_mask <- trim(clipped_mask, values=F)
-    if (continent=="asia"){
-      # forgive me
-      asia_rast <- raster("Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic/CHIRPS.Synoptic.01.mean.5km.Data.tif")
-      asia_rast <- crop(asia_rast, clipped_mask)
-      clipped_mask <- crop(clipped_mask, asia_rast)
+    if (!is.null(extra_crop_dir)){
+      extra_crop_raster <- raster(extra_crop_dir)
+      extra_crop_raster <- crop(extra_crop_raster, clipped_mask)
+      clipped_mask <- crop(clipped_mask, extra_crop_raster)
     }
     writeRaster(clipped_mask, out_fname)
   }
@@ -42,10 +41,10 @@ get_mask <- function(continent, out_dir, mask_dir){
 extract_values <- function(raster_in_dir, raster_out_dir, mask){
   full <- raster(raster_in_dir)
   vals <- crop(full, mask)
-  if (!compareRaster(vals, mask, stopiffalse = F)){
-    mask <- crop(mask, vals) # ensure that extents are the same 
-  }
-  vals <- mask(vals, mask, maskvalue=FALSE)
+  # if (!compareRaster(vals, mask, stopiffalse = F)){
+  #   mask <- crop(mask, vals) # ensure that extents are the same 
+  # }
+  vals <- raster::mask(vals, mask, maskvalue=FALSE)
   writeRaster(vals, raster_out_dir)
   return(vals)
 }
@@ -85,7 +84,6 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster){
 }
 
 drop_na_cols = function(DT) {
-  # or by number (slightly faster than by name) :
   for (j in seq_len(ncol(DT)))
     set(DT,which(is.na(DT[[j]])),j,0)
 }
@@ -96,11 +94,11 @@ rotate_matrix <- function(nvecs, main_dir, cov="tsi"){
   
   ## multiply by original matrix to get rotations
   for_svd <- fread(file.path(main_dir, paste0(cov, "_vals.csv")))
-  print("reshaping")
+  print("reshaping and filling nulls")
   for_svd <- dcast(for_svd, cov + variable_name + variable_val ~ id)
-  drop_na_cols(for_svd) # drop columns with null values (due to extent differences in rasters)
+  for_svd[is.na(for_svd)] <- 0
   print("rotating")
-  rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,5:ncol(for_svd)])))
+  rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,4:ncol(for_svd)])))
   rotation$id <- as.integer(rownames(rotation))
   rotation <- data.table(rotation)
   return(rotation)

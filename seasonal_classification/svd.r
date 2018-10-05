@@ -21,10 +21,10 @@ rm(list=ls())
 source("classify_functions.r")
 base_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
-mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
 continents <- c("africa", "asia", "americas")
+continents <- c("africa")
 cov_details <- fread("clustering_covariates.csv")
-overwrite <- F
+overwrite <- T
 
 for (continent in continents){
   print(paste("running svd on", continent))
@@ -49,17 +49,19 @@ for (continent in continents){
   
   # svd
   svd_out_fname <- file.path(main_dir, paste0(full_label, "_svd.rdata"))
-  if (file.exists(svd_out_fname & overwrite==F)){
+  if (file.exists(svd_out_fname) & overwrite==F){
     print("loading svd outputs")
     load(svd_out_fname)
   }else{
-    print("running svd")
+    print("reshaping and filling nulls")
     for_svd <- dcast(all_vals, cov + variable_name + variable_val ~ id)
-    drop_na_cols(for_svd) # drop columns with null values (due to extent differences in rasters)
-    svd_out <- svd(for_svd[, 5:ncol(for_svd)])
+    for_svd[is.na(for_svd)] <- 0
+    print("running svd")
+    svd_out <- svd(for_svd[, 4:ncol(for_svd)])
     save(svd_out, file=svd_out_fname)
   }
   
+  print("plotting")
   png(file=file.path(main_dir, paste0(full_label, "_svd.png")))
   plot(svd_out$d^2/sum(svd_out$d^2), xlim = c(0, 15), type = "b", pch = 16, xlab = "singular vectors",
        ylab = "variance explained")
