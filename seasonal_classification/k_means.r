@@ -35,6 +35,7 @@ palette <- "Paired" # color scheme for plots
 #                    rainfall = list(africa=3, asia=3, americas=3)) 
 
 input_list <- list(tsi_rainfall_vector_abundance=list(africa=3))
+cluster_counts <- 3:7
 
 for (this_cov in names(input_list)){
   nvec_list <- input_list[[this_cov]]
@@ -62,21 +63,24 @@ for (this_cov in names(input_list)){
     
     # k-means and plotting
     pdf(file.path(main_dir, paste0("k_means_", this_cov, ".pdf")), width=9, height=6)
-    for (nclust in 3:7){
+    for (nclust in cluster_counts){
       
       cov_label <- ifelse(nchar(this_cov)==3, toupper(this_cov), capitalize(this_cov))
       
       # if k-means has already been run, just load outputs
-      k_out_fname <- file.path(main_dir, paste0("k_out_", this_cov, "_", nclust, ".tif"))
-      cluster_raster_fname <- file.path(main_dir, paste0("k_clusters_", this_cov, "_", nclust, ".tif"))
-      random_trace_fname <- file.path(main_dir, paste0("random_trace_", this_cov, "_", nclust, ".csv"))
-      time_series_fname <- file.path(main_dir,  paste0("time_series_", this_cov, "_", nclust, ".csv"))
+      kmeans_dir <- file.path(main_dir, "kmeans")
+      dir.create(kmeans_dir, showWarnings=F, recursive=T)
+      
+      k_out_fname <- file.path(kmeans_dir, paste0("k_out_", this_cov, "_", nclust, ".tif"))
+      cluster_raster_fname <- file.path(kmeans_dir, paste0("k_clusters_", this_cov, "_", nclust, ".tif"))
+      random_trace_fname <- file.path(kmeans_dir, paste0("random_trace_", this_cov, "_", nclust, ".csv"))
+      means_fname <- file.path(kmeans_dir,  paste0("means_", this_cov, "_", nclust, ".csv"))
       
       if (file.exists(k_out_fname)){
         print("k-means already run, loading outputs")
         cluster_raster <- raster(cluster_raster_fname)
         random_trace <- fread(random_trace_fname)
-        time_series <- fread(time_series_fname)
+        means <- fread(means_fname)
         
       }else{
         print(paste("finding clusters for k of", nclust))
@@ -85,12 +89,8 @@ for (this_cov in names(input_list)){
         
         print("creating new raster")
         # load mask raster to get dimensions & extent
-        if (this_cov %like% "vector_abundance"){
-          temp_raster <- raster(file.path(main_dir, "rasters", "vector_abundance_species_gambiae.tif"))
-        }else{
-          temp_raster <- raster(file.path(main_dir, "rasters", "rainfall_month_01.tif"))
-        }
-        
+        temp_raster <- raster(file.path(main_dir, "rasters", "mask.tif"))
+
         cluster_raster <- rep(NA, ncell(temp_raster))
         cluster_raster[rotation$id] <- rotation$cluster
         cluster_raster <- matrix(cluster_raster, nrow=nrow(temp_raster))
@@ -101,15 +101,13 @@ for (this_cov in names(input_list)){
         
         print("finding random traces")
         random_grids <- sample(unique(all_vals$id), 500)
-        random_trace <- all_vals[variable_name=="month" & id %in% random_grids]
-        random_trace[, variable_val:=as.integer(variable_val)]
+        random_trace <- all_vals[id %in% random_grids]
         write.csv(random_trace, random_trace_fname, row.names=F)
         
-        print("finding mean time series")
-        time_series <- all_vals[variable_name=="month", list(cov_val=mean(cov_val)), by=list(cluster, variable_val, cov)]
-        time_series[, nclust:=nclust]
-        time_series[, variable_val:= as.integer(variable_val)]
-        write.csv(time_series, time_series_fname, row.names=F)
+        print("finding means")
+        means <- all_vals[,list(cov_val=mean(cov_val)), by=list(cluster, variable_name, variable_val, cov)]
+        means[, nclust:=nclust]
+        write.csv(means, means_fname, row.names=F)
         all_vals[, cluster:=NULL]
         
         save(k_out, file=k_out_fname) # save last to ensure other outputs have been saved if this exists
@@ -122,11 +120,12 @@ for (this_cov in names(input_list)){
       cluster_raster <- ratify(cluster_raster)
       map_plot <- levelplot(cluster_raster, att="ID", col.regions=brewer.pal(nclust, palette),
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
-                            main = paste("Clusters"), colorkey=F, margin=F)
+                            main = "", colorkey=F, margin=F)
       plotlist[[1]] <- map_plot
       
+      time_series <- means[variable_name=="month"]
       lines <- lapply(unique(time_series$cov), function(cov_value){
-        ggplot(time_series[cov==cov_value], aes(x=variable_val, y=cov_val)) +
+        ggplot(time_series[cov==cov_value], aes(x=as.integer(variable_val), y=cov_val)) +
           geom_line(aes(color=factor(cluster)), size=2) +
           geom_line(data=random_trace[cov==cov_value], aes(group=id, color=factor(cluster)), size=0.5, alpha=0.25) + 
           facet_grid(cluster~.) + 
@@ -142,9 +141,33 @@ for (this_cov in names(input_list)){
       
       plotlist <- append(plotlist, lines)
       
-      layout_pattern <- c(1, 1:(length(lines)+1))
-      layout <- rbind(layout_pattern,
-                      layout_pattern)
+      # if applicable, plot vector mix
+      mean_species <- means[variable_name=="species"]
+
+      if (nrow(mean_species)>0){
+        vector_mix <- ggplot(mean_species, aes(x=cluster, y=cov_val)) +
+          geom_bar(aes(fill=variable_val), stat="identity") + 
+          theme_minimal() +
+          theme(legend.position="bottom") +
+          scale_fill_manual(values=c("#ffd92f", "#a6d854", "#8da0cb"), name="")+ 
+          labs(title="Relative Species Abundance",
+               x="Cluster",
+               y="")
+        
+        vector_idx <- length(plotlist) +1 
+        plotlist[[vector_idx]] <- vector_mix
+        
+        layout_pattern <- c(1, 1:(length(lines)+1))
+        layout <- rbind(c(1, 1:(length(lines)+1)),
+                        c(1, 1:(length(lines)+1)),
+                        c(vector_idx, vector_idx, 2:(length(lines)+1))
+                        )
+        
+      }else{
+        layout_pattern <- c(1, 1:length(plotlist))
+        layout <- rbind(layout_pattern,
+                        layout_pattern)
+      }
       
       print("saving")
       full_plot <- grid.arrange(grobs=plotlist, layout_matrix=layout)

@@ -22,7 +22,6 @@ source("classify_functions.r")
 base_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 continents <- c("africa", "asia", "americas")
-continents <- c("africa")
 cov_details <- fread("clustering_covariates.csv")
 overwrite <- T
 
