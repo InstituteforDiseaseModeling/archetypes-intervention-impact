@@ -31,10 +31,10 @@ base_dir <- file.path(Sys.getenv("USERPROFILE"), "Dropbox (IDM)/Malaria Team Fol
 palette <- "Paired" # color scheme for plots 
 
 # number of singular vectors to use, from visual inspection of svd plots
-input_list <- list(tsi= list(africa=2, asia=3, americas=2),
-                   rainfall = list(africa=3, asia=3, americas=3)) 
+# input_list <- list(tsi= list(africa=2, asia=3, americas=2),
+#                    rainfall = list(africa=3, asia=3, americas=3)) 
 
-input_list <- list(joint=list(asia=3))
+input_list <- list(tsi_rainfall_vector_abundance=list(africa=3))
 
 for (this_cov in names(input_list)){
   nvec_list <- input_list[[this_cov]]
@@ -85,7 +85,7 @@ for (this_cov in names(input_list)){
         
         print("creating new raster")
         # load mask raster to get dimensions & extent
-        temp_raster <- raster(file.path(main_dir, "rasters", paste0("rainfall", "_month_1.tif")))
+        temp_raster <- raster(file.path(main_dir, "rasters", paste0("rainfall", "_month_01.tif")))
         cluster_raster <- matrix(nrow=temp_raster@nrows, ncol=temp_raster@ncols)
         cluster_raster[rotation$id] <- rotation$cluster
         cluster_raster <- raster(cluster_raster, template=temp_raster)

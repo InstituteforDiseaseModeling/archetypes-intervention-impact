@@ -39,7 +39,7 @@ for (idx in 1:nrow(cov_details)){
     
     main_dir <- file.path(base_dir, continent, "rasters")
     dir.create(main_dir, showWarnings=F, recursive=T)
-    all_vals_fname <- file.path(main_dir, paste0(this_cov$cov, "_vals.csv"))
+    all_vals_fname <- file.path(main_dir, "..", paste0(this_cov$cov, "_vals.csv"))
     
     ## find values
     if (file.exists(all_vals_fname) & overwrite==F){
