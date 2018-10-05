@@ -25,6 +25,10 @@ base_dir <- file.path(Sys.getenv("USERPROFILE"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
 
+extra_crop_rasters <- list(asia="Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic/CHIRPS.Synoptic.01.mean.5km.Data.tif",
+                           africa=file.path(base_dir, "vectors", "gambiae.tif")
+                           )
+
 overwrite <- F
 cov_details <- fread("clustering_covariates.csv")
 
@@ -47,7 +51,11 @@ for (idx in 1:nrow(cov_details)){
     }else{
       
       print("clipping mask")
-      mask <- get_mask(continent, out_dir=main_dir, mask_dir)
+      if (continent %in% names(extra_crop_rasters)){
+        mask <- get_mask(continent, out_dir=main_dir, mask_dir, extra_crop_rasters[[continent]])
+      }else{
+        mask <- get_mask(continent, out_dir=main_dir, mask_dir)
+      }
       
       print("extracting from raster")
       all_vals <- lapply(strsplit(this_cov$values, "/")[[1]], extract_by_pattern, main_dir, this_cov, mask)
