@@ -23,7 +23,7 @@ base_dir <- file.path(Sys.getenv("USERPROFILE"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 continents <- c("africa", "asia", "americas")
 cov_details <- fread("clustering_covariates.csv")
-overwrite <- T
+overwrite <- F
 
 for (continent in continents){
   print(paste("running svd on", continent))
