@@ -25,7 +25,7 @@ run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "bf3ab639-9cc3-e811-a2bd-c4346bcb1555"
 asset_exp_id = "26d67813-96c3-e811-a2bd-c4346bcb1555"
 
-intervention_coverages = [0, 20, 40, 60, 80]
+intervention_coverages = [80, 90]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -40,7 +40,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_New_Setup"
+    sweep_name = "MAP_II_Experimental_Ints"
     serialize = False
     pull_from_serialization = True
 else:
@@ -140,9 +140,9 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        # df = df.query("Site_Name=='aba' &  Run_Number==7")
+        df = df.query("Run_Number==7")
 
-        builder = ModBuilder.from_list([[
+        orig_builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
@@ -170,6 +170,52 @@ if __name__=="__main__":
             for act_cov in intervention_coverages
 
         ])
+
+        from_burnin_list = [
+            ModFn(DTKConfigBuilder.update_params, {
+                "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
+                "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
+                "Run_Number": df["Run_Number"][x],
+                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})
+
+        for x in df.index]
+
+        builder = ModBuilder.from_list([
+            [
+                [burnin_fn,
+                 ModFn(add_annual_itns, year_count=years,
+                       n_rounds=1,
+                       coverage=itn_cov / 100,
+                       discard_halflife=180,
+                       start_day=5,
+                       IP=[{"NetUsage": "LovesNets"}]
+                       ),
+                ModFn(assign_net_ip, hates_net_prop)]
+
+                for burnin_fn in from_burnin_list
+                for itn_cov in intervention_coverages
+                for hates_net_prop in net_hating_props
+            ] +
+            [
+                [burnin_fn,
+                 ModFn(add_irs_group, coverage=irs_cov / 100,
+                       decay=180,
+                       start_days=[365 * start for start in range(years)])
+                 ]
+                for burnin_fn in from_burnin_list
+                for irs_cov in intervention_coverages
+            ] +
+            [
+                [burnin_fn,
+                 ModFn(add_healthseeking_by_coverage, coverage=act_cov / 100, rate=0.15)
+                 ]
+                for burnin_fn in from_burnin_list
+                for act_cov in intervention_coverages
+            ]
+
+        ])
+        
+        # pdb.set_trace()
 
         run_sim_args = {"config_builder": cb,
                         "exp_name": sweep_name,
