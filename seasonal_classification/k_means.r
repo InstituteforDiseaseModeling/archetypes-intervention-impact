@@ -25,14 +25,15 @@ library(Hmisc)
 set.seed(206)
 
 rm(list=ls())
+overwrite <- T
 
 source("classify_functions.r")
 base_dir <- file.path(Sys.getenv("USERPROFILE"), "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 palette <- "Paired" # color scheme for plots 
 
 # number of singular vectors to use, from visual inspection of svd plots
-input_list <- list(tsi_rainfall = list(asia=3, americas=3) #, 
-                   # tsi_rainfall_vector_abundance=list(africa=3)
+input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
+                   tsi_rainfall_vector_abundance=list(africa=3)
                    )
 cluster_counts <- 3:7
 
@@ -70,12 +71,12 @@ for (this_cov in names(input_list)){
       kmeans_dir <- file.path(main_dir, "kmeans")
       dir.create(kmeans_dir, showWarnings=F, recursive=T)
       
-      k_out_fname <- file.path(kmeans_dir, paste0("k_out_", this_cov, "_", nclust, ".tif"))
+      k_out_fname <- file.path(kmeans_dir, paste0("k_out_", this_cov, "_", nclust, ".rdata"))
       cluster_raster_fname <- file.path(kmeans_dir, paste0("k_clusters_", this_cov, "_", nclust, ".tif"))
       random_trace_fname <- file.path(kmeans_dir, paste0("random_trace_", this_cov, "_", nclust, ".csv"))
       means_fname <- file.path(kmeans_dir,  paste0("means_", this_cov, "_", nclust, ".csv"))
       
-      if (file.exists(k_out_fname)){
+      if (file.exists(k_out_fname) & overwrite==F){
         print("k-means already run, loading outputs")
         cluster_raster <- raster(cluster_raster_fname)
         random_trace <- fread(random_trace_fname)
@@ -85,6 +86,7 @@ for (this_cov in names(input_list)){
         print(paste("finding clusters for k of", nclust))
         k_out <- kmeans(rotation[, 1:nvecs], centers=nclust, algorithm = "MacQueen", iter.max=100)
         rotation[, cluster:= k_out$cluster]
+        
         
         print("creating new raster")
         # load mask raster to get dimensions & extent
