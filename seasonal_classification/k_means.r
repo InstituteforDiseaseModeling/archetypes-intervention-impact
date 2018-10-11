@@ -33,7 +33,7 @@ palette <- "Paired" # color scheme for plots
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
-                   tsi_rainfall_vector_abundance=list(africa=3)
+                   tsi_rainfall=list(africa=3)
                    )
 cluster_counts <- 3:7
 
@@ -49,7 +49,7 @@ for (this_cov in names(input_list)){
     rotation_fname <- file.path(main_dir, paste0("svd_rotations_", this_cov, ".csv"))
     nvecs <- nvec_list[[continent]]
     
-    if (file.exists(rotation_fname)){
+    if (file.exists(rotation_fname) & overwrite==F){
       print("loading matrix rotations")
       rotation <- fread(rotation_fname)
     }else{
