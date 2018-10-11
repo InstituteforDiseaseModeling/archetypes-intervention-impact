@@ -68,7 +68,6 @@ for (continent in continents){
   }else{
     print("reshaping and filling nulls")
     for_svd <- dcast(all_vals, cov + variable_name + variable_val ~ id)
-    for_svd[is.na(for_svd)] <- 0
     print("running svd")
     svd_out <- svd(for_svd[, 4:ncol(for_svd)])
     save(svd_out, file=svd_out_fname)
