@@ -83,10 +83,6 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster){
   
 }
 
-drop_na_cols = function(DT) {
-  for (j in seq_len(ncol(DT)))
-    set(DT,which(is.na(DT[[j]])),j,0)
-}
 
 rotate_matrix <- function(nvecs, main_dir, cov="tsi"){
   load(file.path(main_dir, paste0(cov, "_svd.rdata")))
@@ -96,7 +92,6 @@ rotate_matrix <- function(nvecs, main_dir, cov="tsi"){
   for_svd <- fread(file.path(main_dir, paste0(cov, "_vals.csv")))
   print("reshaping and filling nulls")
   for_svd <- dcast(for_svd, cov + variable_name + variable_val ~ id)
-  for_svd[is.na(for_svd)] <- 0
   print("rotating")
   rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,4:ncol(for_svd)])))
   rotation$id <- as.integer(rownames(rotation))

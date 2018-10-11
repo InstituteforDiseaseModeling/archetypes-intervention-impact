@@ -20,10 +20,12 @@ rm(list=ls())
 
 source("classify_functions.r")
 base_dir <- file.path(Sys.getenv("USERPROFILE"), 
-                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
+                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
 continents <- c("africa", "asia", "americas")
+continents <- c("africa")
 cov_details <- fread("clustering_covariates.csv")
-overwrite <- F
+cov_details <- cov_details[variable=="month"]
+overwrite <- T
 
 for (continent in continents){
   print(paste("running svd on", continent))
@@ -34,15 +36,27 @@ for (continent in continents){
   
   # load datasets, merge
   all_vals_fname <- file.path(main_dir, paste0(full_label, "_vals.csv"))
-  if (file.exists(all_vals_fname)){
+  if (file.exists(all_vals_fname) & overwrite==F){
     print("loading extracted values")
     all_vals <- fread(all_vals_fname)
   }else{
     print("appending datasets")
     all_vals <- lapply(these_covs$cov, function(cov_name){
       vals <- fread(file.path(main_dir, paste0(cov_name, "_vals.csv")))
+      # # temp
+      # setnames(vals, c(cov_name, "month"), c("value", "variable_val"))
+      # vals[, cov:=cov_name]
+      # vals[, variable_name:="month"]
+      return(vals)
     })
+    
+    # keep only those pixels with values for all covariates
+    non_null_ids <- lapply(all_vals, function(df){
+      return(unique(df$id))
+    })
+    shared_ids <- Reduce(intersect, non_null_ids)
     all_vals <- rbindlist(all_vals)
+    all_vals <- all_vals[id %in% shared_ids]
     write.csv(all_vals, file=all_vals_fname, row.names=F)
   }
   
