@@ -180,49 +180,43 @@ if __name__=="__main__":
 
         for x in df.index]
 
-        builder = ModBuilder.from_list([
-            [
-                [burnin_fn,
-                 ModFn(add_annual_itns, year_count=years,
-                       n_rounds=1,
-                       coverage=itn_cov / 100,
-                       discard_halflife=180,
-                       start_day=5,
-                       IP=[{"NetUsage": "LovesNets"}]
-                       ),
-                ModFn(assign_net_ip, hates_net_prop)]
+        combos = []
 
-                for burnin_fn in from_burnin_list
-                for itn_cov in intervention_coverages
-                for hates_net_prop in net_hating_props
-            ] +
-            [
-                [burnin_fn,
-                 ModFn(add_irs_group, coverage=irs_cov / 100,
-                       decay=180,
-                       start_days=[365 * start for start in range(years)])
-                 ]
-                for burnin_fn in from_burnin_list
-                for irs_cov in intervention_coverages
-            ] +
-            [
-                [burnin_fn,
-                 ModFn(add_healthseeking_by_coverage, coverage=act_cov / 100, rate=0.15)
-                 ]
-                for burnin_fn in from_burnin_list
-                for act_cov in intervention_coverages
-            ]
+        combos.extend(list(
+            [burnin_fn,
+             ModFn(add_annual_itns, year_count=years,
+                   n_rounds=1,
+                   coverage=itn_cov / 100,
+                   discard_halflife=180,
+                   start_day=5,
+                   IP=[{"NetUsage": "LovesNets"}]
+                   ),
+             ModFn(assign_net_ip, hates_net_prop)]
 
-        ])
-        
-        # pdb.set_trace()
+            for burnin_fn in from_burnin_list
+            for itn_cov in intervention_coverages
+            for hates_net_prop in net_hating_props
+        ))
 
-        run_sim_args = {"config_builder": cb,
-                        "exp_name": sweep_name,
-                        "exp_builder": builder}
+        combos.extend(list(
+            [burnin_fn,
+             ModFn(add_irs_group, coverage=irs_cov / 100,
+                   decay=180,
+                   start_days=[365 * start for start in range(years)])
+             ]
+            for burnin_fn in from_burnin_list
+            for irs_cov in intervention_coverages
+        ))
 
-        em = ExperimentManagerFactory.from_cb(cb)
-        em.run_simulations(**run_sim_args)
+        combos.extend(list(
+            [burnin_fn,
+             ModFn(add_healthseeking_by_coverage, coverage=act_cov / 100, rate=0.15)
+             ]
+            for burnin_fn in from_burnin_list
+            for act_cov in intervention_coverages
+        ))
+
+        builder = ModBuilder.from_list(combos)
 
 
     else:
