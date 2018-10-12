@@ -11,6 +11,9 @@ from dtk.interventions.irs import add_IRS
 from dtk.interventions.itn_age_season import add_ITN_age_season
 from dtk.interventions.property_change import change_individual_property
 
+from malaria.interventions.malaria_drug_campaigns import add_drug_campaign
+from malaria.interventions.malaria_vaccine import add_vaccine
+
 def assign_net_ip(cb, hates_net_prop):
     change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop),
     change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop,
@@ -36,7 +39,7 @@ def simulation_setup(cb, species_details, site_vector_props, max_larval_capacity
                     }
     )
 
-    # Find vector proportions for each vector TODO: add node-specific and habitat-specific multiplier to demog overlay
+    # Find vector proportions for each vector
     set_params_by_species(cb.params, [name for name in species_details.keys()])
 
     larval_habs_per_site = {"NodeID": site_vector_props["node_id"]}
@@ -99,7 +102,10 @@ def add_irs_group(cb, coverage=1.0, start_days=[0], decay=270):
 
 
 # act
-def add_healthseeking_by_coverage(cb, coverage=1.0, rate=0.15):
+def add_healthseeking_by_coverage(cb, coverage=1.0, rate=0.15, drugname="AL"):
+    drugs = {"AL": ["Artemether", "Lumefantrine"],
+             "DP": ["DHA", "Piperaquine"]}
+
     add_health_seeking(cb,
                        targets=[{"trigger": "NewClinicalCase",
                                  "coverage": coverage,
@@ -107,11 +113,25 @@ def add_healthseeking_by_coverage(cb, coverage=1.0, rate=0.15):
                                  "agemax": 100,
                                  "seek": 1.0,
                                  "rate": rate}],
-                       drug=["Artemether", "Lumefantrine"],
+                       drug=drugs[drugname],
                        dosing="FullTreatmentNewDetectionTech",
                        nodes={"class": "NodeSetAll"},
                        repetitions=1,
                        tsteps_btwn_repetitions=365,
                        broadcast_event_name="Received_Treatment")
 
-    return {"ACT_Coverage": coverage, "ACT_Daily_Prob": rate}
+    return {"CM_Coverage": coverage, "CM_Daily_Prob": rate, "CM_Drug": drugname}
+
+# mda
+def add_mda(cb, coverage=0.8, drugname="DP", start_days=[0], reps=3):
+
+    add_drug_campaign(cb, 'MDA', drugname,
+                      start_days=start_days,
+                      coverage=coverage,
+                      nodes={"class": "NodeSetAll"},
+                      repetitions=reps,
+                      interval=30)
+
+    return {"MDA_Drug": drugname, "MDA_Repetitions": reps}
+
+# def add_mAb(cb, coverage=0.8, )
