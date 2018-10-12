@@ -91,8 +91,11 @@ if __name__ == "__main__":
         am = AnalyzeManager(exp_list=exps, analyzers=[PfPRAnalyzer(working_dir=out_dir,
                                                                           sweep_variables=[ "Run_Number",
                                                                                            "x_Temporary_Larval_Habitat",
-                                                                                           "ACT_Coverage",
+                                                                                           "CM_Drug",
+                                                                                           "CM_Coverage",
                                                                                            "IRS_Coverage",
-                                                                                           "ITN_Coverage"
+                                                                                           "ITN_Coverage",
+                                                                                            "MDA_Drug",
+                                                                                            "MDA_Repetitions"
                                                                                            ])])
         am.analyze()

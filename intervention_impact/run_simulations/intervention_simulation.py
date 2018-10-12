@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import pdb
 import json
+import math
 
 from simtools.ExperimentManager.ExperimentManagerFactory import ExperimentManagerFactory
 from simtools.SetupParser import SetupParser
@@ -18,14 +19,17 @@ from dtk.utils.reports.VectorReport import add_vector_stats_report
 from simtools.Utilities.Experiments import retrieve_experiment
 
 from generate_input_files import generate_input_files, net_usage_overlay
+from malaria.interventions.malaria_vaccine import add_vaccine
 from sweep_functions import *
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "bf3ab639-9cc3-e811-a2bd-c4346bcb1555"
-asset_exp_id = "26d67813-96c3-e811-a2bd-c4346bcb1555"
+asset_exp_id = "e7b14dec-69ce-e811-a2bd-c4346bcb1555"
 
-intervention_coverages = [80, 90]
+intervention_coverages = [50, 80]
+vaccine_durations = [182, 365]
+interventions = ["dp_cm", "dp_mda", "mAb", "pev", "tbv"]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -35,7 +39,7 @@ new_inputs = False
 print("setting up")
 if run_type == "burnin":
     years = 15
-    sweep_name = "MAP_II_New_Setup_Burnin"
+    sweep_name = "MAP_II_New_Sites_Burnin"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
@@ -56,7 +60,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Config_Name=sweep_name,
                                     Birth_Rate_Dependence="FIXED_BIRTH_RATE",
                                     Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX",
-                                    Num_Cores=1,
+                                    Num_Cores=2,
 
                                     # interventions
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
@@ -142,7 +146,7 @@ if __name__=="__main__":
         # temp for testing
         df = df.query("Run_Number==7")
 
-        orig_builder = ModBuilder.from_list([[
+        builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
@@ -180,9 +184,8 @@ if __name__=="__main__":
 
         for x in df.index]
 
-        combos = []
-
-        combos.extend(list(
+        intervention_dict = {
+            "itn": list(
             [burnin_fn,
              ModFn(add_annual_itns, year_count=years,
                    n_rounds=1,
@@ -196,9 +199,9 @@ if __name__=="__main__":
             for burnin_fn in from_burnin_list
             for itn_cov in intervention_coverages
             for hates_net_prop in net_hating_props
-        ))
+            ),
 
-        combos.extend(list(
+            "irs": list(
             [burnin_fn,
              ModFn(add_irs_group, coverage=irs_cov / 100,
                    decay=180,
@@ -206,17 +209,99 @@ if __name__=="__main__":
              ]
             for burnin_fn in from_burnin_list
             for irs_cov in intervention_coverages
-        ))
+            ),
 
-        combos.extend(list(
+            "al_cm": list(
             [burnin_fn,
-             ModFn(add_healthseeking_by_coverage, coverage=act_cov / 100, rate=0.15)
+             ModFn(add_healthseeking_by_coverage, coverage=al_cm_cov / 100, rate=0.15)
              ]
             for burnin_fn in from_burnin_list
-            for act_cov in intervention_coverages
-        ))
+            for al_cm_cov in intervention_coverages
+            ),
 
-        builder = ModBuilder.from_list(combos)
+            "dp_cm": list(
+                [burnin_fn,
+                 ModFn(add_healthseeking_by_coverage, coverage=dp_cm_cov / 100, rate=0.15, drugname="dp")
+                 ]
+                for burnin_fn in from_burnin_list
+                for dp_cm_cov in intervention_coverages
+            ),
+
+            "dp_mda": list(
+                [burnin_fn,
+                 ModFn(add_mda, coverage=dp_mda_cov/100)]
+
+                for burnin_fn in from_burnin_list
+                for dp_mda_cov in intervention_coverages
+            ),
+
+            "mAb":list(
+                [burnin_fn,
+                 ModFn(add_vaccine, vaccine_type="PEV",
+                                    coverage=mab_cov,
+                                    vaccine_params={"Waning_Config": {
+                                                        "class": "WaningEffectBox",
+                                                        "Box_Duration": 90 # 3 month protection
+                                                    }
+                                                    },
+                                    target_group={"agemin": 10, "agemax": 25},
+                                    repetitions=3,
+                                    interval=365
+                       )
+                ]
+
+                for burnin_fn in from_burnin_list
+                for mab_cov in intervention_coverages
+            ),
+
+            "pev": list(
+                [burnin_fn,
+                 ModFn(add_vaccine, vaccine_type="PEV",
+                                    coverage=pev_cov,
+                                    vaccine_params={"Reduced_Acquire": 0.75,
+                                                    "Waning_Config": {
+                                                        "class": "WaningEffectExponential",
+                                                        "Decay_Time_Constant": vaccine_hl/ math.log(2)
+                                                    }
+                                                    },
+                                    trigger_condition_list=["Births"],
+                                    triggered_delay=150
+                       )
+                ]
+
+                for burnin_fn in from_burnin_list
+                for pev_cov in intervention_coverages
+                for vaccine_hl in vaccine_durations
+            ),
+
+            "tbv": list(
+                [burnin_fn,
+                 ModFn(add_vaccine, vaccine_type="TBV",
+                       coverage=tbv_cov,
+                       vaccine_params={"Reduced_Transmit": 0.75,
+                                       "Waning_Config": {
+                                           "class": "WaningEffectExponential",
+                                           "Decay_Time_Constant": vaccine_hl / math.log(2)
+                                       }
+                                       },
+                       target_group={"agemin": 10, "agemax": 25},
+                       repetitions = 3,
+                       interval = 365
+                       )
+                 ]
+
+                for burnin_fn in from_burnin_list
+                for tbv_cov in intervention_coverages
+                for vaccine_hl in vaccine_durations
+            )
+
+        }
+
+        combos = []
+        for int in interventions:
+            combos.extend(intervention_dict[int])
+
+        in_progress_builder = ModBuilder.from_list(combos)
 
 
     else:
