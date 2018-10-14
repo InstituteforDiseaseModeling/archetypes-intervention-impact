@@ -1,5 +1,6 @@
 import pandas as pd
 import json
+import math
 
 import os
 import pdb
@@ -12,7 +13,6 @@ from dtk.interventions.itn_age_season import add_ITN_age_season
 from dtk.interventions.property_change import change_individual_property
 
 from malaria.interventions.malaria_drug_campaigns import add_drug_campaign
-from malaria.interventions.malaria_vaccine import add_vaccine
 
 def assign_net_ip(cb, hates_net_prop):
     change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop),
@@ -134,4 +134,3 @@ def add_mda(cb, coverage=0.8, drugname="DP", start_days=[0], reps=3):
 
     return {"MDA_Drug": drugname, "MDA_Repetitions": reps}
 
-# def add_mAb(cb, coverage=0.8, )

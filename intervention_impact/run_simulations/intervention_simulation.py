@@ -30,7 +30,6 @@ asset_exp_id = None # "66d8416c-9fce-e811-a2bd-c4346bcb1555"
 intervention_coverages = [0, 40, 80]
 vaccine_durations = [182, 365]
 interventions = ["dp_cm", "dp_mda", "mAb", "pev", "tbv"]
-interventions = ["pev"]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -67,7 +66,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using", "Received_Vaccine"],
-                                    Enable_Default_Reporting=1,
+                                    Enable_Default_Reporting=0,
                                     Enable_Demographics_Risk=1,
                                     Enable_Vector_Species_Report=0,
 
@@ -297,24 +296,12 @@ if __name__=="__main__":
             )
 
         }
-        #
-        # # test vaccine fn
-        # add_vaccine(cb, vaccine_type="PEV", coverage=0.8,
-        #             vaccine_params={"Reduced_Acquire": 0.75,
-        #                             "Waning_Config": {
-        #                                 "class": "WaningEffectExponential",
-        #                                 "Decay_Time_Constant": 183 / math.log(2)
-        #                             }
-        #                             },
-        #             trigger_condition_list=["Births"],
-        #             triggered_delay=182
-        #             )
 
         combos = []
         for int in interventions:
             combos.extend(intervention_dict[int])
 
-        in_progress_builder = ModBuilder.from_list(combos)
+        builder = ModBuilder.from_list(combos)
 
 
     else:
