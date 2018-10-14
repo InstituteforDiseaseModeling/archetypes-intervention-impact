@@ -128,7 +128,7 @@ def add_mda(cb, coverage=0.8, drugname="DP", start_days=[0], reps=3):
     add_drug_campaign(cb, 'MDA', drugname,
                       start_days=start_days,
                       coverage=coverage,
-                      nodes={"class": "NodeSetAll"},
+                      # nodes={"class": "NodeSetAll"},
                       repetitions=reps,
                       interval=30)
 

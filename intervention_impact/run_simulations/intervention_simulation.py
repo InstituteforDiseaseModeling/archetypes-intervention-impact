@@ -23,13 +23,14 @@ from malaria.interventions.malaria_vaccine import add_vaccine
 from sweep_functions import *
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
-burnin_id = "bf3ab639-9cc3-e811-a2bd-c4346bcb1555"
-asset_exp_id = "e7b14dec-69ce-e811-a2bd-c4346bcb1555"
+run_type = "intervention"  # set to "burnin" or "intervention"
+burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
+asset_exp_id = None # "66d8416c-9fce-e811-a2bd-c4346bcb1555"
 
-intervention_coverages = [50, 80]
+intervention_coverages = [0, 40, 80]
 vaccine_durations = [182, 365]
 interventions = ["dp_cm", "dp_mda", "mAb", "pev", "tbv"]
+interventions = ["pev"]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -44,7 +45,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_Experimental_Ints"
+    sweep_name = "MAP_II_UCSF_Ints_Test"
     serialize = False
     pull_from_serialization = True
 else:
@@ -60,13 +61,13 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Config_Name=sweep_name,
                                     Birth_Rate_Dependence="FIXED_BIRTH_RATE",
                                     Age_Initialization_Distribution_Type= "DISTRIBUTION_COMPLEX",
-                                    Num_Cores=2,
+                                    Num_Cores=1,
 
                                     # interventions
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
-                                    Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using"],
-                                    Enable_Default_Reporting=0,
+                                    Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using", "Received_Vaccine"],
+                                    Enable_Default_Reporting=1,
                                     Enable_Demographics_Risk=1,
                                     Enable_Vector_Species_Report=0,
 
@@ -130,7 +131,7 @@ if __name__=="__main__":
                                "Node_List": [int(row["node_id"])]
                            },
                            description = row["name"])
-    # add_event_counter_report(cb, ["Bednet_Using"])
+    add_event_counter_report(cb, ["Bednet_Using", "Received_Vaccine"])
     # add_vector_stats_report(cb)
 
     if pull_from_serialization:
@@ -144,9 +145,9 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        df = df.query("Run_Number==7")
+        df = df.query("Run_Number==7 & x_Temporary_Larval_Habitat>90 & x_Temporary_Larval_Habitat<150")
 
-        builder = ModBuilder.from_list([[
+        old_builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
@@ -221,7 +222,7 @@ if __name__=="__main__":
 
             "dp_cm": list(
                 [burnin_fn,
-                 ModFn(add_healthseeking_by_coverage, coverage=dp_cm_cov / 100, rate=0.15, drugname="dp")
+                 ModFn(add_healthseeking_by_coverage, coverage=dp_cm_cov / 100, rate=0.15, drugname="DP")
                  ]
                 for burnin_fn in from_burnin_list
                 for dp_cm_cov in intervention_coverages
@@ -238,13 +239,13 @@ if __name__=="__main__":
             "mAb":list(
                 [burnin_fn,
                  ModFn(add_vaccine, vaccine_type="PEV",
-                                    coverage=mab_cov,
+                                    coverage=mab_cov/100,
                                     vaccine_params={"Waning_Config": {
                                                         "class": "WaningEffectBox",
                                                         "Box_Duration": 90 # 3 month protection
                                                     }
                                                     },
-                                    target_group={"agemin": 10, "agemax": 25},
+                                    target_group={"agemin": 15, "agemax": 55},
                                     repetitions=3,
                                     interval=365
                        )
@@ -257,7 +258,7 @@ if __name__=="__main__":
             "pev": list(
                 [burnin_fn,
                  ModFn(add_vaccine, vaccine_type="PEV",
-                                    coverage=pev_cov,
+                                    coverage=pev_cov/100,
                                     vaccine_params={"Reduced_Acquire": 0.75,
                                                     "Waning_Config": {
                                                         "class": "WaningEffectExponential",
@@ -265,7 +266,7 @@ if __name__=="__main__":
                                                     }
                                                     },
                                     trigger_condition_list=["Births"],
-                                    triggered_delay=150
+                                    triggered_delay=182
                        )
                 ]
 
@@ -277,14 +278,14 @@ if __name__=="__main__":
             "tbv": list(
                 [burnin_fn,
                  ModFn(add_vaccine, vaccine_type="TBV",
-                       coverage=tbv_cov,
+                       coverage=tbv_cov/100,
                        vaccine_params={"Reduced_Transmit": 0.75,
                                        "Waning_Config": {
                                            "class": "WaningEffectExponential",
                                            "Decay_Time_Constant": vaccine_hl / math.log(2)
                                        }
                                        },
-                       target_group={"agemin": 10, "agemax": 25},
+                       target_group={"agemin": 15, "agemax": 55},
                        repetitions = 3,
                        interval = 365
                        )
@@ -296,6 +297,18 @@ if __name__=="__main__":
             )
 
         }
+        #
+        # # test vaccine fn
+        # add_vaccine(cb, vaccine_type="PEV", coverage=0.8,
+        #             vaccine_params={"Reduced_Acquire": 0.75,
+        #                             "Waning_Config": {
+        #                                 "class": "WaningEffectExponential",
+        #                                 "Decay_Time_Constant": 183 / math.log(2)
+        #                             }
+        #                             },
+        #             trigger_condition_list=["Births"],
+        #             triggered_delay=182
+        #             )
 
         combos = []
         for int in interventions:
