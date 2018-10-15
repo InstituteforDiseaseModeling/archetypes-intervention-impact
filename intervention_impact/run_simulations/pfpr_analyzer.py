@@ -26,7 +26,11 @@ class PfPRAnalyzer(BaseAnalyzer):
 
         for site_name in self.sitenames:
 
-            channeldata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTime"]["PfPR_2to10"]
+            try:
+                channeldata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTime"]["PfPR_2to10"]
+            except:
+                print("file not found for sim" + simulation.id)
+
             tempdata = pd.DataFrame({colname: channeldata,
                                     "Site_Name": site_name})
             tempdata = tempdata[-2:-1]
@@ -60,42 +64,26 @@ if __name__ == "__main__":
 
     sites = pd.read_csv("site_details.csv")
 
-    run_type = "exp"
+    experiments = {# "initial": "96e9c858-a8ce-e811-a2bd-c4346bcb1555",
+                   "interactions" :"8f45458c-0dcf-e811-a2bd-c4346bcb1555"
+                   }
 
-    if run_type == "exp":
-        experiments = {# "initial": "bf3ab639-9cc3-e811-a2bd-c4346bcb1555",
-                       "interactions" :"3d478806-fbc3-e811-a2bd-c4346bcb1555"
-                       }
+    for dirname, exp_id in experiments.items():
 
-        for dirname, exp_id in experiments.items():
+        am = AnalyzeManager(exp_list=exp_id, analyzers=[PfPRAnalyzer(working_dir=out_dir,
+                                                                     dir_name=dirname,
+                                                                     report_names = sites["name"].tolist(),
+                                                                      sweep_variables=["Run_Number",
+                                                                                       "x_Temporary_Larval_Habitat",
+                                                                                       "CM_Drug",
+                                                                                       "CM_Coverage",
+                                                                                       "IRS_Coverage",
+                                                                                       "ITN_Coverage",
+                                                                                        "MDA_Drug",
+                                                                                        "MDA_Repetitions"
+                                                                                       ])],
+                            force_analyze=True)
 
-            am = AnalyzeManager(exp_list=exp_id, analyzers=[PfPRAnalyzer(working_dir=out_dir,
-                                                                         dir_name=dirname,
-                                                                         report_names = sites["name"].tolist(),
-                                                                          sweep_variables=["Run_Number",
-                                                                                           "x_Temporary_Larval_Habitat",
-                                                                                           "ACT_Coverage",
-                                                                                           "IRS_Coverage",
-                                                                                           "ITN_Coverage"
-                                                                                           ])],
-                                force_analyze=True)
-
-            print(am.experiments)
-            am.analyze()
-
-
-    elif run_type == "suite":
-
-        exps = exps_for_suite_id("537b9041-0fa3-e811-a2c0-c4346bcb7275")
-        print(exps)
-        am = AnalyzeManager(exp_list=exps, analyzers=[PfPRAnalyzer(working_dir=out_dir,
-                                                                          sweep_variables=[ "Run_Number",
-                                                                                           "x_Temporary_Larval_Habitat",
-                                                                                           "CM_Drug",
-                                                                                           "CM_Coverage",
-                                                                                           "IRS_Coverage",
-                                                                                           "ITN_Coverage",
-                                                                                            "MDA_Drug",
-                                                                                            "MDA_Repetitions"
-                                                                                           ])])
+        print(am.experiments)
         am.analyze()
+
