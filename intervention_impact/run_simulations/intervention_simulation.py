@@ -244,7 +244,7 @@ if __name__=="__main__":
                                                         "Box_Duration": 90 # 3 month protection
                                                     }
                                                     },
-                                    target_group={"agemin": 15, "agemax": 55},
+                                    target_group={"agemin": 15, "agemax": 49},
                                     repetitions=3,
                                     interval=365
                        )
@@ -284,7 +284,7 @@ if __name__=="__main__":
                                            "Decay_Time_Constant": vaccine_hl / math.log(2)
                                        }
                                        },
-                       target_group={"agemin": 15, "agemax": 55},
+                       target_group={"agemin": 15, "agemax": 49},
                        repetitions = 3,
                        interval = 365
                        )
