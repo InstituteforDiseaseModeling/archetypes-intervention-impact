@@ -3,8 +3,9 @@ library(data.table)
 main_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
 
-initial <- fread(file.path(main_dir, "../initial/MAP_II_New_Setup_Burnin.csv"))
-all_data <- fread(file.path(main_dir, "MAP_II_New_Setup.csv"))
+initial <- fread(file.path(main_dir, "../initial/MAP_II_New_Sites_Burnin.csv"))
+all_data <- fread(file.path(main_dir, "MAP_II_New_Sites.csv"))
+setnames(all_data, "CM_Coverage", "ACT_Coverage")
 
 # files <- list.files(file.path(main_dir, "version_2"), full.names = T)
 # all_data <- lapply(files, fread)
@@ -27,5 +28,5 @@ all_data[, Run_Number:=factor(Run_Number)]
 all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
 all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
 
-write.csv(all_data, file=file.path(main_dir, "lookup_full_interactions_v3.csv"), row.names = F)
+write.csv(all_data, file=file.path(main_dir, "lookup_full_interactions_v4.csv"), row.names = F)
 

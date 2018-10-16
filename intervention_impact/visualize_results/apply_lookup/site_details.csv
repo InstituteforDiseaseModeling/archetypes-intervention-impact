@@ -1,9 +1,9 @@
-name,lat,lon,cluster,country,birth_rate_country,continent,arabiensis,funestus,gambiae
-aba,5.43,7.58,1,Nigeria,Nigeria,Africa,14.1,40.2,45.7
-martae,6.92,13.05,2,Cameroon,Cameroon,Africa,17.4,43.4,39.2
-djibo,14.1,-1.65,3,Burkina_Faso,Burkina Faso,Africa,84,16,0
-kananga,-6.188,21.57,4,Democratic_Republic_of_the_Congo,"Congo, Dem. Rep.",Africa,0,0.1,99.9
-moine,-24.896,32.5,5,Mozambique,Mozambique,Africa,92.2,7.8,0
-gode,5.91,43.6,6,Ethiopia,Ethiopia,Africa,1,0,0
-karen,17.4116,98.0511,1,Myanmar,Myanmar,Asia,0,0,0
-bajonapo,-0.7292,-75.6459,1,Ecuador,Ecuador,Americas,0,0,0
+name,lat,lon,cluster,country,birth_rate_country,continent
+aba,5.43,7.58,1,Nigeria,Nigeria,Africa
+kasama,-10.21,31.1957,3,Zambia,Zambia,Africa
+djibo,14.1,-1.65,4,Burkina_Faso,Burkina Faso,Africa
+kananga,-6.188,21.57,2,Democratic_Republic_of_the_Congo,"Congo, Dem. Rep.",Africa
+moine,-24.896,32.5,6,Mozambique,Mozambique,Africa
+gode,5.91,43.6,5,Ethiopia,Ethiopia,Africa
+karen,17.4116,98.0511,1,Myanmar,Myanmar,Asia
+bajonapo,-0.7292,-75.6459,1,Ecuador,Ecuador,Americas

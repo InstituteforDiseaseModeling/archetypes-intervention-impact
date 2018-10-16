@@ -59,7 +59,7 @@ apply_spline_to_raster<-function(splObj,inRaster, return_r0=F){
 }
 ##################################################################################################
 
-lut <- fread(file.path(main_dir, "lookup_full_interactions_v3.csv"))
+lut <- fread(file.path(main_dir, "lookup_full_interactions_v4.csv"))
 lut <- lut[Intervention %in% interventions]
 
 
@@ -67,7 +67,7 @@ lut <- lut[Intervention %in% interventions]
 pr_orig <- raster(file.path("MODEL43.2015.PR.ALL.rmean.tif"))
 
 masks <- raster("MAP_Regions_Pf_5k.tif")
-cluster_map <- raster("clusters_joint_6.tif")
+cluster_map <- raster("africa_clusters_v4.tif")
 # africa counterfactual is smaller than cluster map; align extents and mask oceans etc.
 cluster_map <- crop(cluster_map, pr_orig)
 pr_orig <- crop(pr_orig, cluster_map)
@@ -75,7 +75,7 @@ pr_orig <- mask(pr_orig, cluster_map)
 
 continent <- "africa"
 cluster_list <-  list("aba"=1,
-                      "martae"=2,
+                      "kasama"=2,
                       "djibo"=3,
                       "kananga"=4,
                       "moine"=5,

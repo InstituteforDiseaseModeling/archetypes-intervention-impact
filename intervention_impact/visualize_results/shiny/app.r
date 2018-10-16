@@ -8,7 +8,7 @@ library(ggplot2)
 
 theme_set(theme_minimal(base_size = 18))
 
-data <- fread(file.path("data", "lookup_full_interactions_v3.csv"))
+data <- fread(file.path("data", "lookup_full_interactions_v4.csv"))
 
 data[, names:=gsub("[0-9]", "", Intervention)]
 
@@ -33,7 +33,7 @@ ui <- fluidPage(
                                            "Gode (Ethiopia)"="gode",
                                            "Kananga (DRC)"="kananga",
                                            "Karen (Myanmar)"="karen",
-                                           "Martae (Cameroon)" = "martae",
+                                           "Kasama (Zambia)" = "kasama",
                                            "Moine (Mozambique)"="moine"),
                               selected=c("djibo", "kananga", "karen"))
            ),
