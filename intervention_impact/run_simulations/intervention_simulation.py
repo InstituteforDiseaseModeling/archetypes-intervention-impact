@@ -25,7 +25,7 @@ from sweep_functions import *
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
-asset_exp_id = None # "66d8416c-9fce-e811-a2bd-c4346bcb1555"
+asset_exp_id = "66d8416c-9fce-e811-a2bd-c4346bcb1555"
 
 intervention_coverages = [0, 40, 80]
 vaccine_durations = [182, 365]
@@ -44,7 +44,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_UCSF_Ints_Test"
+    sweep_name = "MAP_II_UCSF_Ints_Take_1"
     serialize = False
     pull_from_serialization = True
 else:
@@ -130,7 +130,7 @@ if __name__=="__main__":
                                "Node_List": [int(row["node_id"])]
                            },
                            description = row["name"])
-    add_event_counter_report(cb, ["Bednet_Using", "Received_Vaccine"])
+    # add_event_counter_report(cb, ["Bednet_Using", "Received_Vaccine"])
     # add_vector_stats_report(cb)
 
     if pull_from_serialization:
@@ -144,7 +144,7 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        df = df.query("Run_Number==7 & x_Temporary_Larval_Habitat>90 & x_Temporary_Larval_Habitat<150")
+        # df = df.query("Run_Number==7 & x_Temporary_Larval_Habitat>90 & x_Temporary_Larval_Habitat<150")
 
         old_builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {

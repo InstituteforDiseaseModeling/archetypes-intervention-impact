@@ -42,6 +42,9 @@ class PfPRAnalyzer(BaseAnalyzer):
                 simdata[sweep_var] = simulation.tags[sweep_var]
         return simdata
 
+    def filter(self, simulation):
+        return simulation.id != "87227af9-0fcf-e811-a2bd-c4346bcb1555"
+
     def finalize(self, all_data):
         data_sets_per_experiment = {}
 
