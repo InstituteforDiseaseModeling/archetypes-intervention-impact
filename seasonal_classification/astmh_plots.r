@@ -11,10 +11,27 @@ out_dir <- copy(main_dir)
 continent <- "africa"
 cov <- "vector_abundance"
 
-this_dir <- file.path(main_dir, continent, "rasters")
-out_dir<- file.path(this_dir, "astmh")
+this_dir <- file.path(main_dir, continent)
+out_dir<- file.path(this_dir, "rasters", "astmh")
 
-all_fnames <- list.files(this_dir, full.names = T)
+traces <- fread(file.path(this_dir, "kmeans", "random_trace_tsi_rainfall_vector_abundance_6.csv"))
+traces <- traces[variable_name=="month"]
+traces[, variable_val:=as.integer(variable_val)]
+traces[, cluster:=as.factor(cluster)]
+summary_traces <- traces[, list(perc_25=quantile(cov_val, c(0.25)),
+                                perc_75=quantile(cov_val, c(0.75)),
+                                median=median(cov_val)), by=list(cov, cluster, variable_val)]
+
+ggplot(summary_traces, aes(x=variable_val, y=median, color=cluster)) +
+  geom_line() +
+  facet_grid(cov~cluster, scales="free") +
+  geom_ribbon(aes(ymin=perc_25, ymax=perc_75, fill=cluster), alpha=0.5)
+  
+
+
+
+
+all_fnames <- list.files(file.path(this_dir, rasters), full.names = T)
 
 for (cov in c("rainfall", "tsi", "vector_abundance")){
   
@@ -57,6 +74,7 @@ for (cov in c("rainfall", "tsi", "vector_abundance")){
       print(this_plot)
     }
     graphics.off()
+    
   }
 }
 
