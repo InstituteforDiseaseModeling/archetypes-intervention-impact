@@ -68,7 +68,7 @@ if __name__ == "__main__":
     sites = pd.read_csv("site_details.csv")
 
     experiments = {# "initial": "96e9c858-a8ce-e811-a2bd-c4346bcb1555",
-                   "interactions" :"8f45458c-0dcf-e811-a2bd-c4346bcb1555"
+                   "interactions" :"636d798d-01d1-e811-a2bd-c4346bcb1555"
                    }
 
     for dirname, exp_id in experiments.items():
@@ -82,8 +82,15 @@ if __name__ == "__main__":
                                                                                        "CM_Coverage",
                                                                                        "IRS_Coverage",
                                                                                        "ITN_Coverage",
-                                                                                        "MDA_Drug",
-                                                                                        "MDA_Repetitions"
+                                                                                       "MDA_Drug",
+                                                                                       "MDA_Repetitions",
+                                                                                       "MDA_Coverage",
+                                                                                       "PEV_Coverage",
+                                                                                       "PEV_Waning_Config_class",
+                                                                                       "PEV_Waning_Config_Decay_Time_Constant",
+                                                                                       "TBV_Coverage",
+                                                                                       "TBV_Waning_Config_Decay_Time_Constant",
+
                                                                                        ])],
                             force_analyze=True)
 
