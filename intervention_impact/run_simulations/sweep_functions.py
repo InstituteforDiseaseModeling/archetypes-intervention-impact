@@ -132,5 +132,5 @@ def add_mda(cb, coverage=0.8, drugname="DP", start_days=[0], reps=3):
                       repetitions=reps,
                       interval=30)
 
-    return {"MDA_Drug": drugname, "MDA_Repetitions": reps}
+    return {"MDA_Drug": drugname, "MDA_Repetitions": reps, "MDA_Coverage": coverage}
 
