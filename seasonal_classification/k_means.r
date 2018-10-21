@@ -25,7 +25,8 @@ library(Hmisc)
 set.seed(206)
 
 rm(list=ls())
-overwrite <- T
+overwrite_rotation <- F
+overwrite_kmeans <- T
 
 source("classify_functions.r")
 base_dir <- file.path(Sys.getenv("USERPROFILE"), "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
@@ -33,7 +34,7 @@ palette <- "Paired" # color scheme for plots
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
-                   tsi_rainfall=list(africa=3)
+                   tsi_rainfall_vector_abundance=list(africa=3)
                    )
 cluster_counts <- 3:7
 
@@ -49,7 +50,7 @@ for (this_cov in names(input_list)){
     rotation_fname <- file.path(main_dir, paste0("svd_rotations_", this_cov, ".csv"))
     nvecs <- nvec_list[[continent]]
     
-    if (file.exists(rotation_fname) & overwrite==F){
+    if (file.exists(rotation_fname) & overwrite_rotation==F){
       print("loading matrix rotations")
       rotation <- fread(rotation_fname)
     }else{
@@ -74,13 +75,13 @@ for (this_cov in names(input_list)){
       k_out_fname <- file.path(kmeans_dir, paste0("k_out_", this_cov, "_", nclust, ".rdata"))
       cluster_raster_fname <- file.path(kmeans_dir, paste0("k_clusters_", this_cov, "_", nclust, ".tif"))
       random_trace_fname <- file.path(kmeans_dir, paste0("random_trace_", this_cov, "_", nclust, ".csv"))
-      means_fname <- file.path(kmeans_dir,  paste0("means_", this_cov, "_", nclust, ".csv"))
+      summary_fname <- file.path(kmeans_dir,  paste0("summary_", this_cov, "_", nclust, ".csv"))
       
-      if (file.exists(k_out_fname) & overwrite==F){
+      if (file.exists(k_out_fname) & overwrite_kmeans==F){
         print("k-means already run, loading outputs")
         cluster_raster <- raster(cluster_raster_fname)
         random_trace <- fread(random_trace_fname)
-        means <- fread(means_fname)
+        summary_vals <- fread(summary_fname)
         
       }else{
         print(paste("finding clusters for k of", nclust))
@@ -105,10 +106,15 @@ for (this_cov in names(input_list)){
         random_trace <- all_vals[id %in% random_grids]
         write.csv(random_trace, random_trace_fname, row.names=F)
         
-        print("finding means")
-        means <- all_vals[,list(cov_val=mean(cov_val)), by=list(cluster, variable_name, variable_val, cov)]
-        means[, nclust:=nclust]
-        write.csv(means, means_fname, row.names=F)
+        print("finding summary stats")
+        summary_vals <- all_vals[,list(mean=mean(cov_val),
+                                       perc_25=quantile(cov_val, c(0.25)),
+                                       perc_75=quantile(cov_val, c(0.75)),
+                                       perc_05=quantile(cov_val, c(0.025)),
+                                       perc_95=quantile(cov_val, c(0.975)),
+                                       median=median(cov_val)), by=list(cluster, variable_name, variable_val, cov)]
+        summary_vals[, nclust:=nclust]
+        write.csv(summary_vals, summary_fname, row.names=F)
         all_vals[, cluster:=NULL]
         
         save(k_out, file=k_out_fname) # save last to ensure other outputs have been saved if this exists
@@ -124,13 +130,18 @@ for (this_cov in names(input_list)){
                             main = "", colorkey=F, margin=F)
       plotlist[[1]] <- map_plot
       
-      time_series <- means[variable_name=="month"]
+      time_series <- summary_vals[variable_name=="month"]
+      time_series[, cluster:=as.factor(cluster)]
       lines <- lapply(unique(time_series$cov), function(cov_value){
-        ggplot(time_series[cov==cov_value], aes(x=as.integer(variable_val), y=cov_val)) +
-          geom_line(aes(color=factor(cluster)), size=2) +
-          geom_line(data=random_trace[cov==cov_value], aes(group=id, color=factor(cluster)), size=0.5, alpha=0.25) + 
-          facet_grid(cluster~.) + 
+        ggplot(time_series[cov==cov_value], aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
+          facet_grid(cluster~.) +
+          geom_line(size=2) +
+          geom_line(aes(y=perc_05), size=1, linetype=2) +
+          geom_line(aes(y=perc_95), size=1, linetype=2) +
+          geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5) +
+          # geom_line(data=random_trace[cov==cov_value], aes(group=id, color=factor(cluster)), size=0.5, alpha=0.25) + 
           scale_color_brewer(type="qual", palette=palette) +
+          scale_fill_brewer(type="qual", palette=palette) + 
           scale_x_continuous(breaks=1:12, labels=1:12) +
           theme_minimal() +
           theme(legend.position="none",
@@ -143,10 +154,10 @@ for (this_cov in names(input_list)){
       plotlist <- append(plotlist, lines)
       
       # if applicable, plot vector mix
-      mean_species <- means[variable_name=="species"]
+      summary_species <- summary_vals[variable_name=="species"]
 
-      if (nrow(mean_species)>0){
-        vector_mix <- ggplot(mean_species, aes(x=cluster, y=cov_val)) +
+      if (nrow(summary_species)>0){
+        vector_mix <- ggplot(summary_species, aes(x=cluster, y=mean)) +
           geom_bar(aes(fill=variable_val), stat="identity") + 
           theme_minimal() +
           theme(legend.position="bottom") +
