@@ -23,8 +23,12 @@ jaline_colors <- list(purple="#AF81AD",
 main_dir <- file.path(Sys.getenv("USERPROFILE"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
 
-gates_dir <- file.path(main_dir, "version_2_vector_bug/for_gates_review")
+out_dir <- file.path(main_dir, "version_2_vector_bug/for_gates_review")
 full_sweep_path <- file.path(main_dir, "gates_examples", "gates_bugfix_lookup.csv")
+
+
+full_sweep_path <- file.path(main_dir, "lookup_full_interactions_v4.csv")
+out_dir <- file.path(main_dir, "for_astmh")
 
 get_smooth <- function(x, y){
   lo <- loess(y[y>0]~x[y>0])
@@ -37,8 +41,8 @@ get_smooth <- function(x, y){
 full_sweep_data <- fread(full_sweep_path)
 
 # # homo biting
-# initial_homo <- fread(file.path(gates_dir, "initial_homo_biting.csv"))
-# final_homo <- fread(file.path(gates_dir, "itns_homo_biting.csv"))
+# initial_homo <- fread(file.path(out_dir, "initial_homo_biting.csv"))
+# final_homo <- fread(file.path(out_dir, "itns_homo_biting.csv"))
 # homo_nets <- merge(initial_homo, final_homo, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
 # homo_nets[, Run_Number:=factor(Run_Number)]
 # homo_nets[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, ITN_Coverage)]
@@ -72,7 +76,7 @@ full_sweep_data <- fread(full_sweep_path)
 #                       by=c("net_type", "ITN_Coverage", "x_Temporary_Larval_Habitat", "mean_initial"))
 # 
 # biting_colors <- unname(unlist(jaline_colors[c("orange", "red", "green", "teal")]))
-# pdf(paste0(gates_dir, "/biting_illustrator.pdf"))
+# pdf(paste0(out_dir, "/biting_illustrator.pdf"))
 # ggplot(summary_nets[ITN_Coverage %in% c(0.2, 0.6)], aes(x=mean_initial, y=mean_final,
 #                                                     fill=interaction(net_type, ITN_Coverage),
 #                                                     group=interaction(net_type, ITN_Coverage))) +
@@ -119,7 +123,7 @@ summary_result <- merge(summary_result,
                       by=c("site", "Intervention", "x_Temporary_Larval_Habitat", "mean_initial"))
 
 # 1: Differing residual transmission, but same overall story
-res_trans_ints <- c("ITN 0.6; " , "IRS 0.6; ", "ITN 0.6; IRS 0.6; ")
+res_trans_ints <- c("ITN 0.6;" , "IRS 0.6;", "ITN 0.6; IRS 0.6;")
 res_trans_colors <- unname(unlist(jaline_colors[c("red", "orange", "teal", "green", "purple", "indigo")]))
 
 idx <- 1
@@ -138,12 +142,12 @@ idx <- 1
                   theme(legend.position="bottom") + 
                   coord_fixed() +
                   labs(x="Initial PfPR",
-                       y="Final PfPR") +
-    facet_grid(~Intervention)
+                       y="Final PfPR") # +
+    # facet_grid(~Intervention)
   
-  # pdf(paste0(gates_dir, "/res_trans_all.pdf"))
-  print(this_plot)
- #  graphics.off()
+  pdf(paste0(out_dir, "/res_trans_all.pdf"))
+    print(this_plot)
+  graphics.off()
   
 # }
 
@@ -153,12 +157,12 @@ idx <- 1
 site_colors <- unname(unlist(jaline_colors[c("red", "orange", "green", "teal")]))
 
 
-int_subset <- c("ACT 0.2; ", "ACT 0.6; " # , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
+int_subset <- c("ACT 0.2;", "ACT 0.6;" # , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
                 )
 subset <- summary_result[Intervention %in% int_subset]
 subset[, Intervention:=factor(Intervention, levels=int_subset)]
 
-pdf(paste0(gates_dir, "/relative_imp_1.pdf"))
+pdf(paste0(out_dir, "/relative_imp_1.pdf"))
 ggplot(subset, aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5, alpha=0.25)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Intervention), alpha=0.25) +
@@ -174,12 +178,12 @@ graphics.off()
 
 
 
-int_subset <- c("ACT 0.2; ", "ACT 0.4; " , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
+int_subset <- c("ACT 0.2;", "ACT 0.4;" , "IRS 0.4; ACT 0.2;" , "ITN 0.4; IRS 0.4; ACT 0.2;"
 )
 subset <- summary_result[Intervention %in% int_subset]
 subset[, Intervention:=factor(Intervention, levels=int_subset)]
 
-pdf(paste0(gates_dir, "/relative_imp_2.pdf"))
+pdf(paste0(out_dir, "/relative_imp_2.pdf"))
 ggplot(subset, aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5, alpha=0.25)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Intervention), alpha=0.25) +
