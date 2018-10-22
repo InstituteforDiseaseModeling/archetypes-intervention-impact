@@ -144,6 +144,7 @@ idx <- 1
                   labs(x="Initial PfPR",
                        y="Final PfPR") # +
     # facet_grid(~Intervention)
+  # testing
   
   pdf(paste0(out_dir, "/res_trans_all.pdf"))
     print(this_plot)
