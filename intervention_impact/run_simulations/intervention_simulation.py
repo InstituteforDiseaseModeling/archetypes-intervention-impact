@@ -33,7 +33,7 @@ interventions = ["dp_cm", "dp_mda", "mAb", "pev", "tbv"]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = False
+new_inputs = True
 
 # Serialization
 print("setting up")
@@ -44,7 +44,7 @@ if run_type == "burnin":
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_UCSF_Ints_Take_1"
+    sweep_name = "MAP_II_UCSF_Ints_Take_2"
     serialize = False
     pull_from_serialization = True
 else:
@@ -116,6 +116,8 @@ if __name__=="__main__":
     if new_inputs:
         print("generating input files")
         generate_input_files(site_input_dir, pop=2000, overwrite=True)
+
+    pdb.set_trace()
 
     # Find vector proportions for each vector in our site
     site_vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
