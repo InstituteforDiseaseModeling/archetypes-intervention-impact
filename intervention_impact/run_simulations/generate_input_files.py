@@ -101,7 +101,7 @@ def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
                   this_site["name"], extra_attributes = {"Country": this_site["birth_rate_country"]})
              for ix, this_site in sites.iterrows()]
 
-    all_vectors = pd.merge(sites[["name", "node_id"]], all_vectors)
+    all_vectors = pd.merge(sites[["name", "node_id", "lat", "lon"]], all_vectors)
     all_vectors.to_csv(os.path.join(out_dir, "vector_proportions.csv"), index=False)
 
     site_demog = DemographicsGenerator(nodes, res_in_arcsec=res,

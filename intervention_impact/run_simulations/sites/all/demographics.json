@@ -10,6 +10,8 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.21307945205479453,
                 "InitialVectorsPerSpecies": {
+                    "lat": 108600,
+                    "lon": 151600,
                     "arabiensis": 2817,
                     "funestus": 8046,
                     "gambiae": 9137,
@@ -180,6 +182,8 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.20893698630136986,
                 "InitialVectorsPerSpecies": {
+                    "lat": -204200,
+                    "lon": 623914,
                     "arabiensis": 2637,
                     "funestus": 4646,
                     "gambiae": 12717,
@@ -350,6 +354,8 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.21326027397260275,
                 "InitialVectorsPerSpecies": {
+                    "lat": 282000,
+                    "lon": -33000,
                     "arabiensis": 16795,
                     "funestus": 3205,
                     "gambiae": 0,
@@ -520,6 +526,8 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.23167123287671235,
                 "InitialVectorsPerSpecies": {
+                    "lat": -123760,
+                    "lon": 431400,
                     "arabiensis": 0,
                     "funestus": 22,
                     "gambiae": 19978,
@@ -690,6 +698,8 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.21344109589041096,
                 "InitialVectorsPerSpecies": {
+                    "lat": -497920,
+                    "lon": 650000,
                     "arabiensis": 18437,
                     "funestus": 1563,
                     "gambiae": 0,
@@ -860,6 +870,8 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.17413150684931505,
                 "InitialVectorsPerSpecies": {
+                    "lat": 118200,
+                    "lon": 872000,
                     "arabiensis": 20000,
                     "funestus": 0,
                     "gambiae": 0,
@@ -1030,6 +1042,8 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.0975013698630137,
                 "InitialVectorsPerSpecies": {
+                    "lat": 348232,
+                    "lon": 1961022,
                     "arabiensis": 0,
                     "funestus": 0,
                     "gambiae": 0,
@@ -1200,6 +1214,8 @@
                 "LarvalHabitatMultiplier": 1.0,
                 "BirthRate": 0.11054794520547946,
                 "InitialVectorsPerSpecies": {
+                    "lat": -14584,
+                    "lon": -1512918,
                     "arabiensis": 0,
                     "funestus": 0,
                     "gambiae": 0,
@@ -1428,7 +1444,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "default",
-        "DateCreated": "2018-10-12 22:25:15.446302",
+        "DateCreated": "2018-10-22 21:50:57.141339",
         "NodeCount": 8,
         "Resolution": 30
     }
