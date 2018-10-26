@@ -62,13 +62,13 @@ class PfPRAnalyzer(BaseAnalyzer):
 
 if __name__ == "__main__":
     SetupParser.init("HPC")
-    out_dir = os.path.join(os.path.expanduser('~'), 'Dropbox (IDM)', 'Malaria Team Folder', 'projects',
+    out_dir = os.path.join('E:/', 'Dropbox (IDM)', 'Malaria Team Folder', 'projects',
                            'map_intervention_impact', 'lookup_tables')
 
     sites = pd.read_csv("site_details.csv")
 
     experiments = {# "initial": "96e9c858-a8ce-e811-a2bd-c4346bcb1555",
-                   "interactions" :"8f45458c-0dcf-e811-a2bd-c4346bcb1555"
+                   "corr_itn_irs" :"d8893e0f-08d8-e811-a2bd-c4346bcb1555"
                    }
 
     for dirname, exp_id in experiments.items():
@@ -78,12 +78,9 @@ if __name__ == "__main__":
                                                                      report_names = sites["name"].tolist(),
                                                                       sweep_variables=["Run_Number",
                                                                                        "x_Temporary_Larval_Habitat",
-                                                                                       "CM_Drug",
-                                                                                       "CM_Coverage",
                                                                                        "IRS_Coverage",
                                                                                        "ITN_Coverage",
-                                                                                        "MDA_Drug",
-                                                                                        "MDA_Repetitions"
+                                                                                       "ITN_IRS_Coverage",
                                                                                        ])],
                             force_analyze=True)
 
