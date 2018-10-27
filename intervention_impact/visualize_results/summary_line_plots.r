@@ -95,8 +95,8 @@ full_sweep_data <- fread(full_sweep_path)
 
 
 # Main takeaways: djibo, kananga, karen 
-takeaway_sites <- c("karen", "djibo", "kananga")
-takeaway_labels <- c("SE Asia", "Sahel", "Central Africa")
+takeaway_sites <- c("karen", "djibo", "kananga", "moine")
+takeaway_labels <- c("SE Asia", "Sahel", "Central Africa", "Southeastern Africa")
 
 takeaways <- full_sweep_data[Site_Name %in% takeaway_sites]
 takeaways[, site:=factor(Site_Name, levels=takeaway_sites, labels=takeaway_labels)]
@@ -133,7 +133,7 @@ idx <- 1
   idx <- idx + 2
   # subset[, Intervention:=factor(Intervention, levels=res_trans_ints)]
   
-  this_plot <- ggplot(subset[site!="SE Asia"], aes(x=mean_initial, y=mean_final, group=interaction(site,Intervention))) +
+  this_plot <- ggplot(subset[site!="SE Asia" & site != "Central Africa"], aes(x=mean_initial, y=mean_final, group=interaction(site,Intervention))) +
                   geom_abline(size=1.5, alpha=0.25)+
                   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=interaction(site, Intervention)), alpha=0.25) +
                   geom_line(aes(color=interaction(site, Intervention)), size=2) +
@@ -160,7 +160,7 @@ site_colors <- unname(unlist(jaline_colors[c("red", "orange", "green", "teal")])
 
 int_subset <- c("ACT 0.2;", "ACT 0.6;" # , "IRS 0.4; ACT 0.2; " , "ITN 0.4; IRS 0.4; ACT 0.2; "
                 )
-subset <- summary_result[Intervention %in% int_subset]
+subset <- summary_result[Intervention %in% int_subset & site != "Southeastern Africa"]
 subset[, Intervention:=factor(Intervention, levels=int_subset)]
 
 pdf(paste0(out_dir, "/relative_imp_1.pdf"))
