@@ -55,11 +55,13 @@ all_data[, Run_Number:=factor(Run_Number)]
 all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage)]
 all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage)]
 
+to_plot <- all_data[Site_Name=="aba" & Intervention %like% "mo"]
 
-ggplot(all_data, aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
+ggplot(to_plot, aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
   geom_line(size=1.5) +
   geom_abline() + 
-  facet_grid(Site_Name ~ Intervention) +
+  scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
+  facet_wrap( ~ Intervention) +
   theme_minimal()
 
 write.csv(all_data, file=file.path(main_dir, "lookup_full_interactions_experimental.csv"), row.names = F)
