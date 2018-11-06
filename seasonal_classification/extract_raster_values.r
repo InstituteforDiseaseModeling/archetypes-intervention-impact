@@ -21,7 +21,8 @@ library(stats)
 rm(list=ls())
 
 source("classify_functions.r")
-base_dir <- file.path(Sys.getenv("USERPROFILE"), 
+root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
+base_dir <- file.path(root_dir, 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
 
