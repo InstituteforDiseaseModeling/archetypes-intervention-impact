@@ -6,7 +6,7 @@
 # May 2018
 # 
 # For a given covariate and continent of interest, this script rotates the covariate values into n-dimensional space
-# as defined by the SVD analysis run in "extract-and_svd.r" (n is user-defined), then runs k-means in this
+# as defined by the SVD analysis run in "svd.r" (n is user-defined), then runs k-means in this
 # lower-dimensional space and plots the results. 
 # 
 # For a detailed project write-up see
@@ -26,10 +26,11 @@ set.seed(206)
 
 rm(list=ls())
 overwrite_rotation <- F
-overwrite_kmeans <- T
+overwrite_kmeans <- F
 
 source("classify_functions.r")
-base_dir <- file.path(Sys.getenv("USERPROFILE"), "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
+root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
+base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 palette <- "Paired" # color scheme for plots 
 
 # number of singular vectors to use, from visual inspection of svd plots

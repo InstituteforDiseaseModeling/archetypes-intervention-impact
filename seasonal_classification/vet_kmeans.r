@@ -3,8 +3,8 @@ library(plotly)
 
 
 set.seed(12)
-
-base_dir <- file.path(Sys.getenv("USERPROFILE"), "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
+root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
+base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
 
 continent <- "africa"
 this_cov <- "tsi_rainfall_vector_abundance"
