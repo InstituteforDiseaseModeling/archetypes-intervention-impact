@@ -21,22 +21,38 @@ library(stats)
 rm(list=ls())
 
 source("classify_functions.r")
-root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
+if (Sys.getenv("USERPROFILE")==""){
+  print("working on osx")
+  root_dir <- Sys.getenv("HOME")
+  map_root_dir <- "/Volumes/map_data/mastergrids"
+}else{
+  print("working on windows")
+  root_dir <- Sys.getenv("USERPROFILE")
+  map_root_dir <- "Z:/mastergrids"
+}
+if (!dir.exists(map_root_dir)){
+  stop("Root map directory does not exist-- have you remembered to map the appropriate drives to your machine?")
+}
+
 base_dir <- file.path(root_dir, 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
-mask_dir <- "Z:/mastergrids/Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif"
+mask_dir <- file.path(map_root_dir, "Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif")
 
-extra_crop_rasters <- list(asia="Z:/mastergrids/Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic/CHIRPS.Synoptic.01.mean.5km.Data.tif",
+extra_crop_rasters <- list(asia=file.path(map_root_dir, "Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic/CHIRPS.Synoptic.01.mean.5km.Data.tif"),
                            africa=file.path(base_dir, "vectors", "gambiae.tif")
                            )
 
-overwrite <- F
+overwrite <- T
 cov_details <- fread("clustering_covariates.csv")
 
 for (idx in 1:nrow(cov_details)){
   
   this_cov <- cov_details[idx]
   continents <- strsplit(this_cov$continents, "/")[[1]]
+  
+  # append appropriate root dir to directories
+  # (todo: pull vector rasters direct from mastergrids)
+  this_cov$dir <- ifelse(this_cov$dir %like% "Dropbox", file.path(root_dir, this_cov$dir), file.path(map_root_dir, this_cov$dir))
   
   for(continent in continents){
     
@@ -50,7 +66,6 @@ for (idx in 1:nrow(cov_details)){
     if (file.exists(all_vals_fname) & overwrite==F){
       print("values already extracted")
     }else{
-      
       print("clipping mask")
       if (continent %in% names(extra_crop_rasters)){
         mask <- get_mask(continent, out_dir=main_dir, mask_dir, extra_crop_rasters[[continent]])

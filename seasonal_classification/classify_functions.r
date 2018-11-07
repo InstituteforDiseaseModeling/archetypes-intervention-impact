@@ -58,11 +58,24 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster){
   files <- list.files(in_dir)
   pattern <- gsub("VAR", sweep_value, cov$pattern)
   fname_idx <- which(str_detect(files, pattern))
-  in_fname <- files[fname_idx]
-  if (length(in_fname)!=1){ # break if there are further issues
+
+  if (length(fname_idx)>1){ 
     stop(paste("multiple potential input rasters: ", in_fname))
+  }else if (length(fname_idx)==0){
+    print("raster initially not found, retrying")
+    retries <- 4
+    while(retries>0 & length(fname_idx)==0){
+      print("retrying")
+      Sys.sleep(2)
+      fname_idx <- which(str_detect(files, pattern))
+      retries <- retries-1
+    }
+    if (length(fname_idx)==0){
+      stop(paste("no input rasters found for pattern", pattern))
+    }
   }
 
+  in_fname <- files[fname_idx]
   out_fname <- file.path(out_dir, paste0(cov$cov, "_", cov$variable, "_", sweep_value, ".tif"))
   
   if (file.exists(out_fname)){
