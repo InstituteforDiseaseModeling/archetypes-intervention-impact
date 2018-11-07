@@ -44,10 +44,6 @@ for (continent in continents){
     print("appending datasets")
     all_vals <- lapply(these_covs$cov, function(cov_name){
       vals <- fread(file.path(main_dir, paste0(cov_name, "_vals.csv")))
-      # # temp
-      # setnames(vals, c(cov_name, "month"), c("value", "variable_val"))
-      # vals[, cov:=cov_name]
-      # vals[, variable_name:="month"]
       return(vals)
     })
     
