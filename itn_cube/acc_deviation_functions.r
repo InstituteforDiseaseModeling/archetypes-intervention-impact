@@ -6,7 +6,6 @@ library(cvTools)
 library(zoo)
 library(boot)
 
-################# function block ######################################
 convert.nodes<-function(r){
   v<-getValues(r)
   NAs<-is.na(v)
@@ -155,5 +154,27 @@ emplogit<-function(Y,N) {top=Y*N+0.5;bottom=N*(1-Y)+0.5;return(log(top/bottom))}
 emplogit2<-function(Y,N) {top=Y+0.5;bottom=N-Y+0.5;return(log(top/bottom))} # empirical logit two numbers
 
 
+#from data load block:
+IHS <- function(x, theta){  # Inverse IHS transformation
+  (1/theta)*asinh(theta * x)
+}
 
-########################################################################################################################
+Inv.IHS <- function(x, theta){  # IHS transformation
+  (1/theta)*sinh(theta * x)
+}
+
+
+IHS.loglik <- function(theta,x){
+  
+  IHS <- function(x, theta){  # function to IHS transform
+    asinh(theta * x)/theta
+  }
+  
+  n <- length(x)
+  xt <- IHS(x, theta)
+  
+  log.lik <- -n*log(sum((xt - mean(xt))^2))- sum(log(1+theta^2*x^2))
+  return(log.lik)
+}
+
+
