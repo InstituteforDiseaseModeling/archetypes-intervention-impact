@@ -67,7 +67,7 @@ if __name__ == "__main__":
 
     sites = pd.read_csv("site_details.csv")
 
-    experiments = {# "initial": "96e9c858-a8ce-e811-a2bd-c4346bcb1555",
+    experiments = {# "initial": "e9af8baf-a8e3-e811-a2bd-c4346bcb1555",
                    "interactions" :"636d798d-01d1-e811-a2bd-c4346bcb1555"
                    }
 
@@ -90,6 +90,7 @@ if __name__ == "__main__":
                                                                                        "PEV_Waning_Config_Decay_Time_Constant",
                                                                                        "TBV_Coverage",
                                                                                        "TBV_Waning_Config_Decay_Time_Constant",
+                                                                                       "gambiae.Adult_Life_Expectancy"
 
                                                                                        ])],
                             force_analyze=True)
