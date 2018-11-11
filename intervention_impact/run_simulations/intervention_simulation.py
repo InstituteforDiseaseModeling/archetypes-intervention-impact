@@ -24,27 +24,27 @@ from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
+burnin_id = "e9af8baf-a8e3-e811-a2bd-c4346bcb1555"
 asset_exp_id = "66d8416c-9fce-e811-a2bd-c4346bcb1555"
 
-intervention_coverages = [0, 40, 80]
+intervention_coverages = [0, 80]
 vaccine_durations = [182, 365]
 interventions = ["dp_cm", "dp_mda", "mAb", "pev", "tbv"]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = True
+new_inputs = False
 
 # Serialization
 print("setting up")
 if run_type == "burnin":
     years = 15
-    sweep_name = "MAP_II_New_Sites_Burnin"
+    sweep_name = "MAP_II_Sweep_Vector_Lifespan"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_UCSF_Ints_Take_2"
+    sweep_name = "MAP_II_Sweep_Vector_Lifespan_Ints"
     serialize = False
     pull_from_serialization = True
 else:
@@ -146,12 +146,19 @@ if __name__=="__main__":
         # temp for testing
         # df = df.query("Run_Number==7 & x_Temporary_Larval_Habitat>90 & x_Temporary_Larval_Habitat<150")
 
+
         old_builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
                 "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
+            ModFn(set_species_param, "arabiensis", "Adult_Life_Expectancy", df["arabiensis.Adult_Life_Expectancy"][x]),
+            ModFn(set_species_param, "funestus", "Adult_Life_Expectancy", df["funestus.Adult_Life_Expectancy"][x]),
+            ModFn(set_species_param, "gambiae", "Adult_Life_Expectancy", df["gambiae.Adult_Life_Expectancy"][x]),
+            ModFn(set_species_param, "minimus", "Adult_Life_Expectancy", df["minimus.Adult_Life_Expectancy"][x]),
+            ModFn(set_species_param, "maculatus", "Adult_Life_Expectancy", df["maculatus.Adult_Life_Expectancy"][x]),
+            ModFn(set_species_param, "darlingi", "Adult_Life_Expectancy", df["darlingi.Adult_Life_Expectancy"][x]),
 
             ModFn(add_annual_itns, year_count=years,
                                    n_rounds=1,
@@ -171,7 +178,7 @@ if __name__=="__main__":
             for hates_net_prop in net_hating_props
             for itn_cov in intervention_coverages
             for irs_cov in intervention_coverages
-            for act_cov in intervention_coverages
+            for act_cov in [80]
 
         ])
 
@@ -310,15 +317,22 @@ if __name__=="__main__":
             ModFn(DTKConfigBuilder.update_params, {
                 "Run_Number": run_num,
                 "x_Temporary_Larval_Habitat":10 ** hab_exp}),
+            ModFn(set_species_param, "arabiensis", "Adult_Life_Expectancy", lifespan),
+            ModFn(set_species_param, "funestus", "Adult_Life_Expectancy", lifespan),
+            ModFn(set_species_param, "gambiae", "Adult_Life_Expectancy", lifespan),
+            ModFn(set_species_param, "minimus", "Adult_Life_Expectancy", lifespan),
+            ModFn(set_species_param, "maculatus", "Adult_Life_Expectancy", lifespan),
+            ModFn(set_species_param, "darlingi", "Adult_Life_Expectancy", lifespan),
         ]
             for run_num in range(10)
             for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for lifespan in [5, 10, 15, 20, 25, 30]
             # for hab_exp in [0, 1, 2]
         ])
 
     run_sim_args = {"config_builder": cb,
                     "exp_name": sweep_name,
-                    "exp_builder": builder}
+                    "exp_builder": old_builder}
 
     em = ExperimentManagerFactory.from_cb(cb)
     em.run_simulations(**run_sim_args)
