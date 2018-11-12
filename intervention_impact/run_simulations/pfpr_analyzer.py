@@ -68,7 +68,7 @@ if __name__ == "__main__":
     sites = pd.read_csv("site_details.csv")
 
     experiments = {# "initial": "e9af8baf-a8e3-e811-a2bd-c4346bcb1555",
-                   "interactions" :"636d798d-01d1-e811-a2bd-c4346bcb1555"
+                   "interactions" :"0d3fe2fa-6ae6-e811-a2bd-c4346bcb1555"
                    }
 
     for dirname, exp_id in experiments.items():

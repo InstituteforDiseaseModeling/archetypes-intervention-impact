@@ -178,7 +178,7 @@ if __name__=="__main__":
             for hates_net_prop in net_hating_props
             for itn_cov in intervention_coverages
             for irs_cov in intervention_coverages
-            for act_cov in [80]
+            for act_cov in [0]
 
         ])
 
