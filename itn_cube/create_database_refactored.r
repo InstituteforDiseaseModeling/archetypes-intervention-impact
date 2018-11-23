@@ -1,6 +1,8 @@
 
 ## Amelia's first pass at parsing "Create_database_ITN access....r"
 
+## sam: takes Harry's data, does aggregating, find national level means at quartery times 
+
 library(zoo)
 library(raster)
 library(VGAM)
@@ -10,7 +12,7 @@ source("create_database_functions.r")
 
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
-# not sure what these two are
+# p0 & p1-- from stock & flow, nat'l time series of p0=p(hh has >0 nets) and p1=avg # of nets
 load('/home/backup/ITNcube/prop0prop1.rData')
 KEY=read.csv('/home/backup/ITNcube/KEY_080817.csv')
 
@@ -76,6 +78,7 @@ output<-foreach(i=1:length(Surveys),.combine=rbind) %dopar% { #survey loop
   names(hh)<-1:10	
   
   #store matrix (1 row per cluster id, columns as described below)
+  # p,n,t: data, means: means from stcok and flow
   fields<-c("Survey" ,"lat" , "lon",'year','P','N','Pu','T','Amean','Tmean','gap','gap2','gap3')
   tmp<-matrix(NA,nrow=length(un),ncol=length(fields))
   colnames(tmp)<-fields
