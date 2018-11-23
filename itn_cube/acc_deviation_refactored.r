@@ -145,6 +145,8 @@ save.image('/home/backup/ITNcube/preload.Rdata')
 
 # what is this?
 load('/home/backup/ITNcube/preload.Rdata')
+## IHS: BURBRIDGE-- inverse hyperbolic sine transform
+
 
 # same "data" as above?
 data<-data[complete.cases(all.covs),]
@@ -159,7 +161,7 @@ data<-cbind(data,all.covs)
 data<-data[sample(1:nrow(data),replace=F),]
 
 
-# no clue what any of this is doing (from here to end of block)
+# check for collinearity
 subs<-covariate.names #<-precipitation
 subs<-subs[-c(9,33,25,11)] 
 
@@ -271,7 +273,7 @@ mod.pred =   inla(formula1,
                   control.compute=list(cpo=TRUE,waic=TRUE),
                   keep=FALSE, verbose=TRUE,
                   control.inla= list(strategy = 'gaussian',
-                                     int.strategy='ccd',
+                                     int.strategy='ccd', # close composite design ?
                                      verbose=TRUE,
                                      step.factor=1,
                                      stupid.search=FALSE)
@@ -283,7 +285,7 @@ inla.ks.plot(mod.pred$cpo$pit, punif)
 
 ### Assess model ----------------------------------------------------------------------------#######################
 
-# compute summary statistics and information criteria
+# compute summary statistics and information criteria (posterior fit)
 # watanabe-aikake information criterion
 waic<-c()
 for(i in 1:4){
@@ -302,6 +304,7 @@ index= inla.stack.index(stack.est,"est")$data
 lp=mod.pred$summary.linear.predictor$mean[index]
 lp=Inv.IHS(lp,theta)
 
+# calculate fit
 lpgap<-plogis(emplogit(data$Amean,1000)+lp)
 plot(data$P/data$N,lpgap)
 cor(data$P/data$N,lpgap)
@@ -312,7 +315,7 @@ sig<-sign(mod.pred$summary.fixed$'0.025quant')==sign(mod.pred$summary.fixed$'0.9
 names(a)<-rownames(mod.pred$summary.fixed)
 sort(a[sig])
 
-### Cross validation -----
+### Cross validation ----- (looc w/o re-running?)
 y=data.est$accdev
 
 Q.space = inla.spde.precision(spde, theta=c(mod.pred$summary.hyperpar$mean[2],mod.pred$summary.hyperpar$mean[3]))
@@ -367,7 +370,7 @@ un=unique(data$Survey)
 actual<-predicted<-c()
 
 for(i in 1:length(un)){
-  
+  # sam: hammer this home (survey-level predictions are good)
   actual[i]<-mean(data$P[data$Survey==un[i]]/data$N[data$Survey==un[i]])
   predicted[i]<-mean(plogis(emplogit(data$Amean[data$Survey==un[i]],1000)+mval[data$Survey==un[i]]))
   
