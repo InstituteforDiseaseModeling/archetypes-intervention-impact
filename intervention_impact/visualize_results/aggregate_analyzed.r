@@ -75,11 +75,22 @@ to_plot <- all_data[Site_Name=="aba"]
 # pdf(file.path(Sys.getenv("USERPROFILE"), 
 #               "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/writing_and_presentations/ii_paper",
 #               "figures/lifespan_sensitivity.pdf"), height=6, width=7)
+
 ggplot(all_data[Site_Name=="kananga"], aes(x=mean_initial, y=mean_final, color=Vector_Life_Expectancy)) +
-  geom_line(size=1.5) +
+  geom_point(size=1.5) +
   geom_abline() + 
   # scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
   facet_wrap( ~ Intervention) +
+  theme_minimal()  +
+  labs(x="Mean Initial Prevalence",
+       y="Mean Final Prevalence",
+       title="Site: Kananga")
+
+ggplot(all_data[Site_Name=="kananga" & Intervention=="ACT 0.8;"], aes(x=mean_initial, y=mean_final, color=Vector_Life_Expectancy)) +
+  geom_point(size=1.5) +
+  geom_abline() + 
+  # scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
+  facet_grid( ~ Vector_Life_Expectancy) +
   theme_minimal()  +
   labs(x="Mean Initial Prevalence",
        y="Mean Final Prevalence",
