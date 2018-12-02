@@ -1,6 +1,6 @@
 ## -----------------------------------------------------------------------------------------------------------------
 # Seasonality Classification
-# extract_and_svd.r
+# extract_raster_values.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # May 2018
@@ -36,20 +36,38 @@ if (!dir.exists(map_root_dir)){
 
 base_dir <- file.path(root_dir, 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
-mask_dir <- file.path(map_root_dir, "Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif")
+mask_in_dir <- file.path(map_root_dir, "Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif")
+temp_mask_dir <- file.path(base_dir, "temp_mask.tif")
+final_mask_dir <- file.path(base_dir, "final_mask.tif")
+transmission_limit_dir <- file.path(map_root_dir, "../GBD2017/Processing/Spatial_Data/Static_Limits", "Pf_Limits_EnvironmentalOnly_Endemic2017Only_5k.tif")
 
-extra_crop_rasters <- list(asia=file.path(map_root_dir, "Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic/CHIRPS.Synoptic.01.mean.5km.Data.tif"),
-                           africa=file.path(base_dir, "vectors", "gambiae.tif")
+extra_crop_rasters <- list(asia=file.path(map_root_dir, "Other_Global_Covariates/Rainfall/CHIRPS/5km/Synoptic/chirps-v2-0.Synoptic.01.mean.5km.Data.tif"),
+                           africa=file.path(base_dir, "vectors", "gambiae.tif"),
+                           americas=""
                            )
 
 overwrite <- T
 cov_details <- fread("clustering_covariates.csv")
 
+# do a dance to make the transmissiong limit layers compatible
+if (!file.exists(final_mask_dir) | overwrite==T){
+  print("clipping full mask to transmission limits")
+  mask_layer <- raster(mask_in_dir)
+  mask_layer[mask_layer==0] <- -Inf
+  NAvalue(mask_layer) <- -Inf
+  writeRaster(mask_layer, temp_mask_dir, overwrite=T)
+  mask_layer <- raster(temp_mask_dir)
+  trans_limits <- raster(transmission_limit_dir)
+  mask_layer <- mask(mask_layer, trans_limits, maskvalue=0)
+  writeRaster(mask_layer, final_mask_dir, overwrite=T)
+}
+
+
 for (idx in 1:nrow(cov_details)){
   
   this_cov <- cov_details[idx]
   continents <- strsplit(this_cov$continents, "/")[[1]]
-  
+
   # append appropriate root dir to directories
   # (todo: pull vector rasters direct from mastergrids)
   this_cov$dir <- ifelse(this_cov$dir %like% "Dropbox", file.path(root_dir, this_cov$dir), file.path(map_root_dir, this_cov$dir))
@@ -66,15 +84,21 @@ for (idx in 1:nrow(cov_details)){
     if (file.exists(all_vals_fname) & overwrite==F){
       print("values already extracted")
     }else{
-      print("clipping mask")
-      if (continent %in% names(extra_crop_rasters)){
-        mask <- get_mask(continent, out_dir=main_dir, mask_dir, extra_crop_rasters[[continent]])
+      
+      # check for mask
+      clipped_mask_fname <- file.path(main_dir, "mask.tif")
+      if (file.exists(clipped_mask_fname) & overwrite==F){
+        print("loading saved mask")
+        mask <- raster(clipped_mask_fname)
       }else{
-        mask <- get_mask(continent, out_dir=main_dir, mask_dir)
+        print("clipping mask")
+        mask <- get_mask(continent, in_fname=final_mask_dir, out_fname=clipped_mask_fname, extra_crop_rasters[[continent]])
+        plot(mask)
       }
       
+      
       print("extracting from raster")
-      all_vals <- lapply(strsplit(this_cov$values, "/")[[1]], extract_by_pattern, main_dir, this_cov, mask)
+      all_vals <- lapply(strsplit(this_cov$values, "/")[[1]], extract_by_pattern, main_dir, this_cov, mask, overwrite)
       all_vals <- rbindlist(all_vals)
       
       print("saving extracted values")

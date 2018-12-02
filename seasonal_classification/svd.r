@@ -1,12 +1,12 @@
 ## -----------------------------------------------------------------------------------------------------------------
 # Seasonality Classification
-# joint_tsi_rainfall.r
+# svd.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # June 2018
 # 
 # Extending the work described in the link below, this script takes the tsi and rainfall covariates 
-# extracted in extract_ans_svd and runs svd on the joint dataset. 
+# extracted in extract_raster_values and runs svd on the joint dataset. 
 # 
 # https://paper.dropbox.com/doc/Cluster-MAP-pixels-by-seasonality-zga4UM1DnBx8pc11rStOS
 ## -----------------------------------------------------------------------------------------------------------------------
@@ -15,6 +15,8 @@ library(gdistance)
 library(data.table)
 library(stringr)
 library(stats)
+library(Hmisc)
+library(ggplot2)
 
 rm(list=ls())
 
@@ -23,9 +25,7 @@ root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
 continents <- c("africa", "asia", "americas")
-continents <- c("africa")
 cov_details <- fread("clustering_covariates.csv")
-cov_details <- cov_details[variable=="month"]
 overwrite <- T
 
 for (continent in continents){
@@ -71,11 +71,24 @@ for (continent in continents){
   }
   
   print("plotting")
-  png(file=file.path(main_dir, paste0(full_label, "_svd.png")))
-  plot(svd_out$d^2/sum(svd_out$d^2), xlim = c(0, 15), type = "b", pch = 16, xlab = "singular vectors",
-       ylab = "variance explained")
-  graphics.off()
+  init_variance <- svd_out$d^2/sum(svd_out$d^2)
+  variance <- data.table(continent=capitalize(continent),
+                         vector=1:length(init_variance), 
+                         variance_explained=init_variance)
   
+  png(file=file.path(main_dir, paste0(full_label, "_svd.png")))
+  varplot <- ggplot(variance[vector<=10], aes(x=vector, y=variance_explained, color=continent)) +
+    geom_line(size=1) +
+    geom_point(shape=1, size=2) +
+    theme_minimal() +
+    theme(legend.position = "none") +
+    labs(x="Singular Vector", 
+         y="Variance Explained",
+         title=paste("Variance Explained by Singular Vectors", capitalize(continent)))
+  print(varplot)
+  
+  graphics.off()
+  print(varplot)
 }
 
 
