@@ -15,26 +15,20 @@ library(raster)
 library(data.table)
 library(stringr)
 
-get_mask <- function(continent, out_dir, mask_dir, extra_crop_dir=NULL){
-  out_fname <- file.path(out_dir, "mask.tif")
-  if (file.exists(out_fname)){
-    print("loading saved mask")
-    clipped_mask <- raster(out_fname)
-  }else{
-    print("generating mask")
-    mask_vals <- list('africa'=1,
-                      'americas'=2,
-                      'asia'=3)
-    mask <- raster(mask_dir)
-    clipped_mask <- mask == mask_vals[[continent]]
-    clipped_mask <- trim(clipped_mask, values=F)
-    if (!is.null(extra_crop_dir)){
-      extra_crop_raster <- raster(extra_crop_dir)
-      extra_crop_raster <- crop(extra_crop_raster, clipped_mask)
-      clipped_mask <- crop(clipped_mask, extra_crop_raster)
-    }
-    writeRaster(clipped_mask, out_fname)
+get_mask <- function(continent, in_fname, out_fname, extra_crop_dir=""){
+  print("generating mask")
+  mask_vals <- list('africa'=1,
+                    'americas'=2,
+                    'asia'=3)
+  mask <- raster(in_fname)
+  mask[mask!=mask_vals[[continent]]] <- NA
+  clipped_mask <- trim(mask)
+  if (extra_crop_dir!=""){
+    extra_crop_raster <- raster(extra_crop_dir)
+    extra_crop_raster <- crop(extra_crop_raster, clipped_mask)
+    clipped_mask <- crop(clipped_mask, extra_crop_raster)
   }
+  writeRaster(clipped_mask, out_fname, overwrite=T)
   return(clipped_mask)
 }
 
@@ -44,12 +38,12 @@ extract_values <- function(raster_in_dir, raster_out_dir, mask){
   # if (!compareRaster(vals, mask, stopiffalse = F)){
   #   mask <- crop(mask, vals) # ensure that extents are the same 
   # }
-  vals <- raster::mask(vals, mask, maskvalue=FALSE)
-  writeRaster(vals, raster_out_dir)
+  vals <- raster::mask(vals, mask, maskvalue=NA)
+  writeRaster(vals, raster_out_dir, overwrite=T)
   return(vals)
 }
 
-extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster){
+extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster, overwrite=F){
   
   print(paste("loading", cov$cov, "for", cov$variable, sweep_value))
   
@@ -63,11 +57,13 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster){
     stop(paste("multiple potential input rasters: ", in_fname))
   }else if (length(fname_idx)==0){
     print("raster initially not found, retrying")
-    retries <- 4
+    retries <- 10
     while(retries>0 & length(fname_idx)==0){
       print("retrying")
-      Sys.sleep(2)
+      Sys.sleep(1)
+      files <- list.files(in_dir)
       fname_idx <- which(str_detect(files, pattern))
+      print(fname_idx)
       retries <- retries-1
     }
     if (length(fname_idx)==0){
@@ -78,7 +74,8 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster){
   in_fname <- files[fname_idx]
   out_fname <- file.path(out_dir, paste0(cov$cov, "_", cov$variable, "_", sweep_value, ".tif"))
   
-  if (file.exists(out_fname)){
+  if (file.exists(out_fname) & overwrite==F){
+    print("loading pre-extracted raster")
     vals <- raster(out_fname)
   }else{
     print("clipping global raster")

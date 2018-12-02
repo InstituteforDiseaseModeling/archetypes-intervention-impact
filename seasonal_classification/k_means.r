@@ -25,8 +25,8 @@ library(Hmisc)
 set.seed(206)
 
 rm(list=ls())
-overwrite_rotation <- F
-overwrite_kmeans <- F
+overwrite_rotation <- T
+overwrite_kmeans <- T
 
 source("classify_functions.r")
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))

@@ -1,4 +1,4 @@
 cov,dir,variable,values,continents,pattern
 tsi,Other_Global_Covariates/TemperatureSuitability/TSI_Pf_Dynamic/5km/Synoptic/,month,01/02/03/04/05/06/07/08/09/10/11/12,africa/asia/americas,TSI-Martens2-Pf.Synoptic.VAR.Mean.5km.Data.tif$
-rainfall,Other_Global_Covariates/Rainfall/CHIRPS/5k/Synoptic,month,01/02/03/04/05/06/07/08/09/10/11/12,africa/asia/americas,CHIRPS.Synoptic.VAR.mean.5km.Data.tif$
+rainfall,Other_Global_Covariates/Rainfall/CHIRPS/5km/Synoptic,month,01/02/03/04/05/06/07/08/09/10/11/12,africa/asia/americas,chirps-v2-0.Synoptic.VAR.mean.5km.Data.tif$
 vector_abundance,Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/vectors,species,arabiensis/funestus/gambiae,africa,VAR.tif$
