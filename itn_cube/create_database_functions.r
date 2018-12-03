@@ -11,7 +11,7 @@ emplogit2<-function(Y,N) {top=Y+0.5;bottom=N-Y+0.5;return(log(top/bottom))} # em
 
 reposition.points<-function(ls,points,square){
   
-  rm<-extract(ls,cbind(points[,'lon'],points[,'lat']))	#get all point values
+  rm<-extract(ls,cbind(points[,'lon'],points[,'lat']))	# get all point values
   index<-which(is.na(rm))
   corindex<-c()
   
