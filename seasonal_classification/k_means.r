@@ -25,8 +25,9 @@ library(Hmisc)
 set.seed(206)
 
 rm(list=ls())
-overwrite_rotation <- T
-overwrite_kmeans <- T
+overwrite_rotation <- F
+overwrite_kmeans <- F
+standardize <- T
 
 source("classify_functions.r")
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
@@ -35,7 +36,7 @@ palette <- "Paired" # color scheme for plots
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
-                   tsi_rainfall_vector_abundance=list(africa=3)
+                   tsi_rainfall_vector_abundance_standardized=list(africa=3)
                    )
 cluster_counts <- 3:7
 
