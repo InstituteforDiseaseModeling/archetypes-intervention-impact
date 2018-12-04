@@ -26,7 +26,8 @@ base_dir <- file.path(root_dir,
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
 continents <- c("africa", "asia", "americas")
 cov_details <- fread("clustering_covariates.csv")
-overwrite <- T
+overwrite <- F
+standardize <- T
 
 for (continent in continents){
   print(paste("running svd on", continent))
@@ -34,6 +35,9 @@ for (continent in continents){
   
   these_covs <- cov_details[continents %like% continent]
   full_label <- paste(these_covs$cov, collapse="_")
+  if (standardize==T & "rainfall" %in% these_covs$cov){
+    full_label <- paste0(full_label, "_standardized")
+  }
   
   # load datasets, merge
   all_vals_fname <- file.path(main_dir, paste0(full_label, "_vals.csv"))
@@ -44,6 +48,9 @@ for (continent in continents){
     print("appending datasets")
     all_vals <- lapply(these_covs$cov, function(cov_name){
       vals <- fread(file.path(main_dir, paste0(cov_name, "_vals.csv")))
+      if (cov_name=="rainfall" & standardize==T){
+        vals[, value:=value/max(value)]
+      }
       return(vals)
     })
     
