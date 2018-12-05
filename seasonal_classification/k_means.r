@@ -27,7 +27,6 @@ set.seed(206)
 rm(list=ls())
 overwrite_rotation <- F
 overwrite_kmeans <- F
-standardize <- T
 
 source("classify_functions.r")
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
@@ -36,9 +35,9 @@ palette <- "Paired" # color scheme for plots
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
-                   tsi_rainfall_vector_abundance_standardized=list(africa=3)
+                   tsi_rainfall_vector_abundance=list(africa=3)
                    )
-cluster_counts <- 3:7
+cluster_counts <- 3:10
 
 for (this_cov in names(input_list)){
   nvec_list <- input_list[[this_cov]]
@@ -65,6 +64,7 @@ for (this_cov in names(input_list)){
     setnames(all_vals, "value", "cov_val")
     
     # k-means and plotting
+    var_explained <- c()
     pdf(file.path(main_dir, paste0("k_means_", this_cov, ".pdf")), width=9, height=6)
     for (nclust in cluster_counts){
       
@@ -84,6 +84,7 @@ for (this_cov in names(input_list)){
         cluster_raster <- raster(cluster_raster_fname)
         random_trace <- fread(random_trace_fname)
         summary_vals <- fread(summary_fname)
+        load(k_out_fname)
         
       }else{
         print(paste("finding clusters for k of", nclust))
@@ -187,7 +188,22 @@ for (this_cov in names(input_list)){
       full_plot <- grid.arrange(grobs=plotlist, layout_matrix=layout)
       print(full_plot)
       
+      # update variance explained
+      var_explained <- c(var_explained, k_out$betweenss/k_out$totss)
     }
+    graphics.off()
+    
+    # plot % variance explained across clusters
+    print("plotting variance explained")
+    all_var <- data.table(k=cluster_counts, var=var_explained)
+    png(file=file.path(main_dir, paste0("elbow_", this_cov, ".png")))
+    elbow_plot<- ggplot(all_var, aes(x=k, y=var)) +
+        geom_line() +
+        geom_point() +
+        theme_minimal()+
+        labs(x="Cluster Count",
+             y="Variance Explained")
+    print(elbow_plot)
     graphics.off()
   }
 }
