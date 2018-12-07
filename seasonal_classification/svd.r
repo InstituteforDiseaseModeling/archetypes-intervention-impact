@@ -64,6 +64,21 @@ for (continent in continents){
     write.csv(all_vals, file=all_vals_fname, row.names=F)
   }
   
+  # plot distribution of values
+  png(file=file.path(main_dir, paste0(full_label, "_distributions.png")))
+  
+  distplot <- ggplot(all_vals, aes(x=value)) + 
+              geom_density(aes(color=cov, fill=cov), alpha=0.5) +
+              facet_grid(cov~.) +
+              theme_minimal() + 
+              theme(legend.position = "none") + 
+              labs(title="Distribution of SVD variables",
+                   x="Standardized Covariate Value",
+                   y="Density") 
+  print(distplot)
+  
+  graphics.off()
+  
   # svd
   svd_out_fname <- file.path(main_dir, paste0(full_label, "_svd.rdata"))
   if (file.exists(svd_out_fname) & overwrite==F){
