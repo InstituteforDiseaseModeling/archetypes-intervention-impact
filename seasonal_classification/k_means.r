@@ -35,7 +35,7 @@ palette <- "Paired" # color scheme for plots
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
-                   tsi_rainfall_vector_abundance_standardized=list(africa=2)
+                   tsi_rainfall_vector_abundance_rescaled=list(africa=3)
                    )
 cluster_counts <- 3:10
 
