@@ -30,12 +30,12 @@ overwrite_kmeans <- F
 
 source("classify_functions.r")
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
-base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification")
+base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
 palette <- "Paired" # color scheme for plots 
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
-                   tsi_rainfall_vector_abundance=list(africa=3)
+                   tsi_rainfall_vector_abundance_rescaled=list(africa=3)
                    )
 cluster_counts <- 3:10
 
@@ -201,7 +201,8 @@ for (this_cov in names(input_list)){
         geom_line() +
         geom_point() +
         theme_minimal()+
-        labs(x="Cluster Count",
+        labs(title=paste("Elbow Plot,", this_cov),
+             x="Cluster Count",
              y="Variance Explained")
     print(elbow_plot)
     graphics.off()

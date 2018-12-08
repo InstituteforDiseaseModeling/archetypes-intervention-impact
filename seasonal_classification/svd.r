@@ -26,8 +26,8 @@ base_dir <- file.path(root_dir,
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
 continents <- c("africa", "asia", "americas")
 cov_details <- fread("clustering_covariates.csv")
-overwrite <- F
-standardize <- T
+overwrite <- T
+rescale <- T
 
 for (continent in continents){
   print(paste("running svd on", continent))
@@ -35,8 +35,8 @@ for (continent in continents){
   
   these_covs <- cov_details[continents %like% continent]
   full_label <- paste(these_covs$cov, collapse="_")
-  if (standardize==T & "rainfall" %in% these_covs$cov){
-    full_label <- paste0(full_label, "_standardized")
+  if (rescale==T & "rainfall" %in% these_covs$cov){
+    full_label <- paste0(full_label, "_rescaled")
   }
   
   # load datasets, merge
@@ -48,7 +48,10 @@ for (continent in continents){
     print("appending datasets")
     all_vals <- lapply(these_covs$cov, function(cov_name){
       vals <- fread(file.path(main_dir, paste0(cov_name, "_vals.csv")))
-      if (cov_name=="rainfall" & standardize==T){
+      if (rescale==T & cov_name=="rainfall"){
+        
+        # cap outliers in rainfall data; rescale to [0,1]
+        vals[value>400, value:=400]
         vals[, value:=value/max(value)]
       }
       return(vals)
@@ -63,6 +66,21 @@ for (continent in continents){
     all_vals <- all_vals[id %in% shared_ids]
     write.csv(all_vals, file=all_vals_fname, row.names=F)
   }
+  
+  # plot distribution of values
+  png(file=file.path(main_dir, paste0(full_label, "_distributions.png")))
+  
+  distplot <- ggplot(all_vals, aes(x=value)) + 
+              geom_density(aes(color=cov, fill=cov), alpha=0.5) +
+              facet_grid(cov~.) +
+              theme_minimal() + 
+              theme(legend.position = "none") + 
+              labs(title="Distribution of SVD variables",
+                   x="Rescaled Covariate Value",
+                   y="Density") 
+  print(distplot)
+  
+  graphics.off()
   
   # svd
   svd_out_fname <- file.path(main_dir, paste0(full_label, "_svd.rdata"))
