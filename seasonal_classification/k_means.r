@@ -20,7 +20,9 @@ library(data.table)
 library(stats)
 library(ggplot2)
 library(gridExtra)
+library(latticeExtra)
 library(Hmisc)
+library(FNN)
 
 set.seed(206)
 
@@ -37,7 +39,7 @@ palette <- "Paired" # color scheme for plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
                    tsi_rainfall_vector_abundance_rescaled=list(africa=3)
                    )
-cluster_counts <- 3:10
+cluster_counts <- 7:8
 
 for (this_cov in names(input_list)){
   nvec_list <- input_list[[this_cov]]
@@ -126,11 +128,25 @@ for (this_cov in names(input_list)){
       
       plotlist <- NULL
       
+      # find points nearest to centroids (todo: put in main section?)
+      temp_raster <- raster(file.path(main_dir, "rasters", "mask.tif"))
+      test_matrix <- rep(NA, ncell(temp_raster))
+      test_matrix[rotation$id] <- rotation$id
+      test_matrix <- matrix(test_matrix, nrow=nrow(temp_raster))
+      test_matrix <- base::t(test_matrix)
+      test_df <- data.table(new_id = which(!is.na(test_matrix)),
+                            id = test_matrix[!is.na(test_matrix)])
+      
+      site_ids <- rotation[get.knnx(rotation[,1:nvecs], k_out$centers, k=1)$nn.index]
+      site_ids <- merge(site_ids, test_df, by="id", all.x=T)
+      site_id_spoints <- xyFromCell(cluster_raster, site_ids$new_id, spatial=T)
+      
       print("making map")
       cluster_raster <- ratify(cluster_raster)
       map_plot <- levelplot(cluster_raster, att="ID", col.regions=brewer.pal(nclust, palette),
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
-                            main = "", colorkey=F, margin=F)
+                            main = "", colorkey=F, margin=F) +
+        latticeExtra::layer(sp.points(site_id_spoints))
       plotlist[[1]] <- map_plot
       
       time_series <- summary_vals[variable_name=="month"]
