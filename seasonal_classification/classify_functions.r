@@ -32,14 +32,25 @@ get_mask <- function(continent, in_fname, out_fname, extra_crop_dir=""){
   return(clipped_mask)
 }
 
-extract_values <- function(raster_in_dir, raster_out_dir, mask){
+extract_values <- function(raster_in_dir, raster_out_dir, mask, cov_name=""){
   full <- raster(raster_in_dir)
   vals <- crop(full, mask)
-  # if (!compareRaster(vals, mask, stopiffalse = F)){
-  #   mask <- crop(mask, vals) # ensure that extents are the same 
-  # }
+  if (!compareRaster(vals, mask, stopiffalse = F)){
+    mask <- crop(mask, vals) # ensure that extents are the same. 
+  }
+  
   vals <- raster::mask(vals, mask, maskvalue=NA)
+  # adjust null values in irs layer
+  if (cov_name %in% c("irs_coverage", "act_coverage_older")){
+    vals[vals==-9999] <- -Inf
+  }
+  # adjust values above 1 in act layer
+  if (cov_name == "act_coverage"){
+    vals[vals>1] <- 0
+  }
+  print("saving raster")
   writeRaster(vals, raster_out_dir, overwrite=T)
+  
   return(vals)
 }
 
@@ -79,9 +90,16 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster, overwrite
     vals <- raster(out_fname)
   }else{
     print("clipping global raster")
-    vals <- extract_values(raster_in_dir=file.path(cov$dir, in_fname), raster_out_dir=out_fname, mask = mask_raster)
+    vals <- extract_values(raster_in_dir=file.path(cov$dir, in_fname), raster_out_dir=out_fname, mask = mask_raster, cov_name = cov$cov)
   }
-  plot(vals)
+  
+  new_out_dir <- gsub("tif", "pdf", out_fname)
+  print(paste("plotting raster to", new_out_dir))
+  pdf(new_out_dir)
+  print(plot(vals, main=paste(cov$cov, sweep_value)))
+  graphics.off()
+  
+  plot(vals, main=paste(cov$cov, sweep_value))
   vals <- as.matrix(vals)
   vals <- data.table(cov = cov$cov,
                      variable_name = cov$variable,
