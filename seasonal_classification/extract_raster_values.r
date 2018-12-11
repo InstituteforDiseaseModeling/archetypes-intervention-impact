@@ -45,12 +45,13 @@ extra_crop_rasters <- list(asia=file.path(map_root_dir, "Other_Global_Covariates
                            africa=file.path(base_dir, "vectors", "gambiae.tif"),
                            americas=""
                            )
-
+overwrite_mask <- F
 overwrite <- T
 cov_details <- fread("clustering_covariates.csv")
+cov_details <- cov_details[cov=="act_coverage_older"]
 
-# do a dance to make the transmissiong limit layers compatible
-if (!file.exists(final_mask_dir) | overwrite==T){
+# do a dance to make the transmission limit layers compatible
+if (!file.exists(final_mask_dir) | overwrite_mask==T){
   print("clipping full mask to transmission limits")
   mask_layer <- raster(mask_in_dir)
   mask_layer[mask_layer==0] <- -Inf
@@ -87,7 +88,7 @@ for (idx in 1:nrow(cov_details)){
       
       # check for mask
       clipped_mask_fname <- file.path(main_dir, "mask.tif")
-      if (file.exists(clipped_mask_fname) & overwrite==F){
+      if (file.exists(clipped_mask_fname) & overwrite_mask==F){
         print("loading saved mask")
         mask <- raster(clipped_mask_fname)
       }else{
@@ -95,7 +96,6 @@ for (idx in 1:nrow(cov_details)){
         mask <- get_mask(continent, in_fname=final_mask_dir, out_fname=clipped_mask_fname, extra_crop_rasters[[continent]])
         plot(mask)
       }
-      
       
       print("extracting from raster")
       all_vals <- lapply(strsplit(this_cov$values, "/")[[1]], extract_by_pattern, main_dir, this_cov, mask, overwrite)
