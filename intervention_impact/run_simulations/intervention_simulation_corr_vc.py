@@ -18,18 +18,18 @@ from malaria.reports.MalariaReport import add_summary_report, add_event_counter_
 from dtk.utils.reports.VectorReport import add_vector_stats_report
 from simtools.Utilities.Experiments import retrieve_experiment
 
-from generate_input_files import generate_input_files, net_usage_overlay
+# from generate_input_files import generate_input_files, net_usage_overlay
 from malaria.interventions.malaria_vaccine import add_vaccine
 from sweep_functions import *
 
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
-burnin_id = "e9af8baf-a8e3-e811-a2bd-c4346bcb1555"
+burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id = "66d8416c-9fce-e811-a2bd-c4346bcb1555"
 
-intervention_coverages = [0, 80]
+intervention_coverages = [60]
 vaccine_durations = [182, 365]
-interventions = ["dp_cm", "dp_mda", "mAb", "pev", "tbv"]
+interventions = ["itn_irs", "itn", 'irs', 'itn_w_irs', 'al_cm']
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -39,12 +39,12 @@ new_inputs = False
 print("setting up")
 if run_type == "burnin":
     years = 15
-    sweep_name = "MAP_II_Sweep_Vector_Lifespan"
+    sweep_name = "MAP_II_New_Sites_Burnin"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_Sweep_Vector_Lifespan_Ints"
+    sweep_name = "ITN_IRS_with_cases"
     serialize = False
     pull_from_serialization = True
 else:
@@ -66,7 +66,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using", "Received_Vaccine"],
-                                    Enable_Default_Reporting=0,
+                                    Enable_Default_Reporting=1,
                                     Enable_Demographics_Risk=1,
                                     Enable_Vector_Species_Report=0,
 
@@ -85,7 +85,11 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     )
 
 cb.update_params({"Disable_IP_Whitelist": 1,
-                  "Enable_Property_Output": 0})
+                  "Enable_Property_Output": 0,
+                  "Enable_Spatial_Output": 1,
+                  "Spatial_Output_Channels": ["Population", "Blood_Smear_Parasite_Prevalence", 'New_Infections',
+                                              'New_Clinical_Cases']
+                  })
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
@@ -113,9 +117,9 @@ if __name__=="__main__":
         cb.set_dll_collection(template_asset["dll_collection_id"])
         cb.set_input_collection(template_asset["input_collection_id"])
 
-    if new_inputs:
-        print("generating input files")
-        generate_input_files(site_input_dir, pop=2000, overwrite=True)
+    # if new_inputs:
+    #     print("generating input files")
+    #     generate_input_files(site_input_dir, pop=2000, overwrite=True)
 
     # Find vector proportions for each vector in our site
     site_vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
@@ -146,19 +150,12 @@ if __name__=="__main__":
         # temp for testing
         # df = df.query("Run_Number==7 & x_Temporary_Larval_Habitat>90 & x_Temporary_Larval_Habitat<150")
 
-
         old_builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
                 "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
-            ModFn(set_species_param, "arabiensis", "Adult_Life_Expectancy", df["arabiensis.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "funestus", "Adult_Life_Expectancy", df["funestus.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "gambiae", "Adult_Life_Expectancy", df["gambiae.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "minimus", "Adult_Life_Expectancy", df["minimus.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "maculatus", "Adult_Life_Expectancy", df["maculatus.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "darlingi", "Adult_Life_Expectancy", df["darlingi.Adult_Life_Expectancy"][x]),
 
             ModFn(add_annual_itns, year_count=years,
                                    n_rounds=1,
@@ -178,7 +175,7 @@ if __name__=="__main__":
             for hates_net_prop in net_hating_props
             for itn_cov in intervention_coverages
             for irs_cov in intervention_coverages
-            for act_cov in [0]
+            for act_cov in intervention_coverages
 
         ])
 
@@ -201,21 +198,60 @@ if __name__=="__main__":
                    start_day=5,
                    IP=[{"NetUsage": "LovesNets"}]
                    ),
-             ModFn(assign_net_ip, hates_net_prop)]
+             ModFn(assign_net_ip, hates_net_prop),
+             ModFn(add_healthseeking_by_coverage, coverage=40 / 100, rate=0.15)
+             ]
 
             for burnin_fn in from_burnin_list
             for itn_cov in intervention_coverages
             for hates_net_prop in net_hating_props
             ),
 
+            "itn_irs": list(
+                [burnin_fn,
+                 ModFn(add_annual_itns, year_count=years,
+                       n_rounds=1,
+                       coverage=itn_cov / 100,
+                       discard_halflife=180,
+                       start_day=5,
+                       IP=[{"NetUsage": "LovesNets"}]
+                       ),
+                 ModFn(assign_net_ip, hates_net_prop),
+                 ModFn(add_irs_group, coverage=itn_cov / 100,
+                       decay=180,
+                       start_days=[365 * start for start in range(years)]),
+                 ModFn(add_healthseeking_by_coverage, coverage=40 / 100, rate=0.15)
+                 ]
+
+                for burnin_fn in from_burnin_list
+                for itn_cov in intervention_coverages
+                for hates_net_prop in net_hating_props
+            ),
+
             "irs": list(
             [burnin_fn,
              ModFn(add_irs_group, coverage=irs_cov / 100,
                    decay=180,
-                   start_days=[365 * start for start in range(years)])
+                   start_days=[365 * start for start in range(years)]),
+             ModFn(add_healthseeking_by_coverage, coverage=40 / 100, rate=0.15)
              ]
             for burnin_fn in from_burnin_list
             for irs_cov in intervention_coverages
+            ),
+
+            "itn_w_irs": list(
+                [burnin_fn,
+                 ModFn(add_annual_itns_w_irs, year_count=years,
+                       n_rounds=1,
+                       coverage=itn_cov / 100,
+                       discard_halflife=180,
+                       start_day=5,
+                       IP=[{"NetUsage": "LovesNets"}]
+                       ),
+                 ModFn(add_healthseeking_by_coverage, coverage=40 / 100, rate=0.15)
+                 ]
+                for burnin_fn in from_burnin_list
+                for itn_cov in intervention_coverages
             ),
 
             "al_cm": list(
@@ -223,7 +259,7 @@ if __name__=="__main__":
              ModFn(add_healthseeking_by_coverage, coverage=al_cm_cov / 100, rate=0.15)
              ]
             for burnin_fn in from_burnin_list
-            for al_cm_cov in intervention_coverages
+            for al_cm_cov in [40]#intervention_coverages
             ),
 
             "dp_cm": list(
@@ -317,22 +353,16 @@ if __name__=="__main__":
             ModFn(DTKConfigBuilder.update_params, {
                 "Run_Number": run_num,
                 "x_Temporary_Larval_Habitat":10 ** hab_exp}),
-            ModFn(set_species_param, "arabiensis", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "funestus", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "gambiae", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "minimus", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "maculatus", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "darlingi", "Adult_Life_Expectancy", lifespan),
         ]
             for run_num in range(10)
             for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for lifespan in [5, 10, 15, 20, 25, 30]
             # for hab_exp in [0, 1, 2]
         ])
 
     run_sim_args = {"config_builder": cb,
                     "exp_name": sweep_name,
-                    "exp_builder": old_builder}
+                    "exp_builder": builder}
 
     em = ExperimentManagerFactory.from_cb(cb)
     em.run_simulations(**run_sim_args)
+

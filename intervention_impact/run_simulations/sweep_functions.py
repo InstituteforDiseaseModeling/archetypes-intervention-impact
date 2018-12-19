@@ -79,8 +79,27 @@ def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife
             "ITN_start": start_day, "ITN_Rounds": n_rounds, "ITN_Distributions": year_count}
 
 
+def add_annual_itns_w_irs(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife=270, start_day=0, IP=[]):
+
+    # per-round coverage: 1 minus the nth root of *not* getting a net in any one round
+    per_round_coverage = 1 - (1 - coverage) ** (1 / n_rounds)
+
+    for year in range(year_count):
+        for this_round in range(n_rounds):
+
+            add_ITN_age_season(cb,
+                               coverage_all=per_round_coverage,
+                               discard={"halflife": discard_halflife},
+                               start=(365 * year) + (30 * this_round) + start_day,
+                               ind_property_restrictions=IP)
+
+    add_irs_group(cb, decay=180, trigger_condition_list=['Bednet_Got_New_One'])
+    return {"ITN_IRS_Coverage": coverage, "ITN_Halflife": discard_halflife, "ITN_Per_Round_Coverage": per_round_coverage,
+            "ITN_start": start_day, "ITN_Rounds": n_rounds, "ITN_Distributions": year_count}
+
+
 # irs
-def add_irs_group(cb, coverage=1.0, start_days=[0], decay=270):
+def add_irs_group(cb, coverage=1.0, start_days=[0], decay=270, trigger_condition_list=[]):
 
     waning = {
         "Killing_Config": {
@@ -96,7 +115,7 @@ def add_irs_group(cb, coverage=1.0, start_days=[0], decay=270):
 
     for start in start_days:
         add_IRS(cb, start, [{"min": 0, "max": 200, "coverage": coverage}],
-                waning=waning)
+                waning=waning, trigger_condition_list=trigger_condition_list)
 
     return {"IRS_Halflife": decay, "IRS_Start": start_days[0], "IRS_Coverage": coverage}
 
