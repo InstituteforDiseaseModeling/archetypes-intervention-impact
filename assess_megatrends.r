@@ -24,7 +24,9 @@ root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact")
 
 main_dir <- file.path(base_dir, "writing_and_presentations/megatrends/pfpr_rasters")
-cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
+# cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
+cluster_fname <- file.path(base_dir, "lookup_tables/interactions/version_3_svd_bug/clusters_joint_6.tif")
+
 
 # load in data, clip to africa
 cluster_layer <- raster(cluster_fname)
@@ -34,10 +36,12 @@ megatrends_only <- crop(megatrends_only, cluster_layer)
 interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
 interventions <- crop(interventions, cluster_layer)
 
+cutoff_pr <- 0.0001
+
 # mask areas that are zero in megatrends only, these will by definition be zero in intervenions as well
 megatrends_orig <- copy(megatrends_only)
-megatrends_only[megatrends_orig==0] <- -Inf
-interventions[megatrends_orig==0] <- -Inf
+megatrends_only[megatrends_orig<cutoff_pr] <- -Inf
+interventions[megatrends_orig<cutoff_pr] <- -Inf
 
 # explore areas of residual transmission--------------------------
 
@@ -46,9 +50,9 @@ resid_megatrends <- copy(megatrends_only)
 resid_clusters <- copy(cluster_layer)
 resid_clusters <- mask(resid_clusters, interventions)
 
-resid_interventions[interventions==0] <- -Inf
-resid_megatrends[interventions==0] <- -Inf
-resid_clusters[interventions==0] <- -Inf
+resid_interventions[interventions<cutoff_pr] <- -Inf
+resid_megatrends[interventions<cutoff_pr] <- -Inf
+resid_clusters[interventions<cutoff_pr] <- -Inf
 writeRaster(resid_clusters, file.path(main_dir, "masked_clusters.tif"), overwrite=T)
 
 reduction <- resid_megatrends-resid_interventions
@@ -96,6 +100,7 @@ ggplot(reduction_dt, aes(x=megatrend_val, y=perc_reduction)) +
        y="PFPr % Reduction under ITN 80%, ACT 80%")
 
 resid_clusters <- raster(file.path(main_dir, "masked_clusters.tif"))
-levelplot(test_raster, att="ID", col.regions=colors,
+resid_clusters <- ratify(resid_clusters)
+levelplot(resid_clusters, att="ID", col.regions=colors,
           xlab=NULL, ylab=NULL, scales=list(draw=F),
           main = "", colorkey=F, margin=F)
