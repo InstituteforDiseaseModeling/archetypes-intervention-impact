@@ -24,16 +24,17 @@ root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact")
 
 main_dir <- file.path(base_dir, "writing_and_presentations/megatrends/pfpr_rasters")
-# cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
-cluster_fname <- file.path(base_dir, "lookup_tables/interactions/version_3_svd_bug/clusters_joint_6.tif")
+cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
+#cluster_fname <- file.path(base_dir, "lookup_tables/interactions/version_3_svd_bug/clusters_joint_6.tif")
 
 
 # load in data, clip to africa
 cluster_layer <- raster(cluster_fname)
 megatrends_only <- raster(file.path(main_dir, "actual_ssp2_2050.tif"))
-cluster_layer <- crop(cluster_layer, megatrends_only)
-megatrends_only <- crop(megatrends_only, cluster_layer)
-interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
+# interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
+interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
+cluster_layer <- crop(cluster_layer, interventions)
+megatrends_only <- crop(megatrends_only, interventions)
 interventions <- crop(interventions, cluster_layer)
 
 cutoff_pr <- 0.0001
