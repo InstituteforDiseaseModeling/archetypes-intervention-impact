@@ -9,13 +9,18 @@ rm(list=ls())
 
 source("pr_to_r0.r")
 
-main_dir <- file.path(Sys.getenv("USERPROFILE"), 
-                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
-out_dir <- file.path(main_dir, "../../writing_and_presentations/tropmed_2018/raw_pdfs")
-interventions <- c( "IRS 0.4; ACT 0.2;" , "ITN 0.4; IRS 0.4; ACT 0.2;") 
+root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
+main_dir <- file.path(root_dir, 
+                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/")
+lookup_dir <- file.path(main_dir, 
+                      "lookup_tables/interactions")
+orig_pr_dir <- file.path(main_dir, 
+                         "writing_and_presentations/megatrends/pfpr_rasters/actual_ssp2_2050_ITN80ACT80-14.tif")
+out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/pfpr_rasters/")
+interventions <- c( "ITN 0.8; ACT 0.8;") 
 
 # set 'repro' to true if you want a reproductive number rather than a pfpr estimate
-repro <- T
+repro <- F
 if (repro){
   print("getting repro spline")
   repro_spline <- R2spline()
@@ -59,12 +64,12 @@ apply_spline_to_raster<-function(splObj,inRaster, return_r0=F){
 }
 ##################################################################################################
 
-lut <- fread(file.path(main_dir, "lookup_full_interactions_v4.csv"))
+lut <- fread(file.path(lookup_dir, "lookup_full_interactions_v4.csv"))
 lut <- lut[Intervention %in% interventions]
 
 
 # read in rasters: PR, cluster assignments, and continent masks
-pr_orig <- raster(file.path("MODEL43.2015.PR.ALL.rmean.tif"))
+pr_orig <- raster(orig_pr_dir)
 
 masks <- raster("MAP_Regions_Pf_5k.tif")
 cluster_map <- raster("africa_clusters_v4.tif")
