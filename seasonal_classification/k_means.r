@@ -25,24 +25,37 @@ library(Hmisc)
 library(FNN)
 
 set.seed(206)
+theme_set(theme_minimal(base_size = 16))
 
 rm(list=ls())
 overwrite_rotation <- F
 overwrite_kmeans <- F
+plot_vectors <- F
 
 source("classify_functions.r")
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
-palette <- "Paired" # color scheme for plots 
+palette <- brewer.pal(8, "Paired") # color scheme for plots 
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
+                   # tsi_rainfall_vector_abundance=list(africa=3),
+                   # tsi_rainfall_vector_abundance_standardized=list(africa=2),
                    tsi_rainfall_vector_abundance_rescaled=list(africa=3)
                    )
-cluster_counts <- 7:8
+
+palettes <- list(
+  tsi_rainfall_vector_abundance= c("#F98400", "#00A08A", "#5392C2", "#902E57", "#F2AD00", "#D71B5A", "#98B548", "#8971B3"),
+  tsi_rainfall_vector_abundance_standardized=c("#00A08A", "#902E57", "#5392C2", "#F98400", "#F2AD00", "#D71B5A", "#98B548", "#8971B3"),
+  tsi_rainfall_vector_abundance_rescaled=c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "#902E57", "#F98400", "#B03A2E", "#2ECC71")
+)
+
+
+cluster_counts <- 3:10
 
 for (this_cov in names(input_list)){
   nvec_list <- input_list[[this_cov]]
+  palette <- palettes[[this_cov]]
   
   for (continent in names(nvec_list)){
     print(paste("clustering", this_cov, "for", continent))
@@ -67,7 +80,7 @@ for (this_cov in names(input_list)){
     
     # k-means and plotting
     var_explained <- c()
-    pdf(file.path(main_dir, paste0("k_means_", this_cov, ".pdf")), width=9, height=6)
+    pdf(file.path(main_dir, paste0("k_means_", this_cov, ".pdf")), width=8, height=4.5)
     for (nclust in cluster_counts){
       
       cov_label <- ifelse(nchar(this_cov)==3, toupper(this_cov), capitalize(this_cov))
@@ -127,6 +140,7 @@ for (this_cov in names(input_list)){
       }
       
       plotlist <- NULL
+      these_colors <- palette[1:nclust]
       
       # find points nearest to centroids (todo: put in main section?)
       temp_raster <- raster(file.path(main_dir, "rasters", "mask.tif"))
@@ -143,30 +157,51 @@ for (this_cov in names(input_list)){
       
       print("making map")
       cluster_raster <- ratify(cluster_raster)
-      map_plot <- levelplot(cluster_raster, att="ID", col.regions=brewer.pal(nclust, palette),
+      map_plot <- levelplot(cluster_raster, att="ID", col.regions=these_colors,
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
-                            main = "", colorkey=F, margin=F) +
-        latticeExtra::layer(sp.points(site_id_spoints))
+                            main = "", colorkey=F, margin=F)  # +
+        # latticeExtra::layer(sp.points(site_id_spoints))
       plotlist[[1]] <- map_plot
       
       time_series <- summary_vals[variable_name=="month"]
       time_series[, cluster:=as.factor(cluster)]
       lines <- lapply(unique(time_series$cov), function(cov_value){
-        ggplot(time_series[cov==cov_value], aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
+        
+        data <- time_series[cov==cov_value]
+        
+        if(max(data$perc_95)>1){
+          ybreaks <- c(0, 600)
+          ylabs <- c("0", "600")
+          yminorbreaks <- c(100, 200, 300, 400, 500)
+          ylimit <- NULL
+        }else if(max(data$perc_95)<0.75){
+          ybreaks <- c(0, 0.75)
+          ylabs <- c("0", "0.75")
+          yminorbreaks <- c(0.25, 0.5)
+          ylimit <- c(0, 0.75)
+        }else{
+          ybreaks <- c(0, 0.75)
+          ylabs <- c("0", "0.75")
+          yminorbreaks <- c(0.25, 0.5)
+          ylimit <- NULL
+        }
+        
+        ggplot(data, aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
           facet_grid(cluster~.) +
-          geom_line(size=2) +
-          geom_line(aes(y=perc_05), size=1, linetype=2) +
-          geom_line(aes(y=perc_95), size=1, linetype=2) +
-          geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5) +
-          # geom_line(data=random_trace[cov==cov_value], aes(group=id, color=factor(cluster)), size=0.5, alpha=0.25) + 
-          scale_color_brewer(type="qual", palette=palette) +
-          scale_fill_brewer(type="qual", palette=palette) + 
-          scale_x_continuous(breaks=1:12, labels=1:12) +
-          theme_minimal() +
+          geom_line(size=1) +
+          geom_line(aes(y=perc_05), size=0.75, linetype=2) +
+          geom_line(aes(y=perc_95), size=0.75, linetype=2) +
+          geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5, color=NA) +
+          scale_color_manual(values = these_colors) +
+          scale_fill_manual(values = these_colors) + 
+          scale_x_continuous(breaks=seq(2,12,2), labels=c("F","A","J","A","O","D"), minor_breaks=seq(1,12,2)) +
+          scale_y_continuous(breaks=ybreaks, labels=ylabs, minor_breaks=yminorbreaks, limits=ylimit) + 
           theme(legend.position="none",
-                plot.title = element_text(face="bold")) +
-          labs(title=paste(cov_value),
-               x="Month",
+                plot.title = element_text(size=16),
+                strip.background = element_blank(),
+                strip.text.y = element_blank()) +
+          labs(title=ifelse(nchar(cov_value)==3, toupper(cov_value), capitalize(cov_value)),
+               x="",
                y="")
       })
       
@@ -175,7 +210,7 @@ for (this_cov in names(input_list)){
       # if applicable, plot vector mix
       summary_species <- summary_vals[variable_name=="species"]
 
-      if (nrow(summary_species)>0){
+      if (nrow(summary_species)>0 & plot_vectors==T){
         vector_mix <- ggplot(summary_species, aes(x=cluster, y=mean)) +
           geom_bar(aes(fill=variable_val), stat="identity") + 
           theme_minimal() +
@@ -212,12 +247,12 @@ for (this_cov in names(input_list)){
     # plot % variance explained across clusters
     print("plotting variance explained")
     all_var <- data.table(k=cluster_counts, var=var_explained)
-    png(file=file.path(main_dir, paste0("elbow_", this_cov, ".png")))
+    pdf(file=file.path(main_dir, paste0("elbow_", this_cov, ".pdf")))
     elbow_plot<- ggplot(all_var, aes(x=k, y=var)) +
-        geom_line() +
-        geom_point() +
+        geom_line(size=1) +
+        geom_point(shape=1, size=4) +
         theme_minimal()+
-        labs(title=paste("Elbow Plot,", this_cov),
+        labs(title= "", # paste("Elbow Plot,", this_cov),
              x="Cluster Count",
              y="Variance Explained")
     print(elbow_plot)
