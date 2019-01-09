@@ -25,9 +25,12 @@ root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
 continents <- c("africa", "asia", "americas")
+continents <- c("africa")
 cov_details <- fread("clustering_covariates.csv")
-overwrite <- T
+cov_details <- cov_details[variable!="year"]
+overwrite <- F
 rescale <- T
+theme_set(theme_minimal(base_size = 16))
 
 for (continent in continents){
   print(paste("running svd on", continent))
@@ -101,15 +104,15 @@ for (continent in continents){
                          vector=1:length(init_variance), 
                          variance_explained=init_variance)
   
-  png(file=file.path(main_dir, paste0(full_label, "_svd.png")))
-  varplot <- ggplot(variance[vector<=10], aes(x=vector, y=variance_explained, color=continent)) +
-    geom_line(size=1) +
-    geom_point(shape=1, size=2) +
-    theme_minimal() +
+  pdf(file=file.path(main_dir, paste0(full_label, "_svd.pdf")))
+  varplot <- ggplot(variance[vector<=5], aes(x=vector, y=variance_explained)) +
+    geom_line(size=2) +
+    geom_point(size=5) +
     theme(legend.position = "none") +
     labs(x="Singular Vector", 
-         y="Variance Explained",
-         title=paste("Variance Explained by Singular Vectors", capitalize(continent)))
+         y="Variance Explained"
+         #title=paste("Variance Explained by Singular Vectors", capitalize(continent))
+         )
   print(varplot)
   
   graphics.off()
