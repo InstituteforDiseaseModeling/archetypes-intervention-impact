@@ -15,7 +15,7 @@ main_dir <- file.path(root_dir,
 lookup_dir <- file.path(main_dir, 
                       "lookup_tables/interactions")
 orig_pr_dir <- file.path(main_dir, 
-                         "writing_and_presentations/megatrends/pfpr_rasters/actual_ssp2_2050_ITN80ACT80-14.tif")
+                         "writing_and_presentations/megatrends/pfpr_rasters/actual_ssp2_noint_2050.tif")
 out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/pfpr_rasters/")
 interventions <- c( "ITN 0.8; ACT 0.8;") 
 

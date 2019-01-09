@@ -30,12 +30,16 @@ cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters
 
 # load in data, clip to africa
 cluster_layer <- raster(cluster_fname)
-megatrends_only <- raster(file.path(main_dir, "actual_ssp2_2050.tif"))
-# interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
+megatrends_only <- raster(file.path(main_dir, "actual_ssp2_noint_2050.tif"))
+pete_interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
 interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
 cluster_layer <- crop(cluster_layer, interventions)
-megatrends_only <- crop(megatrends_only, interventions)
+megatrends_only <- crop(megatrends_only, cluster_layer)
 interventions <- crop(interventions, cluster_layer)
+pete_interventions <-  crop(pete_interventions, cluster_layer)
+
+# mask clusters to megatrends
+cluster_layer <- raster::mask(cluster_layer, megatrends_only)
 
 cutoff_pr <- 0.0001
 
@@ -49,7 +53,6 @@ interventions[megatrends_orig<cutoff_pr] <- -Inf
 resid_interventions <- copy(interventions)
 resid_megatrends <- copy(megatrends_only)
 resid_clusters <- copy(cluster_layer)
-resid_clusters <- mask(resid_clusters, interventions)
 
 resid_interventions[interventions<cutoff_pr] <- -Inf
 resid_megatrends[interventions<cutoff_pr] <- -Inf
@@ -81,7 +84,7 @@ colors <- c("#00a08a", "#d71b5a", "#f2a200", "#f98400", "#902e57", "#5392c2")
 ggplot(reduction_dt, aes(x=megatrend_val, y=intervention_val)) + 
         geom_point(aes(color=cluster_val), alpha=0.5) + 
         scale_color_manual(values=colors) + 
-        facet_wrap(~cluster_val) + 
+         facet_wrap(~cluster_val) + 
         geom_abline() +
         theme_minimal() + 
         theme(legend.position="none") + 

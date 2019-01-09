@@ -20,9 +20,9 @@ traces <- fread(file.path(main_dir, "kmeans", paste0("random_trace_", this_cov, 
 
 traces <- merge(traces, rotations, by="id", all.x=T)
 
-centers <- k_out$centers
-centers[, cluster:="center"]
-for_plot <- rbind(traces[, list(cluster, X1, X2, X3)], centers)
+centers <- data.table(k_out$centers)
+centers[, cluster:="centroid"]
+for_plot <- rbind(unique(traces[, list(cluster, X1, X2, X3)]), centers)
 for_plot[, cluster:=as.factor(cluster)]
 
 # ggplot(traces, aes(x=X1, y=X2, color=cluster)) +
@@ -31,7 +31,7 @@ for_plot[, cluster:=as.factor(cluster)]
 #   theme(legend.position = "none")
 
 
-plot_ly(traces, x = ~X1, y = ~X2, z = ~X3, color = ~cluster, colors=pal) %>%
+plot_ly(for_plot, x = ~X1, y = ~X2, z = ~X3, color = ~cluster, colors=pal, opacity=0.8) %>%
   add_markers()
 
 
