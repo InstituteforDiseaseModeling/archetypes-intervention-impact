@@ -27,6 +27,18 @@ main_dir <- file.path(base_dir, "writing_and_presentations/megatrends/pfpr_raste
 cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
 #cluster_fname <- file.path(base_dir, "lookup_tables/interactions/version_3_svd_bug/clusters_joint_6.tif")
 
+# test: compare lookup tables
+pete_lut <- fread(file.path(main_dir, "../model ready LUTs/lookup_full_interactions_ITN80ACT80-14.csv"))
+abv_lut <- fread(file.path(base_dir, "lookup_tables/interactions/lookup_full_interactions_v4.csv"))
+abv_lut <- abv_lut[Intervention=="ITN 0.8; ACT 0.8;"]
+abv_lut <- unique(abv_lut[, list(Site_Name, x_Temporary_Larval_Habitat, mean_initial, mean_final)])
+pete_lut <- unique(pete_lut[, list(Site_Name, x_Temporary_Larval_Habitat, mean_initial, mean_final)])
+
+ggplot(abv_lut, aes(x=mean_initial, y=mean_final, color=Site_Name)) +
+  geom_point() +
+  geom_point(data=pete_lut, shape=0, size=4) + 
+  facet_wrap(~Site_Name)
+
 
 # load in data, clip to africa
 cluster_layer <- raster(cluster_fname)
