@@ -27,24 +27,27 @@ main_dir <- file.path(base_dir, "writing_and_presentations/megatrends/pfpr_raste
 cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
 #cluster_fname <- file.path(base_dir, "lookup_tables/interactions/version_3_svd_bug/clusters_joint_6.tif")
 
-# test: compare lookup tables
-pete_lut <- fread(file.path(main_dir, "../model ready LUTs/lookup_full_interactions_ITN80ACT80-14.csv"))
-abv_lut <- fread(file.path(base_dir, "lookup_tables/interactions/lookup_full_interactions_v4.csv"))
-abv_lut <- abv_lut[Intervention=="ITN 0.8; ACT 0.8;"]
-abv_lut <- unique(abv_lut[, list(Site_Name, x_Temporary_Larval_Habitat, mean_initial, mean_final)])
-pete_lut <- unique(pete_lut[, list(Site_Name, x_Temporary_Larval_Habitat, mean_initial, mean_final)])
+# temp: plot Pete's baseline and intervention results for mmc slides
+cluster_layer <- raster(cluster_fname)
+megatrends_full <- raster(file.path(main_dir, "actual_ssp2_2050.tif"))
+interventions_1 <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
+interventions_2 <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80IRS80ACT80-14.tif"))
+stacked_layers <- stack(list(megatrends_full, interventions_1, interventions_2))
+stacked_layers <- crop(stacked_layers, cluster_layer)
 
-ggplot(abv_lut, aes(x=mean_initial, y=mean_final, color=Site_Name)) +
-  geom_point() +
-  geom_point(data=pete_lut, shape=0, size=4) + 
-  facet_wrap(~Site_Name)
+
+names(stacked_layers) <- c("PfPR 2050 Megatrends Only", "PfPR 2050 ITN 80 ACT 80", "PfPR 2050 ITN 80 ACT 80 IRS 80")
+pdf(file.path(main_dir, "megatrends_pete.pdf"), width=12, height=6)
+print(levelplot(stacked_layers, par.settings=rasterTheme(rev(brewer.pal(7, "Spectral"))), xlab=NULL, ylab=NULL, scales=list(draw=F)))
+graphics.off()
+#writeRaster(stacked_layers, options="INTERLEAVE=BAND", file.path(out_dir, paste0("pfpr_",continent, ".tif")), overwrite=T)
 
 
 # load in data, clip to africa
 cluster_layer <- raster(cluster_fname)
 megatrends_only <- raster(file.path(main_dir, "actual_ssp2_noint_2050.tif"))
-pete_interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
-interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
+interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
+# interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
 cluster_layer <- crop(cluster_layer, interventions)
 megatrends_only <- crop(megatrends_only, cluster_layer)
 interventions <- crop(interventions, cluster_layer)
