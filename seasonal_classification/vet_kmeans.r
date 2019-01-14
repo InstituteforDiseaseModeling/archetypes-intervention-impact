@@ -31,7 +31,8 @@ for_plot[, cluster:=as.factor(cluster)]
 #   theme(legend.position = "none")
 
 
-plot_ly(for_plot, x = ~X1, y = ~X2, z = ~X3, color = ~cluster, colors=pal, opacity=0.8) %>%
+plot_ly(for_plot, x = ~X1, y = ~X2, marker=list(color="black"), z = ~X3, opacity=0.8) %>%
   add_markers()
 
-
+plot_ly(for_plot, x = ~X1, y = ~X2, color = ~cluster, colors=pal, z = ~X3, opacity=0.8) %>%
+  add_markers()
