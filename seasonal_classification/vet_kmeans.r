@@ -20,19 +20,19 @@ traces <- fread(file.path(main_dir, "kmeans", paste0("random_trace_", this_cov, 
 
 traces <- merge(traces, rotations, by="id", all.x=T)
 
-centers <- data.table(k_out$centers)
-centers[, cluster:="centroid"]
-for_plot <- rbind(unique(traces[, list(cluster, X1, X2, X3)]), centers)
-for_plot[, cluster:=as.factor(cluster)]
+if (this_cov %like% "standardized"){
+  ggplot(traces, aes(x=X1, y=X2, color=as.factor(cluster))) +
+    geom_point(size=3, alpha=0.8) +
+    geom_point(data=centers, size=3) + 
+    scale_color_manual(values=pal) +
+    theme(legend.position = "none")
+}else{
+  centers <- data.table(k_out$centers)
+  centers[, cluster:="centroid"]
+  for_plot <- rbind(unique(traces[, list(cluster, X1, X2, X3)]), centers)
+  for_plot[, cluster:=as.factor(cluster)]
+  
+  plot_ly(for_plot, x = ~X1, y = ~X2, color = ~cluster, colors=pal, z = ~X3, opacity=0.8) %>%
+    add_markers()
+}
 
-# ggplot(traces, aes(x=X1, y=X2, color=cluster)) +
-#   geom_point(size=3, alpha=0.75) + 
-#   scale_color_manual(values=pal) +
-#   theme(legend.position = "none")
-
-
-plot_ly(for_plot, x = ~X1, y = ~X2, marker=list(color="black"), z = ~X3, opacity=0.8) %>%
-  add_markers()
-
-plot_ly(for_plot, x = ~X1, y = ~X2, color = ~cluster, colors=pal, z = ~X3, opacity=0.8) %>%
-  add_markers()
