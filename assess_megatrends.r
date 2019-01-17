@@ -26,29 +26,17 @@ base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_
 main_dir <- file.path(base_dir, "writing_and_presentations/megatrends/pfpr_rasters")
 cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
 
-# temp: plot Pete's baseline and intervention results for mmc slides
-cluster_layer <- raster(cluster_fname)
-megatrends_full <- raster(file.path(main_dir, "actual_ssp2_2050.tif"))
-interventions_1 <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
-interventions_2 <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80IRS80ACT80-14.tif"))
-stacked_layers <- stack(list(megatrends_full, interventions_1, interventions_2))
-stacked_layers <- crop(stacked_layers, cluster_layer)
-
-names(stacked_layers) <- c("PfPR 2050 Megatrends Only", "PfPR 2050 ITN 80 ACT 80", "PfPR 2050 ITN 80 ACT 80 IRS 80")
-pdf(file.path(main_dir, "megatrends_pete.pdf"), width=12, height=6)
-print(levelplot(stacked_layers, par.settings=rasterTheme(rev(brewer.pal(7, "Spectral"))), xlab=NULL, ylab=NULL, scales=list(draw=F)))
-graphics.off()
-
 
 # load in data, clip to africa
 cluster_layer <- raster(cluster_fname)
 megatrends_only <- raster(file.path(main_dir, "actual_ssp2_noint_2050.tif"))
-interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
-# interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
+megatrends_full <- raster(file.path(main_dir, "actual_ssp2_2050.tif"))
+# interventions <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
+interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
 cluster_layer <- crop(cluster_layer, interventions)
 megatrends_only <- crop(megatrends_only, cluster_layer)
+megatrends_full <- crop(megatrends_full, cluster_layer)
 interventions <- crop(interventions, cluster_layer)
-pete_interventions <-  crop(pete_interventions, cluster_layer)
 
 # mask clusters to megatrends
 cluster_layer <- raster::mask(cluster_layer, megatrends_only)
@@ -58,7 +46,11 @@ cutoff_pr <- 0.001
 # mask areas that are zero in megatrends only, these will by definition be zero in intervenions as well
 megatrends_orig <- copy(megatrends_only)
 megatrends_only[megatrends_orig<cutoff_pr] <- -Inf
+megatrends_full[megatrends_orig<cutoff_pr] <- -Inf
 interventions[megatrends_orig<cutoff_pr] <- -Inf
+
+bounded_interventions <-min(stack(interventions,megatrends_full))
+megatrends_diff <- interventions - bounded_interventions
 
 # explore areas of residual transmission--------------------------
 
