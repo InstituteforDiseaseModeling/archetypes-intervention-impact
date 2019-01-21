@@ -24,34 +24,32 @@ rm(list=ls())
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact")
 
-main_dir <- file.path(base_dir, "writing_and_presentations/megatrends/pfpr_rasters")
+main_dir <- file.path(base_dir, "/megatrends")
 cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
 
 colors <- c("#00a08a", "#d71b5a", "#f2a200", "#f98400", "#902e57", "#5392c2")
 
 # load in data, clip to africa
 cluster_layer <- raster(cluster_fname)
-megatrends_noints <- raster(file.path(main_dir, "actual_ssp2_noint_2050.tif"))
-megatrends_ints <- raster(file.path(main_dir, "actual_ssp2_2050.tif"))
+megatrends_noints <- raster(file.path(main_dir, "pete_analysis", "actual_ssp2_base2000_2050.tif"))
+megatrends_ints <- raster(file.path(main_dir, "pete_analysis", "actual_ssp2_base2016_2050.tif"))
 
-int_type <- "itn_act"
+int_type <- "itn_irs_act"
 
 if (int_type=="itn_act"){
-  interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
-  interventions_pete <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
-  int_label <- "ITN 60%, ACT 60%"
+  interventions <- raster(file.path(main_dir, "abv_pfpr_africa_ITN.0.8..ACT.0.8..tif"))
+  interventions_pete <- raster(file.path(main_dir, "pete_analysis", "actual_ssp2_2050_ITN80ACT80-14.tif"))
+  int_label <- "ITN 80%, ACT 80%"
 }else if (int_type=="itn_irs_act"){
-  interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=3)
-  interventions_pete <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80IRS80ACT80-14.tif"))
-  int_label <- "ITN 60%, IRS 60%, ACT 60%"
+  interventions <- raster(file.path(main_dir, "abv_pfpr_africa_ITN.0.8..IRS.0.8..ACT.0.8..tif"))
+  interventions_pete <- raster(file.path(main_dir, "pete_analysis", "actual_ssp2_2050_ITN80IRS80ACT80-14.tif"))
+  int_label <- "ITN 80%, IRS 80%, ACT 80%"
 }else{
   stop(paste("unrecognized intervention type", int_type))
 }
 
 # ensure consistent extents in all rasters, and
-# mask areas that are zero (or near-zero) in megatrends. 
-# These will by definition be zero in interventions as well
-
+# set near-zero areas to zero.
 cutoff_pr <- 0.0001
 cluster_layer <- crop(cluster_layer, interventions)
 megatrends_orig <- copy(megatrends_noints)
@@ -64,11 +62,7 @@ for (rastname in names(rastlist)){
   rast <- rastlist[[rastname]]
   rast[rast<cutoff_pr] <- 0
   newrast <- crop(rast, cluster_layer)
-  # save and reload such that -Inf gets applied appropriately
-  # todo: find a better way to reset the "names" variable in raster layers
-  fname <- file.path(main_dir, "temp", paste0(rastname, ".tif"))
-  writeRaster(newrast, fname, overwrite=T)
-  newrast <- raster(fname)
+  names(newrast) <- rastname
   assign(rastname, newrast)
 }
 
@@ -128,6 +122,7 @@ reduction_dt <- reduction_dt[complete.cases(reduction_dt)] # todo: what are the 
 reduction_dt[, cluster:=as.factor(cluster)]
 reduction_dt[, perc_reduction:= (megatrends_noints-bounded_interventions)/megatrends_noints *100]
 
+png(file.path(main_dir, "megatrend_compare.png"), width=900, height=600)
 ggplot(reduction_dt, aes(x=megatrends_noints, y=megatrends_ints)) +
   geom_point(alpha=0.25) +
   facet_wrap(~cluster) +
@@ -138,9 +133,11 @@ ggplot(reduction_dt, aes(x=megatrends_noints, y=megatrends_ints)) +
   labs(title="Megatrend (Base 2000) vs Megatrend (Base 2016), \n by Transmission Archetype",
        x="Megatrends, Base 2000",
        y="Megatrends, Base 2016")
+graphics.off()
 
-ggplot(reduction_dt[interventions>cutoff_pr], aes(x=megatrends_noints, y=bounded_interventions)) + 
-        geom_point(aes(y=megatrends_ints), alpha=0.1) + 
+png(file.path(main_dir, "megatrend_int_impact.png"), width=900, height=600)
+ggplot(reduction_dt[bounded_interventions>cutoff_pr], aes(x=megatrends_noints, y=bounded_interventions)) + 
+        # geom_point(aes(y=megatrends_ints), alpha=0.1) + 
         geom_point(aes(color=cluster), alpha=0.5) + 
         scale_color_manual(values=colors) + 
         facet_wrap(~cluster) + 
@@ -151,22 +148,4 @@ ggplot(reduction_dt[interventions>cutoff_pr], aes(x=megatrends_noints, y=bounded
         labs(title="Megatrend (Base 2000) vs Megatrend Plus Interventions, \n by Transmission Archetype",
              x="Megatrend, Base 2000",
              y=paste("Megatrend Base 2000 +", int_label))
-
-
-## some putzing around --------------------------
-reduction_dt[, type:=ifelse(interventions==bounded_interventions, "lookup_val", "megatrends_val")]
-
-summary_pulls <- reduction_dt[, .N, by=list(cluster, type)]
-summary_pulls <- dcast(summary_pulls, cluster~type)
-summary_pulls[, perc_lookup:=(lookup_val/(megatrends_val+lookup_val))*100]
-
-test <- reduction_dt[cluster==5 & bounded_interventions > 0.001]
-test[, id:=factor(id)]
-ggplot(test, aes(x=id)) +
-  geom_point(aes(y=megatrends_noints), color="red") +
-  geom_point(aes(y=bounded_interventions), color="blue") 
-  # geom_point(aes(y=interventions), color="green") 
-
-## ------------------------------------------------------
-
-
+graphics.off()

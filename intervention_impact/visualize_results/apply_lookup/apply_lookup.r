@@ -15,9 +15,10 @@ main_dir <- file.path(root_dir,
 lookup_dir <- file.path(main_dir, 
                       "lookup_tables/interactions")
 orig_pr_dir <- file.path(main_dir, 
-                         "writing_and_presentations/megatrends/pfpr_rasters/actual_ssp2_noint_2050.tif")
-out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/pfpr_rasters/")
-interventions <- c( "ITN 0.6; ACT 0.6;", "ITN 0.6; IRS 0.6; ACT 0.6;") 
+                         "megatrends/pete_analysis/actual_ssp2_base2000_2050.tif")
+out_dir <- file.path(main_dir, "megatrends")
+base_label <- "Megatrends Base 2000"
+interventions <- c( "ITN 0.8; ACT 0.8;", "ITN 0.8; IRS 0.8; ACT 0.8;") 
 
 # set 'repro' to true if you want a reproductive number rather than a pfpr estimate
 repro <- F
@@ -138,10 +139,10 @@ if (repro==T){
   graphics.off()
   writeRaster(stacked_layers, options="INTERLEAVE=BAND", file.path(out_dir, paste0("repro_",continent, ".tif")), overwrite=T)
 }else{
-  names(stacked_layers) <- c("PfPR 2015", interventions)
-  pdf(file.path(out_dir, paste0("pfpr_", continent, ".pdf")), width=12, height=6)
+  names(stacked_layers) <- c(base_label, interventions)
+  pdf(file.path(out_dir, paste0("abv_pfpr_", continent, ".pdf")), width=12, height=6)
   print(levelplot(stacked_layers, par.settings=rasterTheme(brewer.pal(7, "BuPu")), xlab=NULL, ylab=NULL, scales=list(draw=F)))
   graphics.off()
-  writeRaster(stacked_layers, options="INTERLEAVE=BAND", file.path(out_dir, paste0("pfpr_",continent, ".tif")), overwrite=T)
+  writeRaster(stacked_layers, options="INTERLEAVE=BAND", file.path(out_dir, paste0("abv_pfpr_",continent, ".tif")), overwrite=T, bylayer=T, suffix="names")
 }
   
