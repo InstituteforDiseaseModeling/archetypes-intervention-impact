@@ -17,7 +17,7 @@ lookup_dir <- file.path(main_dir,
 orig_pr_dir <- file.path(main_dir, 
                          "writing_and_presentations/megatrends/pfpr_rasters/actual_ssp2_noint_2050.tif")
 out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/pfpr_rasters/")
-interventions <- c( "ITN 0.8; ACT 0.8;") 
+interventions <- c( "ITN 0.6; ACT 0.6;", "ITN 0.6; IRS 0.6; ACT 0.6;") 
 
 # set 'repro' to true if you want a reproductive number rather than a pfpr estimate
 repro <- F

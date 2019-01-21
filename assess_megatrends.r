@@ -33,8 +33,20 @@ colors <- c("#00a08a", "#d71b5a", "#f2a200", "#f98400", "#902e57", "#5392c2")
 cluster_layer <- raster(cluster_fname)
 megatrends_noints <- raster(file.path(main_dir, "actual_ssp2_noint_2050.tif"))
 megatrends_ints <- raster(file.path(main_dir, "actual_ssp2_2050.tif"))
-interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
-interventions_pete <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
+
+int_type <- "itn_act"
+
+if (int_type=="itn_act"){
+  interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=2)
+  interventions_pete <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80ACT80-14.tif"))
+  int_label <- "ITN 60%, ACT 60%"
+}else if (int_type=="itn_irs_act"){
+  interventions <- raster(file.path(main_dir, "pfpr_africa.tif"), band=3)
+  interventions_pete <- raster(file.path(main_dir, "actual_ssp2_2050_ITN80IRS80ACT80-14.tif"))
+  int_label <- "ITN 60%, IRS 60%, ACT 60%"
+}else{
+  stop(paste("unrecognized intervention type", int_type))
+}
 
 # ensure consistent extents in all rasters, and
 # mask areas that are zero (or near-zero) in megatrends. 
@@ -90,7 +102,7 @@ for (cluster_idx in 1:6){
   names(stacked_series) <- c("Full Cluster", "Residual Transmission", "Megatrends RT")
   cluster_plot <- levelplot(stacked_series, att="ID", col.regions=c("#A9A9A9", this_color),
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
-                            main = "", colorkey=F, margin=F)
+                            main = int_label, colorkey=F, margin=F)
   print(cluster_plot)
 }
 graphics.off()
@@ -138,7 +150,7 @@ ggplot(reduction_dt[interventions>cutoff_pr], aes(x=megatrends_noints, y=bounded
         xlim(0,1)  + 
         labs(title="Megatrend (Base 2000) vs Megatrend Plus Interventions, \n by Transmission Archetype",
              x="Megatrend, Base 2000",
-             y="Megatrend Base 2000 + ITN 80%, ACT 80%")
+             y=paste("Megatrend Base 2000 +", int_label))
 
 
 ## some putzing around --------------------------
