@@ -27,6 +27,13 @@ base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_
 main_dir <- file.path(base_dir, "/megatrends")
 cluster_fname <- file.path(base_dir, "lookup_tables/interactions/africa_clusters_v4.tif")
 
+
+anthro_endo_map <- data.table(cluster=1:6,
+                              sitename=c("aba", "kananga", "kasama", "djibo", "gode", "moine"),
+                              anthro=c(74.45, 65.02, 79.04, 76.6, 75, 75.78),
+                              endo=c(80, 85, 80.38, 55.6, 50, 52.73))
+anthro_endo_map[, human_indoor:= (anthro*endo)/100]
+
 colors <- c("#00a08a", "#d71b5a", "#f2a200", "#f98400", "#902e57", "#5392c2")
 
 # load in data, clip to africa
@@ -117,10 +124,46 @@ raster_to_dt <- function(rast){
 reduction_dt <- lapply(list(interventions, bounded_interventions, megatrends_ints, megatrends_noints, cluster_layer), raster_to_dt)
 reduction_dt <- rbindlist(reduction_dt)
 reduction_dt <- dcast.data.table(reduction_dt, id ~ type)
-reduction_dt <- reduction_dt[complete.cases(reduction_dt)] # todo: what are the 10,000 pixels that get dropped here between bounded_interventions and interventions?
+reduction_dt <- reduction_dt[complete.cases(reduction_dt)] 
+reduction_dt <- reduction_dt[megatrends_noints>0]
+reduction_dt <- merge(reduction_dt, anthro_endo_map, by="cluster", all=T)
 
 reduction_dt[, cluster:=as.factor(cluster)]
-reduction_dt[, perc_reduction:= (megatrends_noints-bounded_interventions)/megatrends_noints *100]
+reduction_dt[, eliminate:=floor(1-bounded_interventions)]
+reduction_dt[, init_prev_class:= cut(megatrends_noints, breaks=seq(0,1,0.05),
+                                     labels=c("0-5", "5-10", "10-15", "15-20", "20-25", "25-30", "30-35",
+                                              "35-40", "40-45", "45-50", "50-55", "55-60", "60-65", "65-70",
+                                              "70-75", "75-80", "80-85", "85-90", "90-95", "95-100"))]
+
+
+summary_dt <- reduction_dt[,lapply(.SD, mean), by=list(sitename, cluster, init_prev_class)]
+summary_dt <- merge(summary_dt, reduction_dt[, list(count=.N), by=list(cluster, init_prev_class)],
+                    by=c("cluster", "init_prev_class"), all=T)
+summary_dt[, count_class:=cut(count, breaks=quantile(count, probs=seq(0,1,0.2)),
+                              labels=c("4-161", "162-1,743", "1,744-7,839", "7,840-14,003", "14,004-59,512"), include.lowest=T)]
+
+elim_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) + 
+            geom_point(aes(color=eliminate, size=count_class), shape=15) +
+            scale_size_discrete(name="Pixel Count") + 
+            scale_color_gradientn(colors=brewer.pal(7,"Spectral"), name="Proportion of\nPixels Eliminating") +
+            theme(axis.text.x = element_text(angle=45, hjust=1)) +
+            labs(x="Initial PfPR (%)",
+                 y="Indoor Biting (%)",
+                 title=paste("Probability of Elimination Under", int_label))
+
+resid_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) + 
+                geom_point(aes(color=bounded_interventions, size=count_class), shape=15) +
+                scale_size_discrete(name="Pixel Count") + 
+                scale_color_gradientn(colors=rev(brewer.pal(7,"Spectral")), name="Mean Final\nPrevalence") +
+                theme(axis.text.x = element_text(angle=45, hjust=1)) +
+                labs(x="Initial PfPR (%)",
+                     y="Indoor Biting (%)",
+                     title=paste("Residual Transmission Under", int_label))
+
+pdf(file.path(main_dir, paste0("resid_by_endo_", int_type, ".pdf")), height=7, width=16)
+  grid.arrange(grobs=list(elim_plot, resid_plot), layout_matrix=rbind(c(1,2)))
+graphics.off()
+
 
 png(file.path(main_dir, "megatrend_compare.png"), width=900, height=600)
 ggplot(reduction_dt, aes(x=megatrends_noints, y=megatrends_ints)) +
