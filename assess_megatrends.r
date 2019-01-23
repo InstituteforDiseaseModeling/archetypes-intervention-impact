@@ -92,21 +92,22 @@ plot(abv_pg_diff>0.01 | abv_pg_diff<(-0.01), main=">1% difference between ABV an
 
 
 # spatially disaggregate pixels that track lookup table vs megatrends 
-pdf(file.path(main_dir, "cluster_plots.pdf"), width=12, height=6)
 
-for (cluster_idx in 1:6){
-  this_color <- colors[[cluster_idx]]
-  stacked_series <- stack(cluster_layer==cluster_idx,
-                          cluster_layer==cluster_idx & bounded_interventions>cutoff_pr,
-                          cluster_layer==cluster_idx & bounded_interventions>cutoff_pr & bounded_interventions<interventions)
-  
-  names(stacked_series) <- c("Full Cluster", "Residual Transmission", "Megatrends RT")
-  cluster_plot <- levelplot(stacked_series, att="ID", col.regions=c("#A9A9A9", this_color),
+for_residplot <- copy(cluster_layer)
+for_residplot[1] <- 0
+resid_clust <- copy(cluster_layer)
+resid_clust[bounded_interventions<cutoff_pr] <- 0
+
+stacked <- stack(ratify(for_residplot), ratify(resid_clust))
+names(stacked) <- c("Full Cluster", "Residual Transmission")
+
+pdf(file.path(main_dir, "cluster_plots.pdf"), width=12, height=6)
+  cluster_plot <- levelplot(stacked, att="ID", col.regions=c("#A9A9A9", colors),
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
                             main = int_label, colorkey=F, margin=F)
   print(cluster_plot)
-}
 graphics.off()
+
 
 
 
