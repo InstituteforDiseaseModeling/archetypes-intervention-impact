@@ -51,7 +51,7 @@ mask_layer <- raster(mask_path)
 
 years <- 2010:2016
 
-pdf(file.path(out_dir, "itn_cube_stratification.pdf"), width=10, height=7)
+# pdf(file.path(out_dir, "itn_cube_stratification.pdf"), width=10, height=7)
 for (year in years){
   print(year)
   basename <- paste0("ITN_", year)
@@ -62,10 +62,44 @@ for (year in years){
   access_gap <- 0.8-access
   use_gap <- access-use
   
-  # Sam's description of relative gain
+  # use gap as a proportion
   use_gap_prop <- use_gap/access
   use_gap_prop[access==0] <- 0
   use_gap_prop[use_gap_prop<0] <- 0 # not immediately intuitive what a use gap<0 means
+  
+  # my definitions of access gain and use gain:
+  
+  capped_use <- min(use, access)
+  capped_use[capped_use>0 & capped_use<1.0e-5] <- 1.0e-5
+  access_diff <- capped_use/access
+  access_gain <- access_diff-capped_use
+  use_gain <- access-capped_use
+  
+  relative_gain <- use_gain/access_gain
+  
+  # sam's definitions of access, use, and relative gain
+  
+  usegap=(access-use)/access # (relative proportion population with access to an ITN who do not sleep under it, calculated as (ACCESS-USE)/ACCESS )
+  usegap[usegap>0]=0 #closing the use gap
+  closeduserate=1-usegap # (proportion population with access to an ITN who do sleep under it, calculated as 1-USEGAP)
+  ### calculation of use rate as 1-(access-use)/access = use/access
+  userate=use/access
+  
+  #access gain shows that under the current use rate, if access was 1 everywhere was is the level of use observed
+  accessgain = userate #percentage point increase in coverage that could be achieved with universal access, but under existing USERATE):
+  accessgain[accessgain>=1]=1
+  
+  # use rate gain shows that under current levels of access, if we closed the use gap what would the level of use be
+  userategain = closeduserate*access #(percentage point increase in coverage that could be achieved with 100% use of existing nets, but under existing ACCESS):
+  
+  #relativegain=userategain/accessgain # (relative potential gain of increasing use rate alone versus increasing access alone) 
+  relativegain=(accessgain-userategain)/accessgain # (relative potential gain of increasing use rate alone versus increasing access alone) 
+  
+  
+  
+  
+  
+  
   
   
   # todo: focus on mean and deviation later
@@ -155,7 +189,7 @@ for (year in years){
   
   
 }
-graphics.off()
+# graphics.off()
 
 
 
