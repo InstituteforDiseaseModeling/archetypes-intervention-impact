@@ -51,7 +51,7 @@ mask_layer <- raster(mask_path)
 
 years <- 2010:2016
 
-# pdf(file.path(out_dir, "itn_cube_stratification.pdf"), width=10, height=7)
+pdf(file.path(out_dir, "access_vs_use.pdf"), width=7, height=10)
 for (year in years){
   print(year)
   basename <- paste0("ITN_", year)
@@ -69,127 +69,121 @@ for (year in years){
   
   # my definitions of access gain and use gain:
   
-  capped_use <- min(use, access)
-  capped_use[capped_use>0 & capped_use<1.0e-5] <- 1.0e-5
-  access_diff <- capped_use/access
-  access_gain <- access_diff-capped_use
-  use_gain <- access-capped_use
+  use[use>0 & use<1.0e-5] <- 1.0e-5
+  capped_use_perc <- min(use, access)*100
+  access_perc <- access*100
+  access_diff <- (capped_use_perc/access_perc) * 100
+  access_gain <- access_diff-capped_use_perc
+  use_gain <- access_perc-capped_use_perc
   
-  relative_gain <- use_gain/access_gain
+  categorical_gain <- access_gain>use_gain
+  categorical_gain <- ratify(categorical_gain)
+  attrs <- levels(categorical_gain)[[1]]
+  attrs$action <- c("Increase Use", "Increase Access")
+  levels(categorical_gain) <- attrs
   
-  # sam's definitions of access, use, and relative gain
-  
-  usegap=(access-use)/access # (relative proportion population with access to an ITN who do not sleep under it, calculated as (ACCESS-USE)/ACCESS )
-  usegap[usegap>0]=0 #closing the use gap
-  closeduserate=1-usegap # (proportion population with access to an ITN who do sleep under it, calculated as 1-USEGAP)
-  ### calculation of use rate as 1-(access-use)/access = use/access
-  userate=use/access
-  
-  #access gain shows that under the current use rate, if access was 1 everywhere was is the level of use observed
-  accessgain = userate #percentage point increase in coverage that could be achieved with universal access, but under existing USERATE):
-  accessgain[accessgain>=1]=1
-  
-  # use rate gain shows that under current levels of access, if we closed the use gap what would the level of use be
-  userategain = closeduserate*access #(percentage point increase in coverage that could be achieved with 100% use of existing nets, but under existing ACCESS):
-  
-  #relativegain=userategain/accessgain # (relative potential gain of increasing use rate alone versus increasing access alone) 
-  relativegain=(accessgain-userategain)/accessgain # (relative potential gain of increasing use rate alone versus increasing access alone) 
-  
-  
-  
-  
-  
-  
-  
-  
-  # todo: focus on mean and deviation later
-  
-  stacked_outputs <- stack(access, use, access_gap, use_gap_prop)
+  stacked_outputs <- stack(capped_use_perc, categorical_gain,
+                           access_diff, access_gain,
+                           access_perc, use_gain)
   
   nl <- nlayers(stacked_outputs)
   m <- matrix(1:nl, ncol=2, byrow = T)
-  layer_names <- c("Access", "Use", "Access Gap (to 80%)", "Use Gap")
+  layer_names <- c("True Use", "Action Needed",
+                   "Maximize Access", "Increase in Access Needed",
+                   "Maximize Use", "Increase in Use Needed")
   
   for (i in 1:nl){
     index <- which(m==i, arr.ind=T)
     this_rast <- stacked_outputs[[i]]
+    this_name <- layer_names[[i]]
+    this_name <- ifelse(this_name=="True Use", paste(this_name, year), this_name)
     
-    if (this_rast@data@min<0){
-      pal <- wpal("diverging_blue_lightpurple_pink", n=15)[3:13]
-      breaks <- c(seq(this_rast@data@min, 0, length.out=8), seq(0, this_rast@data@max, length.out=8)[2:8])
+    if (this_name %like% "Action"){
+      p <- levelplot(this_rast, att="action",
+                col.regions=colors[c(1,3)],
+                xlab=NULL, ylab=NULL, scales=list(draw=F),
+                main=this_name, margin=F)
     }else{
-      if (layer_names[[i]] %like% "Use Gap"){
-        pal <- wpal("diverging_blue_lightpurple_pink", n=15)[8:13]
-      }else{
+      
+      if (this_name %like% "True Use" | this_name %like% "Maximize"){
         pal <- wpal("cool_green_grassy", n=15)
+      }else{
+        pal <- brewer.pal(9, "RdPu")
       }
-      breaks <- seq(0, 1, length.out = 15)
+      
+      p <- levelplot(this_rast,
+                     par.settings=rasterTheme(region=pal), at=seq(0, 100, length.out = length(pal)+1),
+                     xlab=NULL, ylab=NULL, scales=list(draw=F),
+                     main=paste(this_name), margin=F)
+      
+      
     }
     
-    p <- levelplot(this_rast,
-                   par.settings=rasterTheme(region=pal), at=breaks,
-                   # par.settings=rasterTheme(region=rev(wpal("cool_green_grassy"))),
-                   xlab=NULL, ylab=NULL, scales=list(draw=F),
-                   main=paste(layer_names[[i]], year), margin=F)
-    # print(p, split=c(index[2], index[1], ncol(m), nrow(m)), more=(i<nl))
+    
+    print(p, split=c(index[2], index[1], ncol(m), nrow(m)), more=(i<nl))
   }
-  
-  # play with notion of relative gain
-  
-  categorical <- copy(access)
-  names(categorical) <- "action_class"
-  categorical[access>=0.8 & use_gap_prop<=0] <- 1
-  categorical[access>=0.8 & use_gap_prop>0] <- 2
-  categorical[access<0.8 & use_gap_prop<=0] <- 3
-  categorical[access<0.8 & use_gap_prop>0] <- 4
-  categorical <- ratify(categorical)
-  
-  attrs <- levels(categorical)[[1]]
-  attrs$action <- c("Do Nothing", "Increase Use", "Increase Access", "Increase Access and Use")
-  attrs$category <- c("Access>80%, Use Gap=0 (Do Nothing)",
-                      "Access>80%, Use Gap>0 (Increase Use)",
-                      "Access<80%, Use Gap=0 (Increase Access)",
-                      "Access<80%, Use Gap>0 (Increase Access and Use)")
-  levels(categorical) <- attrs
+
   
   
-  catplot <- levelplot(categorical, att="category",
-                  col.regions=colors[1:4],
-                  xlab=NULL, ylab=NULL, scales=list(draw=F),
-                  main=paste("Access/Use Stratification", year), margin=F)
-  print(catplot)
-  
-  
-  relgain <- lapply(list(access, use_gap, categorical), raster_to_dt)
-  relgain <- rbindlist(relgain)
-  relgain <- dcast.data.table(relgain, id ~ type)
-  do_both <- relgain[action_class==4]
-  names(relgain) <- c("id", "access", "action_class", "use_gap")
-  relgain[, action_class:=factor(action_class, labels=attrs$action)]
-  
-  access_distplot <- ggplot(relgain, aes(x=access, color=action_class, fill=action_class)) +
-                    geom_density(alpha=0.75) +
-                    facet_grid(action_class~., scales="free") +
-                    scale_color_manual(values = colors[1:4]) +
-                    scale_fill_manual(values=colors[1:4]) +
-                    theme(legend.position = "none") +
-                    labs(x="Access",
-                         y="Density",
-                         title="Distribution of Access by Action Class")
-  
-  usegap_distplot <- ggplot(relgain[use_gap>0], aes(x=use_gap, color=action_class, fill=action_class)) +
-                      geom_density(alpha=0.75) +
-                      facet_grid(action_class~., scales="free") +
-                      scale_color_manual(values = colors[3:4]) +
-                      scale_fill_manual(values=colors[3:4]) +
-                      theme(legend.position = "none") +
-                      labs(x="Use Gap",
-                           y="Density",
-                           title="Distribution of Access by Action Class")
-  
-  
+
+  # # todo: focus on mean and deviation later
+  # 
+  # # play with notion of relative gain
+  # 
+  # categorical <- copy(access)
+  # names(categorical) <- "action_class"
+  # categorical[access>=0.8 & use_gap_prop<=0] <- 1
+  # categorical[access>=0.8 & use_gap_prop>0] <- 2
+  # categorical[access<0.8 & use_gap_prop<=0] <- 3
+  # categorical[access<0.8 & use_gap_prop>0] <- 4
+  # categorical <- ratify(categorical)
+  # 
+  # attrs <- levels(categorical)[[1]]
+  # attrs$action <- c("Do Nothing", "Increase Use", "Increase Access", "Increase Access and Use")
+  # attrs$category <- c("Access>80%, Use Gap=0 (Do Nothing)",
+  #                     "Access>80%, Use Gap>0 (Increase Use)",
+  #                     "Access<80%, Use Gap=0 (Increase Access)",
+  #                     "Access<80%, Use Gap>0 (Increase Access and Use)")
+  # levels(categorical) <- attrs
+  # 
+  # 
+  # catplot <- levelplot(categorical, att="category",
+  #                 col.regions=colors[1:4],
+  #                 xlab=NULL, ylab=NULL, scales=list(draw=F),
+  #                 main=paste("Access/Use Stratification", year), margin=F)
+  # # print(catplot)
+  # 
+  # 
+  # relgain <- lapply(list(access, use_gap, categorical), raster_to_dt)
+  # relgain <- rbindlist(relgain)
+  # relgain <- dcast.data.table(relgain, id ~ type)
+  # do_both <- relgain[action_class==4]
+  # names(relgain) <- c("id", "access", "action_class", "use_gap")
+  # relgain[, action_class:=factor(action_class, labels=attrs$action)]
+  # 
+  # access_distplot <- ggplot(relgain, aes(x=access, color=action_class, fill=action_class)) +
+  #                   geom_density(alpha=0.75) +
+  #                   facet_grid(action_class~., scales="free") +
+  #                   scale_color_manual(values = colors[1:4]) +
+  #                   scale_fill_manual(values=colors[1:4]) +
+  #                   theme(legend.position = "none") +
+  #                   labs(x="Access",
+  #                        y="Density",
+  #                        title="Distribution of Access by Action Class")
+  # 
+  # usegap_distplot <- ggplot(relgain[use_gap>0], aes(x=use_gap, color=action_class, fill=action_class)) +
+  #                     geom_density(alpha=0.75) +
+  #                     facet_grid(action_class~., scales="free") +
+  #                     scale_color_manual(values = colors[3:4]) +
+  #                     scale_fill_manual(values=colors[3:4]) +
+  #                     theme(legend.position = "none") +
+  #                     labs(x="Use Gap",
+  #                          y="Density",
+  #                          title="Distribution of Access by Action Class")
+  # 
+  # 
 }
-# graphics.off()
+graphics.off()
 
 
 
