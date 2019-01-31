@@ -143,17 +143,18 @@ access_dev_16 <- raster::mask(raster(paste0("ITN_2016", ".DEV.tif")), mask_layer
 stacked_outputs <- stack(mean_access_00, access_dev_00,
                          mean_access_16, access_dev_16)
 
-nl <- nlayers(stacked_outputs)
-m <- matrix(1:nl, ncol=2, byrow = T)
-layer_names <- c("Mean Access 2000", "Access Deviation 2000",
-                 "Mean Access 2016", "Access Deviation 2016")
+years <- 2000:2016
+nl <- length(years)
+m <- matrix(1:20, nrow=4, byrow = T)
 
 for (i in 1:nl){
+  
+  year <- years[[i]]
   index <- which(m==i, arr.ind=T)
-  this_rast <- stacked_outputs[[i]]
-  this_name <- layer_names[[i]]
+  this_rast <- raster::mask(raster(paste0("ITN_", year, ".MEAN.tif")), mask_layer)
+  this_name <- year
 
-  if (this_name %like% "Mean Access"){
+  if (this_name %like% "Mean Access" | this_name==year){
     pal <- brewer.pal(8, "RdYlGn")
     breaks <- seq(0, mean_access_00@data@max, length.out = length(pal)+1)
   }else{
