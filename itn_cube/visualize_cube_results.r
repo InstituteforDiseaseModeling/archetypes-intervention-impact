@@ -124,14 +124,53 @@ for (year in years){
     
     
     print(p, split=c(index[2], index[1], ncol(m), nrow(m)), more=(i<nl))
+    
   }
+
+  
 
 }
 graphics.off()
 
+# quick compare: national access means and access deviation
 
+mean_access_00 <- raster::mask(raster(paste0("ITN_2000", ".MEAN.tif")), mask_layer)
+access_dev_00 <- raster::mask(raster(paste0("ITN_2000", ".DEV.tif")), mask_layer)
 
+mean_access_16 <- raster::mask(raster(paste0("ITN_2016", ".MEAN.tif")), mask_layer)
+access_dev_16 <- raster::mask(raster(paste0("ITN_2016", ".DEV.tif")), mask_layer)
 
+stacked_outputs <- stack(mean_access_00, access_dev_00,
+                         mean_access_16, access_dev_16)
 
+years <- 2000:2016
+nl <- length(years)
+m <- matrix(1:20, nrow=4, byrow = T)
 
+for (i in 1:nl){
+  
+  year <- years[[i]]
+  index <- which(m==i, arr.ind=T)
+  this_rast <- raster::mask(raster(paste0("ITN_", year, ".MEAN.tif")), mask_layer)
+  this_name <- year
+
+  if (this_name %like% "Mean Access" | this_name==year){
+    pal <- brewer.pal(8, "RdYlGn")
+    breaks <- seq(0, mean_access_00@data@max, length.out = length(pal)+1)
+  }else{
+    pal <- brewer.pal(9, "PRGn")
+    seg_length <- ceiling(length(pal)/2)
+    breaks <-  c(seq(-4, 0, length.out = seg_length),
+                 seq(0, 4, length.out = seg_length)[2:seg_length])
+  }
+  
+  p <- levelplot(this_rast,
+                 par.settings=rasterTheme(region=pal), at=breaks,
+                 xlab=NULL, ylab=NULL, scales=list(draw=F),
+                 main=paste(this_name), margin=F)
+  
+  
+  print(p, split=c(index[2], index[1], ncol(m), nrow(m)), more=(i<nl))
+
+}
 
