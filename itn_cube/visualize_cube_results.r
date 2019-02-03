@@ -21,6 +21,8 @@ library(MapSuite)
 rm(list=ls())
 
 in_dir <- "/Volumes/map_pit/sam/bld1/bras2280/ITNcube"
+zed_root <- '/Volumes/map_data/'
+compare_dir <- file.path(zed_root, 'cubes/5km/ITN/')
 out_dir <- "/Users/bertozzivill/Dropbox (IDM)/Malaria Team Folder/projects/map_itn_cube"
 
 colors <- c("#00a08a", "#d71b5a", "#f2a200", "#902e57", "#f98400","#5392c2")
@@ -29,7 +31,32 @@ if (!dir.exists(in_dir)){
   stop("input directory not found! Did you remember to mount your drives?")
 }
 
-setwd(in_dir)
+
+years <- 2000:2016
+
+pdf(file.path(out_dir, "use_compare.pdf"), width=7, height=10)
+for (year in years){
+  print(year)
+  basename <- paste0("ITN_", year)
+  sam_use <- raster(file.path(in_dir, paste0(basename, ".USE.tif")))
+  zed_use <- raster(file.path(compare_dir, paste0(year, '.ITN.use.yearavg.new.adj.tif')))
+  diff <- sam_use-zed_use
+  
+  stacked_outputs <- stack(sam_use, zed_use)
+  names(stacked_outputs) <- c("Sam Dir", "Z Dir")
+  
+  pal <- brewer.pal(8, "RdYlGn")
+  breaks <- seq(0, 1, length.out = length(pal)+1)
+  
+  p <- levelplot(stacked_outputs,
+            par.settings=rasterTheme(region=pal), at=breaks,
+            xlab=NULL, ylab=NULL, scales=list(draw=F), margin=F,
+            main=paste(year, ": Min Diff", diff@data@min, ", Max Diff", diff@data@max)
+            )
+  print(p)
+  
+}
+graphics.off()
 
 raster_to_dt <- function(rast){
   vals <- as.matrix(rast)
