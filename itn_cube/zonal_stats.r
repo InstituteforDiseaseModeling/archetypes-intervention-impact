@@ -18,14 +18,16 @@ rm(list=ls())
 desktop.dir <- ifelse(Sys.getenv('USERPROFILE')=='', Sys.getenv('HOME'))
 out.dir <- file.path(desktop.dir, 'Dropbox (IDM)/Malaria Team Folder/projects/map_itn_cube')
 zed.root <- '/Volumes/map_data/'
+sam.root <- '/Volumes/map_pit/sam/bld1/bras2280/ITNcube/'
 
 ## ------------ define input and output filenames and years of interest ------------------
 template.filename    <- file.path(zed.root, 'GBD2017/Processing/Stages/09a_Africa_Cubes/Checkpoint_Outputs/Summary_20181122/Africa/summaries/rasters/PfPR_mean/pr_2000_rmean_Africa.tif')
 
-raster.path          <- file.path(zed.root, 'cubes/5km/ITN/')
-filename.string      <- '.ITN.use.yearavg.new.adj.tif'
-output.filename      <- file.path(out.dir, 'test_agg_USE.csv')
-label <- "ITN Use"
+raster.path          <- sam.root
+# raster.path          <- file.path(zed.root, 'cubes/5km/ITN/')
+# filename.string      <- '.ITN.use.yearavg.new.adj.tif'
+output.filename      <- file.path(out.dir, 'test_agg_ACC.csv')
+label <- "ITN Access"
 
 pop.path.and.prefix  <- file.path(zed.root, 'GBD2017/Processing/Stages/03_Muster_Population_Figures/Verified_Outputs/Ouput_Pop_Unmasked_5K/ihme_corrected_frankenpop_All_Ages_3_') 
 pop.suffix           <- '.tif'  # the filename characters and extension information that follows the year
@@ -73,7 +75,8 @@ if (nrow(results.template)!=n.endemic.countries){
 # main aggregation
 full.results <- lapply(start.year:end.year, function(year){
   print(year)
-  input.filename <- paste(raster.path, year, filename.string, sep='') 
+  input.filename <- paste(raster.path, "ITN_", year, ".USE.tif", sep='') 
+  # input.filename <- paste(raster.path, year, filename.string, sep='') 
   input <- raster(input.filename)
   input <- crop(input, e)
   input <- align_res(input, template)
@@ -120,7 +123,7 @@ time_series <- ggplot(full.results, aes(x=year, y=rate, color=ISO3)) +
                 geom_line() +
                 facet_wrap(~ISO3) +
                 theme(legend.position = "none") +
-                labs(x="Year", y=label)
+                labs(x="Year", y="Annual Use (Sam's Folder)")
 print(time_series)
 
 full.results.wide <- dcast(full.results, uid + ISO3 ~ year, value.var="rate")
