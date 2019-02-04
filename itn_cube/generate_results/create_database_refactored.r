@@ -17,7 +17,7 @@ rm(list=ls())
 if(Sys.getenv("input_dir")=="") {
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output"
-  func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/create_database_functions.r"
+  func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/create_database_functions.r"
 } else {
   input_dir <- Sys.getenv("input_dir")
   output_dir <- Sys.getenv("output_dir")
@@ -57,6 +57,10 @@ b=HH$n.ITN.per.hh # number of nets
 d=b*2 # number covered by nets
 d[d>a]=a[d>a] # bounding to not exceed the number in the house
 e=HH$n.individuals.that.slept.under.ITN # use count
+
+# test locally
+orig_Surveys <- copy(Surveys)
+Surveys <- Surveys[2]
 
 # Main loop: calculating access/gap for each household cluster  ------------------------------------------------------------
 registerDoParallel()
@@ -151,13 +155,13 @@ data<-HH1
 # Cleanup: remove flawed points, print summary messages, save ------------------------------------------------------------
 
 #print(paste('**OUTPUT MESSAGE** remove points with no cooridnates: there are - ',nrow(data[!complete.cases(data),])))
-data<-data[complete.cases(data),]
+data<-data[complete.cases(data),] # NOTE: do you want to be getting rid of cases where the only NA's are in the "gap" values?
 
 print(paste('**OUTPUT MESSAGE** remove points with 0 lat 0 lon: there are - ',nrow(data[data$lat==0 & data$lon==0,])))
 data<-data[data$lat!=0 & data$lon!=0,]
 
 # Check for invalid points, and attempt to reposition them
-cn<-raster('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif') # master country layer
+cn<-raster(file.path(input_dir, 'african_cn5km_2013_no_disputes.tif')) # master country layer
 NAvalue(cn)=-9999
 data$yearqtr<-as.numeric(as.yearqtr(data$year))
 
@@ -176,4 +180,4 @@ print(paste('**OUTPUT MESSAGE** get floored year '))
 
 data$flooryear<-floor(data$year)
 
-write.csv(data, file.path(output_dir, 'ITN_final_clean_access_3rdDec2018.csv'),row.names=FALSE)
+write.csv(data, file.path(output_dir, 'ITN_final_clean_access_test_4Feb2019.csv'),row.names=FALSE)
