@@ -60,7 +60,7 @@ e=HH$n.individuals.that.slept.under.ITN # use count
 
 # test locally
 orig_Surveys <- copy(Surveys)
-Surveys <- Surveys[2]
+Surveys <- Surveys[2:3]
 
 # Main loop: calculating access/gap for each household cluster  ------------------------------------------------------------
 registerDoParallel()
