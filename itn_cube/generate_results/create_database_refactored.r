@@ -3,14 +3,17 @@
 
 ## sam: takes Harry's data, does aggregating, find national level means at quarterly times 
 
-library(zoo)
-library(raster)
-library(VGAM)
-library(doParallel)
+tic <- Sys.time()
+# package installation/loading
+list.of.packages <- c("zoo","raster","VGAM", "doParallel", "data.table")
+new.packages <- list.of.packages[!(list.of.packages %in% installed.packages()[,"Package"])]
+if(length(new.packages)) install.packages(new.packages)
+lapply(list.of.packages, library, character.only=T)
+
 rm(list=ls())
 
 # current dsub:
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --machine-type n1-standard-1 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/input --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://users/amelia/itn_cube/create_database/output --command "Rscript ${CODE}"
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/input --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/create_database/output --command 'Rscript ${CODE}'
 
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
@@ -58,9 +61,9 @@ d=b*2 # number covered by nets
 d[d>a]=a[d>a] # bounding to not exceed the number in the house
 e=HH$n.individuals.that.slept.under.ITN # use count
 
-# test locally
-orig_Surveys <- copy(Surveys)
-Surveys <- Surveys[2:3]
+# # test locally
+# orig_Surveys <- copy(Surveys)
+# Surveys <- Surveys[2:3]
 
 # Main loop: calculating access/gap for each household cluster  ------------------------------------------------------------
 registerDoParallel()
@@ -180,4 +183,9 @@ print(paste('**OUTPUT MESSAGE** get floored year '))
 
 data$flooryear<-floor(data$year)
 
-write.csv(data, file.path(output_dir, 'ITN_final_clean_access_test_4Feb2019.csv'),row.names=FALSE)
+write.csv(data, file.path(output_dir, 'ITN_final_clean_access_test64core_9Feb2019.csv'),row.names=FALSE)
+
+toc <- Sys.time()
+elapsed <- toc-tic
+
+print(paste("--> Time Elapsed: ", elapsed, units(elapsed)))
