@@ -1,25 +1,36 @@
-require('raster')
-require('rgdal')
-library(INLA)
-library(RColorBrewer)
-library(cvTools)
-library(zoo)
-library(boot)
-library(stringr)
-library(doParallel)
 
-library(dismo)
-library(gbm)
 
-# what are these?
-source('/home/backup/Space Time Malaria/algorithm.V1.R')
-source('/home/backup/Space Time Malaria/INLAFunctions.R')
+
+rm(list=ls())
+
+package_load <- function(package_list){
+  # package installation/loading
+  new_packages <- package_list[!(package_list %in% installed.packages()[,"Package"])]
+  if(length(new_packages)) install.packages(new_packages)
+  lapply(package_list, library, character.only=T)
+}
+
+package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
+
+if(Sys.getenv("input_dir")=="") {
+  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input/ITN_final_clean_access_test_4Feb2019.csv"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/access_deviation"
+  func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/"
+} else {
+  database_fname <- Sys.getenv("database_fname")
+  input_dir <- Sys.getenv("input_dir")
+  output_dir <- Sys.getenv("output_dir")
+  func_dir <- Sys.getenv("func_dir")
+}
 
 # load relevant functions
-source("acc_deviation_functions.r")
+source(file.path(func_dir, "acc_deviation_functions.r"))
+source(file.path(func_dir, "algorithm.V1.R"))
+source(file.path(func_dir, "INLAFunctions.R"))
 
 # Load data from create_database.r  ------------------------------------------------------------
-data<-read.csv('/home/backup/ITNcube/ITN_final_clean_access_20thNov2017.csv')
+data<-read.csv(database_fname)
 data<-data[!is.na(data$year),]
 
 ### Load covariates  ----------------------------------------------------------------------------#######################  
