@@ -13,7 +13,7 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input/ITN_final_clean_access_test_4Feb2019.csv"
+  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output/ITN_final_clean_access_test_4Feb2019.csv"
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/access_deviation"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/"
@@ -28,6 +28,8 @@ if(Sys.getenv("input_dir")=="") {
 source(file.path(func_dir, "acc_deviation_functions.r"))
 source(file.path(func_dir, "algorithm.V1.R"))
 source(file.path(func_dir, "INLAFunctions.R"))
+
+output_fname <- file.path(output_dir, 'ITN_cube_access_dynamic_access deviation_11Feb2019.Rdata')
 
 # Load data from create_database.r  ------------------------------------------------------------
 data<-read.csv(database_fname)
@@ -147,7 +149,7 @@ static.covs<-st[data$cellnumber]
 
 all.covs<-cbind(static.covs,yearonly.covs,dynamic.covs)
 
-save.image('/home/backup/ITNcube/preload.Rdata')
+save.image(file.path(output_dir, 'preload.Rdata'))
 
 
 ##todo: start new script here 
@@ -155,14 +157,14 @@ save.image('/home/backup/ITNcube/preload.Rdata')
 ### Load (what kind of?) data ----------------------------------------------------------------------------#######################  
 
 # what is this?
-load('/home/backup/ITNcube/preload.Rdata')
+load(file.path(output_dir, 'preload.Rdata'))
 ## IHS: BURBRIDGE-- inverse hyperbolic sine transform
 
 
 # same "data" as above?
 data<-data[complete.cases(all.covs),]
 
-# filter covariates based on "complete.cases", which is still mysterious to me --abv
+# keep only rows with all entries filled
 all.covs<-all.covs[complete.cases(all.covs),]
 all.covs<-as.data.frame(all.covs)
 covariate.names<-colnames(all.covs)
@@ -198,6 +200,7 @@ if(STANDARD){
 
 drow<-nrow(data) ## Number of data points
 # load country rasters
+# todo: move both of these datasets into a shared folder across all scripts
 cn<-raster(paste('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif',sep=""))
 NAvalue(cn)<--9999
 POPULATIONS<-read.csv('/home/backup/ITNcube/country_table_populations.csv') # load table to match gaul codes to country names
@@ -290,7 +293,7 @@ mod.pred =   inla(formula1,
                                      stupid.search=FALSE)
 )
 
-save.image('/home/backup/ITNcube/ITN_cube_access_dynamic_access deviation_21112017.Rdata')
+save.image(output_fname)
 inla.ks.plot(mod.pred$cpo$pit, punif)
 
 
