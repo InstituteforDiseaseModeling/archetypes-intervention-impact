@@ -1,3 +1,7 @@
+
+## straight from sam (/home/backup/Space Time Malaria/) used (?) in acc_deviation_refactored.r
+## todo: add to acc_dev_functions
+
 ########################################################################################################################  
 ##### functions #######  ########################################################################################## 
 ##create.list.cov<-function(data){

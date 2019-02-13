@@ -1,6 +1,5 @@
 
 
-
 rm(list=ls())
 
 package_load <- function(package_list){

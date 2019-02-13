@@ -1,4 +1,6 @@
 
+## straight from sam, (/home/backup/Space Time Malaria/) used (?) in acc_deviation_refactored.r
+## todo: add to acc_dev_functions
 
 ssize.tmean = c( 0.03916203, 0.04464933, 0.0464907, 0.04703639,
 0.04468962, 0.04430289, 0.04088593, 0.04048751, 0.0385978,
