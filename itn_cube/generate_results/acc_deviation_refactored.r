@@ -1,4 +1,26 @@
 
+## /cubes/5km subfolders:
+# '/home/drive/cubes/5km/LST_day/mean/'
+# '/home/drive/cubes/5km/LST_night/mean/'
+# '/home/drive/cubes/5km/EVI/mean/'
+# '/home/drive/cubes/5km/TCW/mean/'
+# '/home/drive/cubes/5km/TSI/mean/'
+
+# '/home/drive/cubes/5km/IGBP_Landcover/Fraction/'
+# '/home/drive/cubes/5km/AfriPop/'
+
+
+# '/home/drive/cubes/5km/Topographic/Africa_TMI_90m.mean.tif',
+# '/home/drive/cubes/5km/Topographic/Africa_SRTM_90m.mean.tif',
+# '/home/drive/cubes/5km/Topographic/Africa_slope_90m.mean.tif',
+# '/home/drive/cubes/5km/Seasonality/pf_seasonality.tif',
+# '/home/drive/cubes/5km/Poverty/PET_1950-2000_5km.mean.tif',
+# '/home/drive/cubes/5km/Poverty/AI_1950-2000_5km.mean.tif',
+# '/home/drive/cubes/5km/Poverty/accessibility_50k_5km.mean.tif',
+# '/home/drive/cubes/5km/Poverty/viirs_nighttime_5km.mean.tif')
+
+
+
 
 rm(list=ls())
 
@@ -89,7 +111,6 @@ l=17+1 # 17 fraction classes and 1 afripop
 cell<-data$cellnumber
 
 #compute covariates for unique year-months	 (surely just years? --abv)	
-# library(doParallel) # do you need to reload this library every time?
 registerDoParallel(62)
 covs.list.year<-foreach(i=1:length(uniques)) %dopar% { # loop through unique names
   wh<-split.dates[,1]==uniques[i] 
