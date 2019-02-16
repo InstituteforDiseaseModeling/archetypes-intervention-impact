@@ -1,8 +1,10 @@
 
 ## /cubes/5km subfolders:
 # '/home/drive/cubes/5km/LST_day/mean/'
+##'/home/drive/cubes/5km/LST_delta/mean/' # 
 # '/home/drive/cubes/5km/LST_night/mean/'
 # '/home/drive/cubes/5km/EVI/mean/'
+##'/home/drive/cubes/5km/TCB/mean/' # 
 # '/home/drive/cubes/5km/TCW/mean/'
 # '/home/drive/cubes/5km/TSI/mean/'
 
@@ -13,10 +15,12 @@
 # '/home/drive/cubes/5km/Topographic/Africa_TMI_90m.mean.tif',
 # '/home/drive/cubes/5km/Topographic/Africa_SRTM_90m.mean.tif',
 # '/home/drive/cubes/5km/Topographic/Africa_slope_90m.mean.tif',
+##'/home/drive/cubes/5km/Topographic/Africa_FA_90m.mean.tif', # 
 # '/home/drive/cubes/5km/Seasonality/pf_seasonality.tif',
 # '/home/drive/cubes/5km/Poverty/PET_1950-2000_5km.mean.tif',
 # '/home/drive/cubes/5km/Poverty/AI_1950-2000_5km.mean.tif',
 # '/home/drive/cubes/5km/Poverty/accessibility_50k_5km.mean.tif',
+##'/home/drive/cubes/5km/worldclim/prec57a0.tif', # 
 # '/home/drive/cubes/5km/Poverty/viirs_nighttime_5km.mean.tif')
 
 
@@ -34,11 +38,13 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/joint_data"
   database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output/ITN_final_clean_access_test_4Feb2019.csv"
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/access_deviation"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/"
 } else {
+  joint_dir <- Sys.getenv("joint_dir")
   database_fname <- Sys.getenv("database_fname")
   input_dir <- Sys.getenv("input_dir")
   output_dir <- Sys.getenv("output_dir")
@@ -221,9 +227,10 @@ if(STANDARD){
 drow<-nrow(data) ## Number of data points
 # load country rasters
 # todo: move both of these datasets into a shared folder across all scripts
-cn<-raster(paste('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif',sep=""))
+cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif'))
 NAvalue(cn)<--9999
-POPULATIONS<-read.csv('/home/backup/ITNcube/country_table_populations.csv') # load table to match gaul codes to country names
+# todo: transfer from '/home/backup/ITNcube/country_table_populations.csv'
+POPULATIONS<-read.csv(file.path(joint_dir, 'country_table_populations.csv')) # load table to match gaul codes to country names
 
 # adjust timing of data? this feels important****
 data$yearqtr[data$yearqtr>=2015]=2014.75
