@@ -21,10 +21,12 @@ package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
 if(Sys.getenv("input_dir")=="") {
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/joint_data"
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output"
   func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/create_database_functions.r"
 } else {
+  joint_dir <- Sys.getenv("joint_dir")
   input_dir <- Sys.getenv("input_dir")
   output_dir <- Sys.getenv("output_dir")
   func_fname <- Sys.getenv("func_fname")
@@ -172,7 +174,7 @@ print(paste('**OUTPUT MESSAGE** remove points with 0 lat 0 lon: there are - ',nr
 data<-data[data$lat!=0 & data$lon!=0,]
 
 # Check for invalid points, and attempt to reposition them
-cn<-raster(file.path(input_dir, 'african_cn5km_2013_no_disputes.tif')) # master country layer
+cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) # master country layer
 NAvalue(cn)=-9999
 data$yearqtr<-as.numeric(as.yearqtr(data$year))
 
