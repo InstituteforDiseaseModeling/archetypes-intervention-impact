@@ -16,12 +16,12 @@ package_load <- function(package_list){
 package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 
 # current dsub:
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/input --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/create_database/output --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/input joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/create_database/output --command 'Rscript ${CODE}'
 
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
 if(Sys.getenv("input_dir")=="") {
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/joint_data"
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output"
   func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/create_database_functions.r"
