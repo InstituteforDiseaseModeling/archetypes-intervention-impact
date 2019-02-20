@@ -17,6 +17,7 @@ library(gdistance)
 library(data.table)
 library(stringr)
 library(stats)
+library(rasterVis)
 
 rm(list=ls())
 
@@ -48,6 +49,34 @@ extra_crop_rasters <- list(asia=file.path(map_root_dir, "Other_Global_Covariates
 overwrite_mask <- F
 overwrite <- T
 cov_details <- fread("clustering_covariates.csv")
+
+# temp: plot old and new act side-by-side
+years <- 2000:2015
+act_indir <- file.path(base_dir, "africa/rasters")
+
+
+pdf("/Users/bertozzivill/Desktop/compare_act.pdf", width=7, height=10)
+
+for (year in years){
+  nejm_cov <- raster(file.path(act_indir, paste0("act_coverage_older_year_", year, ".tif")))
+  new_cov <- raster(file.path(act_indir, paste0("act_coverage_year_", year, ".tif")))
+  
+  stacked_cov <- stack(nejm_cov, new_cov)
+  names(stacked_cov) <- c("NEJM", "Cubes 5km")
+  
+  pal <- rev(brewer.pal(8, "RdYlGn"))
+  breaks <- seq(0, 1, length.out = length(pal)+1)
+  
+  p <- levelplot(stacked_cov,
+                 par.settings=rasterTheme(region=pal), at=breaks,
+                 xlab=NULL, ylab=NULL, scales=list(draw=F), margin=F,
+                 main=paste("ACT Coverage Comparison", year))
+  print(p)
+}
+
+graphics.off()
+
+
 cov_details <- cov_details[cov=="act_coverage_older"]
 
 # do a dance to make the transmission limit layers compatible
