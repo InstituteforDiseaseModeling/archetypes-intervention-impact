@@ -17,6 +17,7 @@ library(gdistance)
 library(data.table)
 library(stringr)
 library(stats)
+library(rasterVis)
 
 rm(list=ls())
 
@@ -48,7 +49,6 @@ extra_crop_rasters <- list(asia=file.path(map_root_dir, "Other_Global_Covariates
 overwrite_mask <- F
 overwrite <- T
 cov_details <- fread("clustering_covariates.csv")
-cov_details <- cov_details[cov=="act_coverage_older"]
 
 # do a dance to make the transmission limit layers compatible
 if (!file.exists(final_mask_dir) | overwrite_mask==T){
