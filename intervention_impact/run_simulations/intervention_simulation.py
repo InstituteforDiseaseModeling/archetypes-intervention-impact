@@ -23,9 +23,10 @@ from malaria.interventions.malaria_vaccine import add_vaccine
 from sweep_functions import *
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "e9af8baf-a8e3-e811-a2bd-c4346bcb1555"
-asset_exp_id = "66d8416c-9fce-e811-a2bd-c4346bcb1555"
+# asset_exp_id = "66d8416c-9fce-e811-a2bd-c4346bcb1555"
+asset_exp_id = None
 
 intervention_coverages = [0, 80]
 vaccine_durations = [182, 365]
@@ -33,7 +34,7 @@ interventions = ["dp_cm", "dp_mda", "mAb", "pev", "tbv"]
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
-new_inputs = False
+new_inputs = True
 
 # Serialization
 print("setting up")
@@ -63,7 +64,6 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Num_Cores=1,
 
                                     # interventions
-                                    Valid_Intervention_States=[],  # apparently a necessary parameter
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One", "Bednet_Using", "Received_Vaccine"],
                                     Enable_Default_Reporting=0,
@@ -100,7 +100,7 @@ if __name__=="__main__":
     sites = pd.read_csv("site_details.csv")
 
     print("finding collection ids and vector details")
-    site_input_dir = os.path.join("sites", "all")
+    site_input_dir = os.path.join("sites", "all_crunchupdate")
 
     with open("species_details.json") as f:
         species_details = json.loads(f.read())
@@ -324,15 +324,17 @@ if __name__=="__main__":
             ModFn(set_species_param, "maculatus", "Adult_Life_Expectancy", lifespan),
             ModFn(set_species_param, "darlingi", "Adult_Life_Expectancy", lifespan),
         ]
-            for run_num in range(10)
-            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for lifespan in [5, 10, 15, 20, 25, 30]
-            # for hab_exp in [0, 1, 2]
+            # for run_num in range(10)
+           #  for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+            for lifespan in [20]
+
+            for run_num in [0]
+            for hab_exp in [0, 1, 2]
         ])
 
     run_sim_args = {"config_builder": cb,
                     "exp_name": sweep_name,
-                    "exp_builder": old_builder}
+                    "exp_builder": builder}
 
     em = ExperimentManagerFactory.from_cb(cb)
     em.run_simulations(**run_sim_args)
