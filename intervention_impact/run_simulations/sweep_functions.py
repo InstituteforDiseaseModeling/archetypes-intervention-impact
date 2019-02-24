@@ -134,7 +134,7 @@ def add_healthseeking_by_coverage(cb, coverage=1.0, rate=0.15, drugname="AL"):
                                  "rate": rate}],
                        drug=drugs[drugname],
                        dosing="FullTreatmentNewDetectionTech",
-                       nodes={"class": "NodeSetAll"},
+                       nodes=None,
                        repetitions=1,
                        tsteps_btwn_repetitions=365,
                        broadcast_event_name="Received_Treatment")
