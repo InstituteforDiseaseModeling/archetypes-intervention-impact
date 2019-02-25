@@ -36,7 +36,8 @@ asset_exp_id = "1bcd5da1-6b37-e911-a2c5-c4346bcb7273"
 
 intervention_coverages = [0, 80]
 vaccine_durations = [182, 365]
-interventions = ["dp_cm", "dp_mda", "mAb", "pev", "tbv"]
+interventions = ["ors", "larvicide"]
+sim_root_name = "Test_Outdoor"
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -46,12 +47,12 @@ new_inputs = False
 print("setting up")
 if run_type == "burnin":
     years = 15
-    sweep_name = "MAP_II_Sweep_Vector_Lifespan"
+    sweep_name = "MAP_" +  sim_root_name + "_Burnin"
     serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
-    sweep_name = "MAP_II_Sweep_Vector_Lifespan_Ints"
+    sweep_name = "MAP_" + sim_root_name + "_Intervention"
     serialize = False
     pull_from_serialization = True
 else:
@@ -306,7 +307,47 @@ if __name__=="__main__":
                 for burnin_fn in from_burnin_list
                 for tbv_cov in intervention_coverages
                 for vaccine_hl in vaccine_durations
-            )
+            ),
+
+            "atsb": list(
+                [burnin_fn,
+                 ModFn(add_atsb, coverage= atsb_cov / 100,
+                       start_days=[365 * start for start in range(years)]
+                       )
+                 ]
+                for burnin_fn in from_burnin_list
+                for atsb_cov in intervention_coverages
+            ),
+
+            "ors": list(
+                [burnin_fn,
+                 ModFn(add_ors, coverage=ors_cov / 100,
+                       start_days=[365 * start for start in range(years)]
+                       )
+                 ]
+                for burnin_fn in from_burnin_list
+                for ors_cov in intervention_coverages
+            ),
+
+            "larvicide": list(
+                [burnin_fn,
+                 ModFn(add_larvicide_wrapper, coverage=larvicide_cov / 100,
+                       start_days=[365 * start for start in range(years)]
+                       )
+                 ]
+                for burnin_fn in from_burnin_list
+                for larvicide_cov in intervention_coverages
+            ),
+
+            "ivermectin": list(
+                [burnin_fn,
+                 ModFn(add_ivermectin_wrapper, coverage=ivermectin_cov / 100,
+                       start_days=[365 * start for start in range(years)]
+                       )
+                 ]
+                for burnin_fn in from_burnin_list
+                for ivermectin_cov in intervention_coverages
+            ),
 
         }
 
@@ -315,7 +356,6 @@ if __name__=="__main__":
             combos.extend(intervention_dict[int])
 
         builder = ModBuilder.from_list(combos)
-
 
     else:
         print("building burnin")
@@ -340,7 +380,7 @@ if __name__=="__main__":
 
     run_sim_args = {"config_builder": cb,
                     "exp_name": sweep_name,
-                    "exp_builder": old_builder}
+                    "exp_builder": builder}
 
     em = ExperimentManagerFactory.from_cb(cb)
     em.run_simulations(**run_sim_args)
