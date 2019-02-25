@@ -602,22 +602,6 @@ splitdf <- function(dataframe, seed=NULL,Tp) {
 	testset <- dataframe[-trainindex, ]	
 	list(trainset=trainset,testset=testset)
 }
-  
-  
-ll.to.xyz<-function(ll){
-	ll[,'longitude']<-ll[,'longitude']*(pi/180)
-	ll[,'latitude']<-ll[,'latitude']*(pi/180)
-	
-	x = cos(ll[,'latitude']) * cos(ll[,'longitude'])
-	
-	y = cos(ll[,'latitude']) * sin(ll[,'longitude'])
-	
-	z = sin(ll[,'latitude'])
-
-	return(cbind(x,y,z))
-
-
-}  
 
 
 xyz.to.ll <- function(cartesian)
