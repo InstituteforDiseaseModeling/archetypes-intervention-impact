@@ -40,10 +40,10 @@ package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RCo
 
 if(Sys.getenv("input_dir")=="") {
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/joint_data"
-  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output/ITN_final_clean_access_test_4Feb2019.csv"
+  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output/ITN_final_clean_access_9Feb2019.csv"
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/access_deviation"
-  func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/"
+  func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
   joint_dir <- Sys.getenv("joint_dir") # location for shared datasets across itn cube scripts
   database_fname <- Sys.getenv("database_fname") # location of output file from generate_database_refactored.r
@@ -57,7 +57,7 @@ source(file.path(func_dir, "acc_deviation_functions.r"))
 source(file.path(func_dir, "algorithm.V1.R"))
 source(file.path(func_dir, "INLAFunctions.R"))
 
-output_fname <- file.path(output_dir, 'ITN_cube_access_dynamic_access deviation_22Feb2019.Rdata')
+output_fname <- file.path(output_dir, 'ITN_cube_access_dynamic_access deviation_25Feb2019.Rdata')
 
 # Load data from create_database.r  ------------------------------------------------------------
 data<-read.csv(database_fname)
@@ -86,8 +86,12 @@ uniques<-unique(split.dates)
 l=length(dynamic_covnames)
 cell<-data$cellnumber
 
-# extract covariates for unique year-months		
-registerDoParallel(62)
+# extract covariates for unique year-months	
+
+ncores <- detectCores()
+print(paste("--> Machine has", ncores, "cores available"))
+registerDoParallel(ncores-2)
+print("Extracting year-month covariates")
 covs.list.dyn<-foreach(i=1:nrow(uniques)) %dopar% { # loop through unique names
   wh<-split.dates[,1]==uniques[i,1] & split.dates[,2]==uniques[i,2]
   un.cells<-cell[wh]
@@ -99,7 +103,11 @@ covs.list.dyn<-foreach(i=1:nrow(uniques)) %dopar% { # loop through unique names
     while(!file.exists(paste0(cov_dir, "/", year,'.',uniques[i,2],'.mean.tif'))){	# some years have no data yet
       year=year-1
     }
-    r=raster(paste0(cov_dir, "/", year,'.',uniques[i,2],'.mean.tif'))
+    
+    this_file_path <- paste0(cov_dir, "/", year,'.',uniques[i,2],'.mean.tif')
+    # print(this_file_path)
+    
+    r=raster(this_file_path)
     NAvalue(r)=-9999
     tmp[,j]<-r[un.cells]
   }
@@ -114,6 +122,7 @@ for(i in 1:nrow(uniques)){
 }
 #colnames(dynamic.covs)<-c('lst_day','lst_delta','lst_night','evy','tcb','tcw','tsi')
 colnames(dynamic.covs)<-c('lst_day','lst_night','evy','tcw','tsi')
+print("year-month covariates extracted successfully")
 
 # Load year-only (??) covariates  ------------------------------------------------------------
 # foldery<-c('/home/drive/cubes/5km/IGBP_Landcover/Fraction/','/home/drive/cubes/5km/AfriPop/')
@@ -124,8 +133,9 @@ uniques<-unique(split.dates[,1])
 l=17+1 # 17 fraction classes and 1 afripop
 cell<-data$cellnumber
 
-#compute covariates for unique year-months
-registerDoParallel(62)
+#compute covariates for unique years
+print("Extracting annual covariates")
+registerDoParallel(ncores-2)
 covs.list.year<-foreach(i=1:length(uniques)) %dopar% { # loop through unique names
   wh<-split.dates[,1]==uniques[i] 
   un.cells<-cell[wh]
@@ -159,10 +169,12 @@ for(i in 1:length(uniques)){
 colnames(yearonly.covs)<-c(paste0('landcover',0:16),'populatopn')
 
 yearonly.covs<-yearonly.covs[,-14] # remove landcover 13  - Urban and built-up   - for collinearity with population
-
+print("annual covs extracted successfully")
 
 # Load static covariates  ------------------------------------------------------------
 
+
+print("Extracting Static covariates")
 static_fnames <- c("Topographic/Africa_TMI_90m.mean.tif",
                    "Topographic/Africa_SRTM_90m.mean.tif",
                    "Topographic/Africa_slope_90m.mean.tif",
@@ -193,6 +205,8 @@ NAvalue(st)=-9999
 static.covs<-st[data$cellnumber]
 
 all.covs<-cbind(static.covs,yearonly.covs,dynamic.covs)
+
+print("Static covariates extracted successfully")
 
 save.image(file.path(output_dir, 'preload.Rdata'))
 
@@ -337,6 +351,7 @@ mod.pred =   inla(formula1,
                                      stupid.search=FALSE)
 )
 
+print(paste("Saving outputs to", output_fname))
 save.image(output_fname)
 inla.ks.plot(mod.pred$cpo$pit, punif)
 
@@ -347,7 +362,7 @@ inla.ks.plot(mod.pred$cpo$pit, punif)
 # watanabe-aikake information criterion
 waic<-c()
 for(i in 1:4){
-  waic[i]<-models[[i]]$waic$waic
+  waic[i]<-mod.pred[[i]]$waic$waic
 }
 a=(waic[1]-waic[2])/waic[1]
 b=(waic[2]-waic[3])/waic[1]

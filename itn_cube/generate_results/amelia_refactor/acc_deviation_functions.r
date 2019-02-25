@@ -22,6 +22,7 @@ convert.nodes<-function(r){
 }
 
 ll.to.xyz<-function(ll){
+
   if(is.null(colnames(ll))){
     colnames(ll)<-c('longitude','latitude')
   }
@@ -38,6 +39,7 @@ ll.to.xyz<-function(ll){
   z = sin(ll[,'latitude'])
   return(cbind(x,y,z))
 }
+
 temporalInfo<- function(f){
   library(zoo)
   start_dates<-as.yearmon(paste(f[, "year_start"], "-", f[, "month_start"],sep=""))
