@@ -23,7 +23,7 @@
 ##'/home/drive/cubes/5km/worldclim/prec57a0.tif', # 
 # '/home/drive/cubes/5km/Poverty/viirs_nighttime_5km.mean.tif')
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code --input database_fname=gs://map_data_z/users/amelia/itn_cube/create_database/output/ITN_final_clean_access_9Feb2019.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/acc_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/access_deviation --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code --input database_fname=gs://map_data_z/users/amelia/itn_cube/create_database/output/ITN_final_clean_access_9Feb2019.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/acc_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/access_deviation --command 'Rscript ${CODE}'
 
 
 
@@ -208,7 +208,7 @@ all.covs<-cbind(static.covs,yearonly.covs,dynamic.covs)
 
 print("Static covariates extracted successfully")
 
-save.image(file.path(output_dir, 'preload.Rdata'))
+save.image(file.path(joint_dir, 'preload.Rdata'))
 
 
 ##todo: start new script here 
@@ -356,21 +356,25 @@ save.image(output_fname)
 inla.ks.plot(mod.pred$cpo$pit, punif)
 
 
+# test: comment out everything south of here to see if that writes the results
+
 ### Assess model ----------------------------------------------------------------------------#######################
 
 # compute summary statistics and information criteria (posterior fit)
-# watanabe-aikake information criterion
-waic<-c()
-for(i in 1:4){
-  waic[i]<-mod.pred[[i]]$waic$waic
-}
-a=(waic[1]-waic[2])/waic[1]
-b=(waic[2]-waic[3])/waic[1]
-c=(waic[3]-waic[4])/waic[1]
 
-a/(a+b+c)
-b/(a+b+c)
-c/(a+b+c)
+# watanabe-aikake information criterion-- this code seems to be expecting a list of models from which we can 
+# query waics, but the above code does not generate such a list.
+# waic<-c()
+# for(i in 1:4){
+#   waic[i]<-models[[i]]$waic$waic
+# }
+# a=(waic[1]-waic[2])/waic[1]
+# b=(waic[2]-waic[3])/waic[1]
+# c=(waic[3]-waic[4])/waic[1]
+# 
+# a/(a+b+c)
+# b/(a+b+c)
+# c/(a+b+c)
 
 # more model stats? what is lpgap?
 index= inla.stack.index(stack.est,"est")$data
@@ -399,7 +403,7 @@ Q.time =
                x=(c(c(1, rep((1+a^2), mesh1d$m-2), 1),
                     rep(-a, mesh1d$m-1)) /(1-a^2)),
                dims=mesh1d$m*c(1,1),
-               symmetric=TRUE)  
+               symmetric=TRUE)
 
 # Space-time precision: the magic
 Q = kronecker(Q.time, Q.space)
@@ -446,7 +450,7 @@ for(i in 1:length(un)){
   # sam: hammer this home (survey-level predictions are good)
   actual[i]<-mean(data$P[data$Survey==un[i]]/data$N[data$Survey==un[i]])
   predicted[i]<-mean(plogis(emplogit(data$Amean[data$Survey==un[i]],1000)+mval[data$Survey==un[i]]))
-  
+
 }
 
 plot(predicted,actual,pch=16,col=1:length(un))
