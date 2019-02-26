@@ -29,14 +29,12 @@ run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "1bcd5da1-6b37-e911-a2c5-c4346bcb7273"
 asset_exp_id = "1bcd5da1-6b37-e911-a2c5-c4346bcb7273"
 
-# commented out: burnin and asset ids for original megatrends results
-# burnin_id = "e9af8baf-a8e3-e811-a2bd-c4346bcb1555"
-# asset_exp_id = "66d8416c-9fce-e811-a2bd-c4346bcb1555"
+# todo: go back to burnin and asset_exp_ids for megatrends
 
 
 intervention_coverages = [0, 80]
 vaccine_durations = [182, 365]
-interventions = ["ors", "larvicide"]
+interventions = ["atsb", "ivermectin"]
 sim_root_name = "Test_Outdoor"
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
@@ -160,12 +158,6 @@ if __name__=="__main__":
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
                 "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]}),
-            ModFn(set_species_param, "arabiensis", "Adult_Life_Expectancy", df["arabiensis.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "funestus", "Adult_Life_Expectancy", df["funestus.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "gambiae", "Adult_Life_Expectancy", df["gambiae.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "minimus", "Adult_Life_Expectancy", df["minimus.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "maculatus", "Adult_Life_Expectancy", df["maculatus.Adult_Life_Expectancy"][x]),
-            ModFn(set_species_param, "darlingi", "Adult_Life_Expectancy", df["darlingi.Adult_Life_Expectancy"][x]),
 
             ModFn(add_annual_itns, year_count=years,
                                    n_rounds=1,
@@ -363,19 +355,12 @@ if __name__=="__main__":
             ModFn(DTKConfigBuilder.update_params, {
                 "Run_Number": run_num,
                 "x_Temporary_Larval_Habitat":10 ** hab_exp}),
-            ModFn(set_species_param, "arabiensis", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "funestus", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "gambiae", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "minimus", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "maculatus", "Adult_Life_Expectancy", lifespan),
-            ModFn(set_species_param, "darlingi", "Adult_Life_Expectancy", lifespan),
         ]
-            # for run_num in range(10)
-           #  for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-            for lifespan in [20]
+            for run_num in range(10)
+            for hab_exp in np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
 
-            for run_num in [0]
-            for hab_exp in [0, 1, 2]
+           #  for run_num in [0]
+           #  for hab_exp in [0, 1, 2]
         ])
 
     run_sim_args = {"config_builder": cb,
