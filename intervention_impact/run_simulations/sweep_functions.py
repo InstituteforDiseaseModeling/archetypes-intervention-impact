@@ -22,9 +22,8 @@ def assign_net_ip(cb, hates_net_prop):
           trigger_condition_list=["Births"])
     return {"Hates_Nets": hates_net_prop}
 
-def simulation_setup(cb, species_details, site_vector_props, max_larval_capacity=4e8):
-
-    site_dir = os.path.join("sites", "all")
+def simulation_setup(cb, species_details, site_vector_props, max_larval_capacity=4e8,
+                     site_dir=os.path.join("sites", "all")):
 
     # directories
     cb.update_params({

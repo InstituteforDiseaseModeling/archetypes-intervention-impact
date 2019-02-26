@@ -34,8 +34,9 @@ asset_exp_id = "1bcd5da1-6b37-e911-a2c5-c4346bcb7273"
 
 intervention_coverages = [0, 80]
 vaccine_durations = [182, 365]
-interventions = ["atsb", "ivermectin"]
-sim_root_name = "Test_Outdoor"
+interventions = ["itn", "irs", "al_cm"]
+intervention_class = "list" # can be "combo" (combinatoric) or "list"
+sim_root_name = "Test_New_Builder"
 # hs_daily_probs = [0.15, 0.3, 0.7]
 
 net_hating_props = [0.1] # based on expert opinion from Caitlin
@@ -124,7 +125,7 @@ if __name__=="__main__":
 
     # Find vector proportions for each vector in our site
     site_vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
-    simulation_setup(cb, species_details, site_vectors)
+    simulation_setup(cb, species_details, site_vectors, site_dir=site_input_dir)
 
     # reporting
     for idx, row in site_vectors.iterrows():
@@ -189,6 +190,12 @@ if __name__=="__main__":
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})
 
         for x in df.index]
+
+        al_cm_list = [ModFn(add_healthseeking_by_coverage, coverage=al_cm_cov / 100, rate=0.15)
+                      for al_cm_cov in intervention_coverages]
+
+        new_builder = ModBuilder.from_combos([from_burnin_list, al_cm_list])
+
 
         intervention_dict = {
             "itn": list(
@@ -347,7 +354,7 @@ if __name__=="__main__":
         for int in interventions:
             combos.extend(intervention_dict[int])
 
-        builder = ModBuilder.from_list(combos)
+        builder = ModBuilder.from_list(combos) if intervention_class=="list" else ModBuilder.from_combos(combos)
 
     else:
         print("building burnin")
