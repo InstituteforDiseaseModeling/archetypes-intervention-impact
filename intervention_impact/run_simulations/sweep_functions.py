@@ -40,6 +40,9 @@ def simulation_setup(cb, species_details, site_vector_props, max_larval_capacity
                     }
     )
 
+    # change net-hating proportion
+    assign_net_ip(cb, 0.1) #10% based on opinion from Caitlin Bever
+
     # Find vector proportions for each vector
     set_params_by_species(cb.params, [name for name in species_details.keys()])
 
@@ -185,10 +188,10 @@ def add_larvicide_wrapper(cb, coverage, start_days=[0], duration=30):
 
     return {"Larvicide_Coverage": coverage, "Larvicide_Start": start_days[0], "Larvicide_Halflife": duration}
 
-def add_ivermectin_wrapper(cb, coverage, start_days=[0], drug_duration="WEEK"):
+def add_ivermectin_wrapper(cb, coverage, start_days=[0], drug_duration=7):
 
     add_ivermectin(cb, start_days=start_days,
                    coverage=coverage,
-                   drug_code=drug_duration)
+                   box_duration=drug_duration)
 
-    return {"Ivermectin_Coverage": coverage, "Ivermectin_Start": start_days[0], "Ivermectin_Druation": drug_duration}
+    return {"Ivermectin_Coverage": coverage, "Ivermectin_Start": start_days[0], "Ivermectin_Duration": drug_duration}
