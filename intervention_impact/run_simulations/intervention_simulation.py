@@ -26,17 +26,14 @@ from sweep_functions import *
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
 
-# below: burnin and asset exp ids for test comparison run
-burnin_id = "1bcd5da1-6b37-e911-a2c5-c4346bcb7273"
-asset_exp_id = "1bcd5da1-6b37-e911-a2c5-c4346bcb7273"
+# below: burnin and asset exp ids for megatrends
+burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
+asset_exp_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-# todo: go back to burnin and asset_exp_ids for megatrends
-
-
-sim_root_name = "Test_New_Builder_Nested_List"
+sim_root_name = "Test_Outdoor_"
 baseline_interventions = ["itn", "irs", "al_cm"]
-baseline_intervention_coverages = [0, 50]
-sweep_interventions = ["tbv", "ivermectin"]
+baseline_intervention_coverages = [80]
+sweep_interventions = ["atsb", "larvicides", "ors", "ivermectin"]
 sweep_intervention_coverages = [0, 40, 80]
 sweep_intervention_class = "list" # can be "combo" (combinatoric) or "list"
 vaccine_durations = [182, 365]
@@ -150,7 +147,7 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        # df = df.query("Run_Number==7 & x_Temporary_Larval_Habitat>90 & x_Temporary_Larval_Habitat<150")
+        df = df.iloc[0:3]
 
         # wrap each modfn in a tuple so it can be combined with the int lists using itertools
         from_burnin_list = [
