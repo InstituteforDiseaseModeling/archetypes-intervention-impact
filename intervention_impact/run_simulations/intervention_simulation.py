@@ -33,12 +33,12 @@ asset_exp_id = "1bcd5da1-6b37-e911-a2c5-c4346bcb7273"
 # todo: go back to burnin and asset_exp_ids for megatrends
 
 
-sim_root_name = "Test_New_Builder_Combo"
+sim_root_name = "Test_New_Builder_Nested_List"
 baseline_interventions = ["itn", "irs", "al_cm"]
 baseline_intervention_coverages = [0, 50]
-sweep_interventions = ["atsb", "ivermectin"]
+sweep_interventions = ["tbv", "ivermectin"]
 sweep_intervention_coverages = [0, 40, 80]
-sweep_intervention_class = "combo" # can be "combo" (combinatoric) or "list"
+sweep_intervention_class = "list" # can be "combo" (combinatoric) or "list"
 vaccine_durations = [182, 365]
 new_inputs = False
 
@@ -154,31 +154,30 @@ if __name__=="__main__":
 
         # wrap each modfn in a tuple so it can be combined with the int lists using itertools
         from_burnin_list = [
-            (ModFn(DTKConfigBuilder.update_params, {
+            [ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames": [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
                 "Run_Number": df["Run_Number"][x],
-                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})
-             ,)
+                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})]
 
         for x in df.index]
 
         intervention_dict = {
             cov: {
-                "itn": ModFn(add_annual_itns, year_count=years,
+                "itn": [ModFn(add_annual_itns, year_count=years,
                    n_rounds=1,
                    coverage=cov / 100,
                    discard_halflife=180,
                    start_day=5,
                    IP=[{"NetUsage": "LovesNets"}]
-                   ),
-                "irs": ModFn(add_irs_group, coverage=cov / 100,
+                   )],
+                "irs": [ModFn(add_irs_group, coverage=cov / 100,
                        decay=180,
-                       start_days=[365 * start for start in range(years)]),
-                "al_cm": ModFn(add_healthseeking_by_coverage, coverage=cov / 100, rate=0.15),
-                "dp_cm": ModFn(add_healthseeking_by_coverage, coverage=cov / 100, rate=0.15, drugname="DP"),
-                "dp_mda": ModFn(add_mda, coverage=cov/100),
-                "mAb": ModFn(add_vaccine, vaccine_type="PEV",
+                       start_days=[365 * start for start in range(years)])],
+                "al_cm": [ModFn(add_healthseeking_by_coverage, coverage=cov / 100, rate=0.15)],
+                "dp_cm": [ModFn(add_healthseeking_by_coverage, coverage=cov / 100, rate=0.15, drugname="DP")],
+                "dp_mda": [ModFn(add_mda, coverage=cov/100)],
+                "mAb": [ModFn(add_vaccine, vaccine_type="PEV",
                                     coverage=cov/100,
                                     vaccine_params={"Waning_Config": {
                                                         "class": "WaningEffectBox",
@@ -186,8 +185,8 @@ if __name__=="__main__":
                                                     }
                                                     },
                                     target_group={"agemin": 15, "agemax": 49},
-                                    repetitions=3,
-                                    interval=365),
+                                    start_days=[365 * start for start in range(years)])
+                                   ],
                 "pev": [ModFn(add_vaccine, vaccine_type="PEV",
                                     coverage=cov/100,
                                     vaccine_params={"Reduced_Acquire": 0.75,
@@ -209,39 +208,50 @@ if __name__=="__main__":
                                        }
                                        },
                        target_group={"agemin": 15, "agemax": 49},
-                       repetitions = 3,
-                       interval = 365)
+                       start_days=[365 * start for start in range(years)]
+                       )
                         for vaccine_hl in vaccine_durations
                         ],
-                "atsb": ModFn(add_atsb, coverage= cov / 100,
-                       start_days=[365 * start for start in range(years)]),
-                "ors": ModFn(add_ors, coverage=cov / 100,
-                       start_days=[365 * start for start in range(years)]),
-                "larvicides": ModFn(add_larvicide_wrapper, coverage=cov / 100,
-                       start_days=[365 * start for start in range(years)]),
-                "ivermectin": ModFn(add_ivermectin_wrapper, coverage=cov / 100,
-                       start_days=[365 * start for start in range(years)])
+                "atsb": [ModFn(add_atsb, coverage= cov / 100,
+                       start_days=[365 * start for start in range(years)])],
+                "ors": [ModFn(add_ors, coverage=cov / 100,
+                       start_days=[365 * start for start in range(years)])],
+                "larvicides": [ModFn(add_larvicide_wrapper, coverage=cov / 100,
+                       start_days=[365 * start for start in range(years)])],
+                "ivermectin": [ModFn(add_ivermectin_wrapper, coverage=cov / 100,
+                       start_days=[365 * start for start in range(years)])]
 
             }
             for cov in list(set(baseline_intervention_coverages + sweep_intervention_coverages))
             }
 
+        def get_combos_and_flatten(old_list):
+            combos = list(itertools.product(*old_list))
+            return [list(itertools.chain.from_iterable(sublist)) for sublist in combos]
+
         # find list of "base intervention" modfns
         baseline_int_list = [[intervention_dict[cov][intname] for cov in baseline_intervention_coverages]
                              for intname in baseline_interventions]
-        baseline_int_list = list(itertools.product(*baseline_int_list))
+        baseline_int_list = get_combos_and_flatten(baseline_int_list)
 
         # find list of "sweep" modfns:
         if sweep_intervention_class=="list":
-            sweep_int_list = [(intervention_dict[cov][intname],) for intname in sweep_interventions
-                             for cov in sweep_intervention_coverages]
+            sweep_int_list = [intervention_dict[cov][intname] for intname in sweep_interventions
+                              for cov in sweep_intervention_coverages]
+            # flatten list
+            sweep_int_list = list(itertools.chain.from_iterable(sweep_int_list))
+
+            # put everything back in a one-element list so chain.from_iterable will work
+            sweep_int_list = [[item] for item in sweep_int_list]
+
         else:
             sweep_int_list = [[intervention_dict[cov][intname] for cov in sweep_intervention_coverages]
                              for intname in sweep_interventions]
-            sweep_int_list = list(itertools.product(*sweep_int_list))
+            sweep_int_list = get_combos_and_flatten(sweep_int_list)
 
-        full_sim_list = list(itertools.product(from_burnin_list, baseline_int_list, sweep_int_list))
-        full_sim_list = [list(itertools.chain.from_iterable(sublist)) for sublist in full_sim_list]
+
+        full_sim_list = [from_burnin_list, baseline_int_list, sweep_int_list]
+        full_sim_list = get_combos_and_flatten(full_sim_list)
 
         builder = ModBuilder.from_list(full_sim_list)
 

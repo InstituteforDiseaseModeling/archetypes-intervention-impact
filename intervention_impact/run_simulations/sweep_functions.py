@@ -10,7 +10,7 @@ from dtk.interventions.habitat_scale import scale_larval_habitats
 from dtk.interventions.irs import add_IRS
 from dtk.interventions.itn_age_season import add_ITN_age_season
 from dtk.interventions.property_change import change_individual_property
-from dtk.interventions.novel_vector_control import add_ATSB, add_ors_node, add_larvicide
+from dtk.interventions.novel_vector_control import add_ATSB, add_ors_node, add_larvicides
 from dtk.interventions.ivermectin import add_ivermectin
 
 from malaria.interventions.malaria_drug_campaigns import add_drug_campaign
@@ -162,31 +162,31 @@ def add_atsb(cb, coverage=0.8, start_days=[0], duration=180):
 
     for start_day in start_days:
         add_ATSB(cb, coverage=coverage,
-                 start=start_day,
+                 start_day=start_day,
                  duration=duration
                  )
 
     return {"ATSB_Coverage": coverage, "ATSB_Start": start_days[0], "ATSB_Duration_Mean": duration}
 
 
-def add_ors(cb, coverage, start_days=[0], duration=30):
+def add_ors(cb, coverage, start_days=[0], kill_duration=100):
 
     for start_day in start_days:
-        add_ors_node(cb, start=start_day,
+        add_ors_node(cb, start_day=start_day,
                      coverage=coverage,
-                     duration=duration)
+                     killing_decay=kill_duration)
 
-    return {"ORS_Coverage": coverage, "ORS_Start": start_days[0], "ORS_Halflife": duration}
+    return {"ORS_Coverage": coverage, "ORS_Start": start_days[0], "ORS_Halflife": kill_duration}
 
 
-def add_larvicide_wrapper(cb, coverage, start_days=[0], duration=30):
+def add_larvicide_wrapper(cb, coverage, start_days=[0], kill_duration=100):
 
     for start_day in start_days:
-        add_larvicide(cb, start=start_day,
+        add_larvicides(cb, start_day=start_day,
                      coverage=coverage,
-                     duration=duration)
+                     killing_duration=kill_duration)
 
-    return {"Larvicide_Coverage": coverage, "Larvicide_Start": start_days[0], "Larvicide_Halflife": duration}
+    return {"Larvicide_Coverage": coverage, "Larvicide_Start": start_days[0], "Larvicide_Kill_Halflife": kill_duration}
 
 def add_ivermectin_wrapper(cb, coverage, start_days=[0], drug_duration=7):
 
