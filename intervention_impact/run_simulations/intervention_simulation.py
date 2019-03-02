@@ -30,13 +30,14 @@ run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "Test_Outdoor_"
+sim_root_name = "Sweep_Novel"
 baseline_interventions = ["itn", "irs", "al_cm"]
 baseline_intervention_coverages = [80]
-sweep_interventions = ["atsb", "larvicides", "ors", "ivermectin"]
+sweep_interventions = ["mAb", "tbv", "pev", "atsb", "larvicides", "ivermectin"]
 sweep_intervention_coverages = [0, 40, 80]
 sweep_intervention_class = "list" # can be "combo" (combinatoric) or "list"
 vaccine_durations = [182, 365]
+ivermectin_durations = [7, 14, 30]
 new_inputs = False
 
 # Serialization
@@ -147,7 +148,7 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         # temp for testing
-        df = df.iloc[0:3]
+        # df = df.iloc[0:3]
 
         # wrap each modfn in a tuple so it can be combined with the int lists using itertools
         from_burnin_list = [
@@ -193,6 +194,7 @@ if __name__=="__main__":
                                                     }
                                                     },
                                     trigger_condition_list=["Births"],
+                                    start_days=[0],
                                     triggered_delay=182)
                         for vaccine_hl in vaccine_durations
                         ],
@@ -216,7 +218,11 @@ if __name__=="__main__":
                 "larvicides": [ModFn(add_larvicide_wrapper, coverage=cov / 100,
                        start_days=[365 * start for start in range(years)])],
                 "ivermectin": [ModFn(add_ivermectin_wrapper, coverage=cov / 100,
-                       start_days=[365 * start for start in range(years)])]
+                                     drug_duration = duration,
+                                     start_days=[365 * start for start in range(years)]
+                                     )
+                               for duration in ivermectin_durations
+                               ]
 
             }
             for cov in list(set(baseline_intervention_coverages + sweep_intervention_coverages))
