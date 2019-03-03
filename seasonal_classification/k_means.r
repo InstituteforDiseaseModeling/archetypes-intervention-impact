@@ -35,7 +35,6 @@ plot_vectors <- F
 source("classify_functions.r")
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
-palette <- brewer.pal(8, "Paired") # color scheme for plots 
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
