@@ -21,6 +21,8 @@ library(gridExtra)
 
 rm(list=ls())
 
+theme_set(theme_minimal())
+
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact")
 
@@ -33,6 +35,8 @@ anthro_endo_map <- data.table(cluster=1:6,
                               anthro=c(74.45, 65.02, 79.04, 76.6, 75, 75.78),
                               endo=c(80, 85, 80.38, 55.6, 50, 52.73))
 anthro_endo_map[, human_indoor:= (anthro*endo)/100]
+
+write.csv(anthro_endo_map, file=file.path(main_dir, "anthro_endo_map.csv"))
 
 colors <- c("#00a08a", "#d71b5a", "#f2a200", "#f98400", "#902e57", "#5392c2")
 
@@ -138,10 +142,13 @@ reduction_dt[, init_prev_class:= cut(megatrends_noints, breaks=seq(0,1,0.05),
 
 
 summary_dt <- reduction_dt[,lapply(.SD, mean), by=list(sitename, cluster, init_prev_class)]
+summary_dt[, human_indoor:=round(human_indoor, 2)]
 summary_dt <- merge(summary_dt, reduction_dt[, list(count=.N), by=list(cluster, init_prev_class)],
                     by=c("cluster", "init_prev_class"), all=T)
 summary_dt[, count_class:=cut(count, breaks=quantile(count, probs=seq(0,1,0.2)),
                               labels=c("4-161", "162-1,743", "1,744-7,839", "7,840-14,003", "14,004-59,512"), include.lowest=T)]
+indoor_vals <- sort(unique(summary_dt$human_indoor), decreasing = T)
+summary_dt[, human_indoor_factor:= factor(human_indoor, levels=indoor_vals, labels=as.character(indoor_vals))]
 
 elim_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) + 
             geom_point(aes(color=eliminate, size=count_class), shape=15) +
@@ -150,7 +157,7 @@ elim_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) +
             theme(axis.text.x = element_text(angle=45, hjust=1)) +
             labs(x="Initial PfPR (%)",
                  y="Indoor Biting (%)",
-                 title=paste("Probability of Elimination Under", int_label))
+                 title=paste("Prob of Elimination"))
 
 resid_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) + 
                 geom_point(aes(color=bounded_interventions, size=count_class), shape=15) +
@@ -159,12 +166,64 @@ resid_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) +
                 theme(axis.text.x = element_text(angle=45, hjust=1)) +
                 labs(x="Initial PfPR (%)",
                      y="Indoor Biting (%)",
-                     title=paste("Residual Transmission Under", int_label))
+                     title=paste("Residual Transmission"))
 
-pdf(file.path(main_dir, paste0("resid_by_endo_", int_type, ".pdf")), height=7, width=16)
-  grid.arrange(grobs=list(elim_plot, resid_plot), layout_matrix=rbind(c(1,2)))
+
+# plot climate time series next to indoor biting maps
+climate <- fread(file.path(base_dir, "seasonal_classification/africa/kmeans/summary_tsi_rainfall_vector_abundance_6.csv"))
+climate <- climate[variable_name=="month"]
+climate[, cluster:=as.factor(cluster)]
+climate_to_sitename = data.table(sitename=c("aba", "kananga", "kasama", "djibo", "gode", "moine"),
+                                 cluster=1:6)
+climate <- merge(climate, climate_to_sitename, by="cluster", all=T)
+climate <- merge(climate, unique(summary_dt[, list(sitename,human_indoor_factor)]), by="sitename", all=T)
+
+palette <- c("#F98400", "#00A08A", "#5392C2", "#902E57", "#F2AD00", "#D71B5A", "#98B548", "#8971B3")
+these_colors <- palette[1:6]
+lines <- lapply(unique(climate$cov), function(cov_value){
+  
+  data <- climate[cov==cov_value]
+  
+  if(max(data$perc_95)>1){
+    ybreaks <- c(0, 600)
+    ylabs <- c("0", "600")
+    yminorbreaks <- c(100, 200, 300, 400, 500)
+    ylimit <- NULL
+  }else if(max(data$perc_95)<0.75){
+    ybreaks <- c(0, 0.75)
+    ylabs <- c("0", "0.75")
+    yminorbreaks <- c(0.25, 0.5)
+    ylimit <- c(0, 0.75)
+  }else{
+    ybreaks <- c(0, 0.75)
+    ylabs <- c("0", "0.75")
+    yminorbreaks <- c(0.25, 0.5)
+    ylimit <- NULL
+  }
+  
+  ggplot(data, aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
+    facet_grid(human_indoor_factor~.) +
+    geom_line(size=1) +
+    geom_line(aes(y=perc_05), size=0.75, linetype=2) +
+    geom_line(aes(y=perc_95), size=0.75, linetype=2) +
+    geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5, color=NA) +
+    scale_color_manual(values = these_colors) +
+    scale_fill_manual(values = these_colors) + 
+    scale_x_continuous(breaks=seq(2,12,2), labels=c("F","A","J","A","O","D"), minor_breaks=seq(1,12,2)) +
+    scale_y_continuous(breaks=ybreaks, labels=ylabs, minor_breaks=yminorbreaks, limits=ylimit) + 
+    theme(legend.position="none",
+          plot.title = element_text(size=16),
+          strip.background = element_blank(),
+          # strip.text.y = element_blank()
+          ) +
+    labs(title=ifelse(nchar(cov_value)==3, toupper(cov_value), capitalize(cov_value)),
+         x="",
+         y="")
+})
+
+pdf(file.path(main_dir, paste0("resid_by_endo_with_climate_", int_type, ".pdf")), height=7, width=20)
+  grid.arrange(grobs=append(list(elim_plot, resid_plot), lines), layout_matrix=rbind(c(1,1,1,2,2,2,3,4)))
 graphics.off()
-
 
 png(file.path(main_dir, "megatrend_compare.png"), width=900, height=600)
 ggplot(reduction_dt, aes(x=megatrends_noints, y=megatrends_ints)) +

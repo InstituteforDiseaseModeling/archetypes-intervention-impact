@@ -216,7 +216,7 @@ save.image(file.path(joint_dir, 'preload.Rdata'))
 ### Load (what kind of?) data ----------------------------------------------------------------------------#######################  
 
 # what is this?
-load(file.path(output_dir, 'preload.Rdata'))
+load(file.path(joint_dir, 'preload.Rdata'))
 ## IHS: BURBRIDGE-- inverse hyperbolic sine transform
 
 
