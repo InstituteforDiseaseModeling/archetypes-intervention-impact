@@ -150,8 +150,8 @@ summary_dt[, count_class:=cut(count, breaks=quantile(count, probs=seq(0,1,0.2)),
 indoor_vals <- sort(unique(summary_dt$human_indoor), decreasing = T)
 summary_dt[, human_indoor_factor:= factor(human_indoor, levels=indoor_vals, labels=as.character(indoor_vals))]
 
-elim_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=endo)) + 
-            geom_point(aes(color=eliminate, size=count_class), shape=15, alpha=0.75) +
+elim_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) + 
+            geom_point(aes(color=eliminate, size=count_class), shape=15) +
             scale_size_discrete(name="Pixel Count") + 
             scale_color_gradientn(colors=brewer.pal(7,"Spectral"), name="Proportion of\nPixels Eliminating") +
             theme(axis.text.x = element_text(angle=45, hjust=1)) +
@@ -159,17 +159,8 @@ elim_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=endo)) +
                  y="Indoor Biting (%)",
                  title=paste("Prob of Elimination"))
 
-elim_plot_2 <- ggplot(summary_dt, aes(x=init_prev_class, y=anthro)) + 
-  geom_point(aes(color=eliminate, size=count_class), shape=15, alpha=0.75) +
-  scale_size_discrete(name="Pixel Count") + 
-  scale_color_gradientn(colors=brewer.pal(7,"Spectral"), name="Proportion of\nPixels Eliminating") +
-  theme(axis.text.x = element_text(angle=45, hjust=1)) +
-  labs(x="Initial PfPR (%)",
-       y="Indoor Biting (%)",
-       title=paste("Prob of Elimination"))
-
-resid_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=endo)) + 
-                geom_point(aes(color=bounded_interventions, size=count_class), shape=15, alpha=0.75) +
+resid_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) + 
+                geom_point(aes(color=bounded_interventions, size=count_class), shape=15) +
                 scale_size_discrete(name="Pixel Count") + 
                 scale_color_gradientn(colors=rev(brewer.pal(7,"Spectral")), name="Mean Final\nPrevalence") +
                 theme(axis.text.x = element_text(angle=45, hjust=1)) +
@@ -177,19 +168,6 @@ resid_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=endo)) +
                      y="Indoor Biting (%)",
                      title=paste("Residual Transmission"))
 
-resid_plot_2 <- ggplot(summary_dt, aes(x=init_prev_class, y=anthro)) + 
-  geom_point(aes(color=bounded_interventions, size=count_class), shape=15, alpha=0.75) +
-  scale_size_discrete(name="Pixel Count") + 
-  scale_color_gradientn(colors=rev(brewer.pal(7,"Spectral")), name="Mean Final\nPrevalence") +
-  theme(axis.text.x = element_text(angle=45, hjust=1)) +
-  labs(x="Initial PfPR (%)",
-       y="Indoor Biting (%)",
-       title=paste("Residual Transmission"))
-
-pdf(file.path(main_dir, paste0("resid_disaggregated_", int_type, ".pdf")), height=12, width=16)
-  grid.arrange(grobs=list(elim_plot, elim_plot_2, resid_plot, resid_plot_2), layout_matrix=rbind(c(1,2),
-                                                                                     c(3,4)))
-graphics.off()
 
 # plot climate time series next to indoor biting maps
 climate <- fread(file.path(base_dir, "seasonal_classification/africa/kmeans/summary_tsi_rainfall_vector_abundance_6.csv"))
