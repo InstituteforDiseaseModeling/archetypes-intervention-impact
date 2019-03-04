@@ -1,27 +1,4 @@
 
-## /cubes/5km subfolders:
-# '/home/drive/cubes/5km/LST_day/mean/'
-##'/home/drive/cubes/5km/LST_delta/mean/' # 
-# '/home/drive/cubes/5km/LST_night/mean/'
-# '/home/drive/cubes/5km/EVI/mean/'
-##'/home/drive/cubes/5km/TCB/mean/' # 
-# '/home/drive/cubes/5km/TCW/mean/'
-# '/home/drive/cubes/5km/TSI/mean/'
-
-# '/home/drive/cubes/5km/IGBP_Landcover/Fraction/'
-# '/home/drive/cubes/5km/AfriPop/'
-
-
-# '/home/drive/cubes/5km/Topographic/Africa_TMI_90m.mean.tif',
-# '/home/drive/cubes/5km/Topographic/Africa_SRTM_90m.mean.tif',
-# '/home/drive/cubes/5km/Topographic/Africa_slope_90m.mean.tif',
-##'/home/drive/cubes/5km/Topographic/Africa_FA_90m.mean.tif', # 
-# '/home/drive/cubes/5km/Seasonality/pf_seasonality.tif',
-# '/home/drive/cubes/5km/Poverty/PET_1950-2000_5km.mean.tif',
-# '/home/drive/cubes/5km/Poverty/AI_1950-2000_5km.mean.tif',
-# '/home/drive/cubes/5km/Poverty/accessibility_50k_5km.mean.tif',
-##'/home/drive/cubes/5km/worldclim/prec57a0.tif', # 
-# '/home/drive/cubes/5km/Poverty/viirs_nighttime_5km.mean.tif')
 
 # dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code --input database_fname=gs://map_data_z/users/amelia/itn_cube/create_database/output/ITN_final_clean_access_9Feb2019.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/acc_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/access_deviation --command 'Rscript ${CODE}'
 
