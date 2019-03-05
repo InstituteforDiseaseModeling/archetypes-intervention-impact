@@ -56,6 +56,7 @@ class PfPRAnalyzer(BaseAnalyzer):
             data_sets_per_experiment[experiment_name].append(associated_data)
 
         for experiment_name, data_sets in data_sets_per_experiment.items():
+            print(os.path.join(self.working_dir, self.dir_name, "{name}.csv".format(name=experiment_name)))
             d = pd.concat(data_sets).reset_index(drop=True)
             d.to_csv(os.path.join(self.working_dir, self.dir_name, "{name}.csv".format(name=experiment_name)), index=False)
 
@@ -68,7 +69,7 @@ if __name__ == "__main__":
     sites = pd.read_csv("site_details.csv")
 
     experiments = {# "initial": "e9af8baf-a8e3-e811-a2bd-c4346bcb1555",
-                   "interactions" :"0d3fe2fa-6ae6-e811-a2bd-c4346bcb1555"
+                   "interactions" :"b72fbc1b-543e-e911-a2c5-c4346bcb7273"
                    }
 
     for dirname, exp_id in experiments.items():
@@ -82,18 +83,21 @@ if __name__ == "__main__":
                                                                                        "CM_Coverage",
                                                                                        "IRS_Coverage",
                                                                                        "ITN_Coverage",
-                                                                                       "MDA_Drug",
-                                                                                       "MDA_Repetitions",
-                                                                                       "MDA_Coverage",
+                                                                                       "ATSB_Coverage",
+                                                                                       "Larvicide_Coverage",
+                                                                                       "Ivermectin_Coverage",
+                                                                                       "Ivermectin_Duration",
                                                                                        "PEV_Coverage",
                                                                                        "PEV_Waning_Config_class",
                                                                                        "PEV_Waning_Config_Decay_Time_Constant",
                                                                                        "TBV_Coverage",
                                                                                        "TBV_Waning_Config_Decay_Time_Constant",
-                                                                                       "gambiae.Adult_Life_Expectancy"
+
 
                                                                                        ])],
                             force_analyze=True)
 
         print(am.experiments)
-        am.analyze()
+        print(out_dir)
+        print(dirname)
+        # am.analyze()
