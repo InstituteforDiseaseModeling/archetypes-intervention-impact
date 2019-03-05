@@ -157,7 +157,7 @@ elim_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) +
             theme(axis.text.x = element_text(angle=45, hjust=1)) +
             labs(x="Initial PfPR (%)",
                  y="Indoor Biting (%)",
-                 title=paste("Prob of Elimination"))
+                 title=paste("Probability of Elimination Under", int_label))
 
 resid_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) + 
                 geom_point(aes(color=bounded_interventions, size=count_class), shape=15) +
@@ -166,7 +166,7 @@ resid_plot <- ggplot(summary_dt, aes(x=init_prev_class, y=human_indoor)) +
                 theme(axis.text.x = element_text(angle=45, hjust=1)) +
                 labs(x="Initial PfPR (%)",
                      y="Indoor Biting (%)",
-                     title=paste("Residual Transmission"))
+                     title=paste("Residual Transmission Under", int_label))
 
 
 # plot climate time series next to indoor biting maps

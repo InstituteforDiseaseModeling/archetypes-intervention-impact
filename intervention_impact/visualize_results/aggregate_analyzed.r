@@ -3,14 +3,14 @@ library(ggplot2)
 
 rm(list=ls())
 
-main_dir <- file.path(Sys.getenv("USERPROFILE"), 
+main_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
 
-experimental_results <- F
+experimental_results <- T 
 
 
-initial <- fread(file.path(main_dir, "../initial/MAP_II_Sweep_Vector_Lifespan.csv"))
-prelim_data <- fread(file.path(main_dir, "MAP_II_Sweep_Vector_Lifespan_Ints.csv"))
+initial <- fread(file.path(main_dir, "../initial/MAP_II_New_Sites_Burnin.csv"))
+prelim_data <- fread(file.path(main_dir, "MAP_Sweep_Novel_Intervention.csv"))
 
 prelim_data[, Intervention:=""]
 
@@ -20,18 +20,21 @@ if (experimental_results==T){
   prelim_data[, pev_half_life:=PEV_Waning_Config_Decay_Time_Constant*log(2)]
   
   all_data <- prelim_data[, list(Site_Name, x_Temporary_Larval_Habitat, Run_Number,
-                                 DP_CM_Coverage=CM_Coverage,
-                                 # DP_MDA_Coverage = MDA_Coverage,
+                                 # IRS_Coverage, ITN_Coverage, AL_CM_Coverage=CM_Coverage,
                                  mAB_Coverage = ifelse(PEV_Waning_Config_class=="WaningEffectBox", PEV_Coverage, NA),
                                  PEV_6mo_Coverage = ifelse(pev_half_life==182, PEV_Coverage, NA),
                                  PEV_12mo_Coverage = ifelse(pev_half_life==365, PEV_Coverage, NA),
                                  TBV_6mo_Coverage = ifelse(tbv_half_life==182, TBV_Coverage, NA),
                                  TBV_12mo_Coverage = ifelse(tbv_half_life==365, TBV_Coverage, NA),
+                                 ATSB_Coverage,
+                                 Larvicide_Coverage,
+                                 Ivermectin_7day_Coverage = ifelse(Ivermectin_Duration==7, Ivermectin_Coverage, NA),
+                                 Ivermectin_14day_Coverage = ifelse(Ivermectin_Duration==14, Ivermectin_Coverage, NA),
+                                 Ivermectin_30day_Coverage = ifelse(Ivermectin_Duration==30, Ivermectin_Coverage, NA),
                                  final_prev)]
   
   all_data <- melt(all_data, id.vars=c("Site_Name", "x_Temporary_Larval_Habitat", "Run_Number", "final_prev"), value.name = "Coverage", variable.name = "Intervention")
   all_data <- all_data[!is.na(Coverage)]
-  
   
 }else{
   all_data <- copy(prelim_data)
@@ -49,27 +52,25 @@ if (experimental_results==T){
 }
 
 
-all_data <- merge(all_data, initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat",
-                                          "gambiae.Adult_Life_Expectancy"), all=T)
-setnames(all_data, "gambiae.Adult_Life_Expectancy", "Vector_Life_Expectancy")
-all_data <- all_data[Vector_Life_Expectancy>5]
-all_data[, Run_Number:=factor(Run_Number)]
-all_data[, Vector_Life_Expectancy:=factor(Vector_Life_Expectancy)]
-all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Vector_Life_Expectancy)]
-all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Vector_Life_Expectancy)]
+all_data <- merge(all_data, initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
 
-to_plot <- all_data[Site_Name=="aba"]
+all_data[, Run_Number:=factor(Run_Number)]
+
+all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage)]
+all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage)]
+
+# to_plot <- all_data[Site_Name=="aba"]
 
 # pdf(file.path(Sys.getenv("USERPROFILE"), 
 #               "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/writing_and_presentations/ii_paper",
 #               "figures/new_ints.pdf"), height=6, width=7)
-# ggplot(to_plot, aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
-#   geom_line(size=1.5) +
-#   geom_abline() + 
-#   scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
-#   facet_wrap( ~ Intervention) +
-#   theme_minimal() +
-#   theme(legend.position="none")
+ggplot(all_data, aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
+  geom_line(size=1.5) +
+  geom_abline() +
+  scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
+  facet_grid(Site_Name ~ Intervention) +
+  theme_minimal() +
+  theme(legend.position="none")
 # graphics.off()
 
 # pdf(file.path(Sys.getenv("USERPROFILE"), 
