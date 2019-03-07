@@ -80,7 +80,7 @@ def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife
                                ind_property_restrictions=IP)
 
     return {"ITN_Coverage": coverage, "ITN_Halflife": discard_halflife, "ITN_Per_Round_Coverage": per_round_coverage,
-            "ITN_start": start_day, "ITN_Rounds": n_rounds, "ITN_Distributions": year_count}
+            "ITN_Start": start_day, "ITN_Rounds": n_rounds, "ITN_Distributions": year_count}
 
 
 def add_annual_itns_w_irs(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife=270, start_day=0, IP=[]):
@@ -158,15 +158,25 @@ def add_mda(cb, coverage=0.8, drugname="DP", start_days=[0], reps=3):
     return {"MDA_Drug": drugname, "MDA_Repetitions": reps, "MDA_Coverage": coverage}
 
 
-def add_atsb(cb, coverage=0.8, start_days=[0], duration=180):
+def add_atsb(cb, coverage=0.8, start_days=[0], duration=180, initial_effect=0.0377):
+
+    # default killing cfg
+    killing_cfg = {"Killing_Config":{
+                            "class": "WaningEffectBoxExponential",
+                            "Box_Duration": 180,
+                            "Decay_Time_Constant": 130,
+                            "Initial_Effect":initial_effect
+                            }}
 
     for start_day in start_days:
         add_ATSB(cb, coverage=coverage,
                  start_day=start_day,
-                 duration=duration
+                 duration=duration,
+                 kill_cfg=killing_cfg
                  )
 
-    return {"ATSB_Coverage": coverage, "ATSB_Start": start_days[0], "ATSB_Duration_Mean": duration}
+    return {"ATSB_Coverage": coverage, "ATSB_Start": start_days[0], "ATSB_Duration_Mean": duration,
+            "ATSB_Initial_Effect": initial_effect}
 
 
 def add_ors(cb, coverage, start_days=[0], kill_duration=100):
@@ -188,10 +198,12 @@ def add_larvicide_wrapper(cb, coverage, start_days=[0], kill_duration=100):
 
     return {"Larvicide_Coverage": coverage, "Larvicide_Start": start_days[0], "Larvicide_Kill_Halflife": kill_duration}
 
-def add_ivermectin_wrapper(cb, coverage, start_days=[0], drug_duration=7):
+def add_ivermectin_wrapper(cb, coverage, start_days=[0], drug_duration=7, monthly_rounds=3):
+    start_days = [(30 * month_idx) + start for start in start_days for month_idx in range(monthly_rounds)]
 
     add_ivermectin(cb, start_days=start_days,
                    coverage=coverage,
                    box_duration=drug_duration)
 
-    return {"Ivermectin_Coverage": coverage, "Ivermectin_Start": start_days[0], "Ivermectin_Duration": drug_duration}
+    return {"Ivermectin_Coverage": coverage, "Ivermectin_Start": start_days[0], "Ivermectin_Duration": drug_duration,
+            "Ivermectin_Monthly_Rounds": monthly_rounds}
