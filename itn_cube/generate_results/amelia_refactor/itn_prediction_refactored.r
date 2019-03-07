@@ -1,37 +1,57 @@
-library(VGAM)
-#set window
-library(maptools)
-library(rgeos)
-library(png)
-library(sp)
-require('raster')
-require('rgdal')
-library(INLA)
-library(RColorBrewer)
-library(zoo)
-library(doParallel)
 
+
+
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive main_dir=gs://map_data_z/users/amelia/itn_cube cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code --input CODE=gs://map_data_z/users/amelia/itn_cube/code/itn_prediction_refactored.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/predictions --command 'Rscript ${CODE}'
+
+# from access deviation and use gap, predict coverage and map all surfaces
+
+package_load <- function(package_list){
+  # package installation/loading
+  new_packages <- package_list[!(package_list %in% installed.packages()[,"Package"])]
+  if(length(new_packages)) install.packages(new_packages)
+  lapply(package_list, library, character.only=T)
+}
+
+package_load(c("zoo","raster", "data.table", "rgdal", "INLA", "RColorBrewer", "VGAM", "maptools", "rgeos", "png", "sp", "doParallel"))
+
+if(Sys.getenv("main_dir")=="") {
+  main_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/"
+  func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
+} else {
+  main_dir <- Sys.getenv("main_dir") 
+  cov_dir <- Sys.getenv("cov_dir") # cubes_5km
+  out_dir <- Sys.getenv("out_dir")
+  func_dir <- Sys.getenv("func_dir") # code directory for function scripts
+}
+
+joint_dir <- file.path(main_dir, "joint_data")
 
 # load shapefiles and templates for plotting
-World<-readShapePoly('/home/backup/MAP_templates/Africa_area/afri_word.shp')
+World<-readShapePoly(file.path(joint_dir, 'MAP_templates_Africa', 'afri_word.shp'))
 World <- gSimplify(World, tol=0.1, topologyPreserve=TRUE)
-Africa<-readShapePoly('/home/backup/MAP_templates/Africa/Africa.shp')
+Africa<-readShapePoly(file.path(joint_dir, 'MAP_templates_Africa', 'Africa.shp'))
 Africa <- gSimplify(Africa, tol=0.1, topologyPreserve=TRUE)
-Water<-readShapePoly('/home/backup/MAP_templates/Africa_area/africa_water.shp')
+Water<-readShapePoly(file.path(joint_dir, 'MAP_templates_Africa', 'africa_water.shp'))
 Water <- gSimplify(Water, tol=0.1, topologyPreserve=TRUE)
-img <- readPNG('/home/backup/MAP_templates/Logo/map-logo_bg.png')
+img <- readPNG(file.path(joint_dir, 'map-logo_bg.png'))
+print("loaded shapefiles and templates for plotting")
 
 # load access and gap estimates
-load('/home/backup/ITNcube/ITN_cube_access_dynamic_access deviation_21112017.Rdata')
+list.files(main_dir)
+list.files(file.path(main_dir, 'access_deviation'))
+load(file.path(main_dir, "access_deviation", "ITN_cube_access_dynamic_access deviation_25Feb2019.Rdata"))
 mod.pred.acc=mod.pred
 theta.acc<-theta
 mesh.acc<-mesh
 
-load('/home/backup/ITNcube/ITN_cube_gap_dynamic_21112017.Rdata')
+# TODO: change this filepath to use_gap, which is the data it represents
+load(file.path(main_dir, "use_gap", "ITN_cube_access_dynamic.Rdata"))
 mod.pred.use=mod.pred
 theta.use<-theta
 mesh.use<-mesh
 
+#overwrite like-named functions in INLAfunctions.r
+source(file.path(func_dir, "itn_prediction_functions.r"))
 
 # HUGE Prediction Loop ----------------------------------------------------------------------------####################### 
 time_points<-2000:2016
@@ -117,7 +137,7 @@ for(xxx in 1:length(time_points)){
   
   ####################################################################################################################
   #### get access mean from stock and flow
-  cn<-raster(paste('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif',sep="")) #load raster
+  cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   pred_val<-getValues(cn)#get values again
   w<-is.na(pred_val) #find NAs again
@@ -126,8 +146,8 @@ for(xxx in 1:length(time_points)){
   gauls<-cn[index]
   
   
-  load('/home/backup/ITNcube/prop0prop1.rData')
-  POPULATIONS<-read.csv('/home/backup/National_Config_Data.csv')
+  load(file.path(main_dir, 'create_database/input', 'prop0prop1.rData'))
+  POPULATIONS<-read.csv(file.path(joint_dir, 'National_Config_Data.csv'))
   Country.list<-Cout
   Country.gaul<-Cout
   for(i in 1:length(Country.gaul)){
@@ -175,8 +195,8 @@ for(xxx in 1:length(time_points)){
       eval(parse(text=paste0('func1[[',f,']]<-approxfun(times_ind,p1[,',f,'])')))
     }
     # load household size distribution
-    hh<-read.csv('/home/backup/Bucket model/HHsize.csv')
-    KEY=read.csv('/home/backup/Bucket model/KEY.csv')
+    hh<-read.csv(file.path(joint_dir, 'Bucket_Model/HHsize.csv'))
+    KEY=read.csv(file.path(joint_dir, 'Bucket_Model/KEY.csv'))
     cn_nm<-as.character(KEY[KEY$Name%in%Country.list[i],'Svy.Name'])
     hh_val<-hh[hh$HHSurvey%in%cn_nm,]
     if(nrow(hh_val)!=0){
@@ -313,9 +333,9 @@ for(xxx in 1:length(time_points)){
   P3[!w]<-plogis(acc_mean)
   P3[!is.na(cn) & is.na(P3)]=0
   
-  writeRaster(P,paste0('/home/backup/ITNcube/ITN_',time_points[xxx],'.ACC.tif'),NAflag=-9999,overwrite=TRUE)
-  writeRaster(P2,paste0('/home/backup/ITNcube/ITN_',time_points[xxx],'.DEV.tif'),NAflag=-9999,overwrite=TRUE)
-  writeRaster(P3,paste0('/home/backup/ITNcube/ITN_',time_points[xxx],'.MEAN.tif'),NAflag=-9999,overwrite=TRUE)
+  writeRaster(P, file.path(out_dir, paste0('ITN_',time_points[xxx],'.ACC.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(P2, file.path(out_dir, paste0('ITN_',time_points[xxx],'.DEV.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(P3, file.path(out_dir, paste0('ITN_',time_points[xxx],'.MEAN.tif')),NAflag=-9999,overwrite=TRUE)
   
   #############################################################################################################################################
   #now predict use
@@ -400,8 +420,8 @@ for(xxx in 1:length(time_points)){
   P5[!w]<-(lp_use)
   P5[!is.na(cn) & is.na(P5)]=0
   
-  writeRaster(P4,paste0('/home/backup/ITNcube/ITN_',time_points[xxx],'.GAP.tif'),NAflag=-9999,overwrite=TRUE)
-  writeRaster(P5,paste0('/home/backup/ITNcube/ITN_',time_points[xxx],'.USE.tif'),NAflag=-9999,overwrite=TRUE)
+  writeRaster(P4, file.path(out_dir, paste0('ITN_',time_points[xxx],'.GAP.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(P5, file.path(out_dir, paste0('ITN_',time_points[xxx],'.USE.tif')),NAflag=-9999,overwrite=TRUE)
   
   
 }
@@ -420,19 +440,19 @@ jet.colors <-
                      "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 
 gainr<-c(-2,1) # relative gain?
-data<-read.csv('/home/backup/ITNcube/ITN_final_clean_access_11thSept2017.csv')
+data<-read.csv(file.path(main_dir, 'create_database/output/', 'ITN_final_clean_access_9Feb2019.csv'))
 
 # Plot access ----
-file.remove('/home/backup/ITNcube/access.pdf')
-filename<-'/home/backup/ITNcube/access.pdf'
+filename<-file.path(out_dir,'access.pdf')
+file.remove(filename)
 pdf(filename,width=18.61, height=10.34,onefile=T)
 
 for(i in time_points){
-  P=raster(paste0('/home/backup/ITNcube/ITN_',i,'.ACC.tif'),NAflag=-9999)
-  #	P2=raster(paste0('/home/backup/ITNcube/ITN_',i,'.DEV.tif'),NAflag=-9999)
-  P3=raster(paste0('/home/backup/ITNcube/ITN_',i,'.MEAN.tif'),NAflag=-9999)
-  #	P4=raster(paste0('/home/backup/ITNcube/ITN_',i,'.GAP.tif'),NAflag=-9999)
-  P5=raster(paste0('/home/backup/ITNcube/ITN_',i,'.USE.tif'),NAflag=-9999)
+  P=raster(file.path(out_dir, paste0('ITN_',i,'.ACC.tif')),NAflag=-9999)
+  #	P2=raster(file.path(out_dir, paste0('ITN_',i,'.DEV.tif')),NAflag=-9999)
+  P3=raster(file.path(out_dir, paste0('ITN_',i,'.MEAN.tif')),NAflag=-9999)
+  #	P4=raster(file.path(out_dir, paste0('ITN_',i,'.GAP.tif')),NAflag=-9999)
+  P5=raster(file.path(out_dir, paste0('ITN_',i,'.USE.tif')),NAflag=-9999)
   relg<-relative_gain(P5,P)
   relg_decision<-relg
   relg_decision[relg_decision>0]=1
@@ -512,13 +532,21 @@ plot(relativegain,main='relative gain decision')
 
 
 # Generate country-level estimates ----
+ncores <- detectCores()
+print(paste("--> Machine has", ncores, "cores available"))
+registerDoParallel(ncores-2)
 
-registerDoParallel(62)
 tables<-foreach(i=time_points) %dopar% {	
-  P=raster(paste0('/home/backup/ITNcube/ITN_',i,'.ACC.tif'),NAflag=-9999)
-  P2=raster(paste0('/home/backup/ITNcube/ITN_',i,'.MEAN.tif'),NAflag=-9999)
-  P3=raster(paste0('/home/backup/ITNcube/ITN_',i,'.USE.tif'),NAflag=-9999)
-  pop<-raster(paste0('/home/drive/cubes/5km/AfriPop/',i,'.total.population.tif'),NAflag=-9999)
+  print("loading just-created access and use rasters")
+  P=raster(file.path(out_dir, paste0('ITN_',i,'.ACC.tif')),NAflag=-9999)
+  P2=raster(file.path(out_dir, paste0('ITN_',i,'.MEAN.tif')),NAflag=-9999)
+  P3=raster(file.path(out_dir, paste0('ITN_',i,'.USE.tif')),NAflag=-9999)
+  print("just-created rasters successfully loaded")
+  print("loading population raster")
+  print(file.path(cov_dir, paste0('AfriPop/',min(2015,i),'.total.population.tif')))
+  # ABV EDIT: there is not 2015 raster, so we have to cap the pop loading at 2015.
+  pop<-raster(file.path(cov_dir, paste0('AfriPop/', min(2015,i),'.total.population.tif')),NAflag=-9999)
+  print("population raster loaded")
   P4=(P-P2)/P2 # relative access deviation
   P5=(P3-P)/P # relative use gap
   P6=(P-P2) # absolute access deviation
@@ -535,20 +563,20 @@ tables<-foreach(i=time_points) %dopar% {
   return(cbind(t1,t2,t3,t4,t5,t6,t7))
   
 }	
-
+print("end dopar")
 
 # Plot use as a function of access ----
 
-file.remove('/home/backup/ITNcube/Summary.pdf')
-filename<-'/home/backup/ITNcube/Summary.pdf'
+
+filename<-file.path(out_dir, 'Summary.pdf')
+file.remove(filename)
 pdf(filename,width=11.59, height=10.06,onefile=T) 
 i=2013
 for(i in time_points){
   
-  P=raster(paste0('/home/backup/ITNcube/ITN_',i,'.ACC.tif'),NAflag=-9999)
-  P2=raster(paste0('/home/backup/ITNcube/ITN_',i,'.MEAN.tif'),NAflag=-9999)
-  P5=raster(paste0('/home/backup/ITNcube/ITN_',i,'.USE.tif'),NAflag=-9999)
-  
+  P=raster(file.path(out_dir, paste0('ITN_',i,'.ACC.tif')),NAflag=-9999)
+  P2=raster(file.path(out_dir, paste0('ITN_',i,'.MEAN.tif')),NAflag=-9999)
+  P5=raster(file.path(out_dir, paste0('ITN_',i,'.USE.tif')),NAflag=-9999)
   
   P[1:5]=1;P[6:10]=0
   P2[1:5]=1;P2[6:10]=0
@@ -571,8 +599,7 @@ dev.off()
 # Final adjustments and plotting (ask Sam)----
 
 # this routine adjust use numbers to zero in bad years and label files the same as before for backward compatibility
-indicators<-read.csv('/home/backup/ITNcube/indicators_access_qtr_new.csv')
-indicatorsr<-read.csv('/home/backup/ITNcube/indicators_access_qtr_new.csv')
+indicators<-read.csv(file.path(joint_dir, 'indicators_access_qtr_new.csv'))
 
 ind<-matrix(nrow=nrow(indicators),ncol=17)
 for(i in 1:nrow(indicators)){
@@ -582,7 +609,8 @@ rownames(ind)<-indicators[,1]
 colnames(ind)<-seq(2000,2016,by=1)
 indicators<-ind
 
-POPULATIONS<-read.csv('/home/backup/ITNcube/country_table_populations.csv') # load table to match gaul codes to country names
+# todo: does this POPULATIONS pull a different file than the one earlier in the script?
+POPULATIONS<-read.csv(file.path(joint_dir, 'country_table_populations.csv')) # load table to match gaul codes to country names
 names<-as.character(rownames(ind))
 #for(i in 1:nrow(indicators)){
 #	names[i]=as.character(POPULATIONS[as.character(POPULATIONS$NAME)==names[i],'COUNTRY_ID']) # get 3 letter country codes
@@ -604,9 +632,9 @@ colnames(indmat)<-seq(2000,2016,by=1)
 rownames(indmat)<-names
 
 times<-seq(2000,2016,by=1)
-st<-stack(paste('/home/backup/ITNcube/ITN_',times,'.USE.tif',sep=""))
+st<-stack(paste(out_dir, '/ITN_',times,'.USE.tif',sep=""))
 stv<-getValues(st)
-cn<-raster(paste('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif',sep=""))
+cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif',sep=""))
 cnv<-getValues(cn)
 for(i in 1:nrow(indmat)){
   gaul<-POPULATIONS[as.character(POPULATIONS$NAME)==rownames(ind)[i],'GAUL_CODE']
@@ -620,8 +648,10 @@ for(i in 1:nlayers(st)){
   st[[i]]<-setValues(st[[i]],stv[,i])
 }
 
+for_zed_dir <- file.path(out_dir, "for_z_drive")
+
 for(i in 1:nlayers(st)){
-  writeRaster(st[[i]],paste('/home/drive/cubes/5km/ITN/',times[i],'.ITN.use.yearavg.new.adj.tif',sep=""),NAflag=-9999,overwrite=TRUE)
+  writeRaster(st[[i]],file.path(for_zed_dir, paste(times[i],'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
   
 }
 
@@ -629,12 +659,10 @@ for(i in 1:nlayers(st)){
 st0<-st[[1]]
 NAvalue(st0)<--9999
 st0[!is.na(st0)]=0
-writeRaster(st0,paste('/home/drive/cubes/5km/ITN/',1999,'.ITN.use.yearavg.new.adj.tif',sep=""),NAflag=-9999,overwrite=TRUE)
-writeRaster(st0,paste('/home/drive/cubes/5km/ITN/',1998,'.ITN.use.yearavg.new.adj.tif',sep=""),NAflag=-9999,overwrite=TRUE)
-writeRaster(st0,paste('/home/drive/cubes/5km/ITN/',1997,'.ITN.use.yearavg.new.adj.tif',sep=""),NAflag=-9999,overwrite=TRUE)
-writeRaster(st0,paste('/home/drive/cubes/5km/ITN/',1996,'.ITN.use.yearavg.new.adj.tif',sep=""),NAflag=-9999,overwrite=TRUE)
-writeRaster(st0,paste('/home/drive/cubes/5km/ITN/',1995,'.ITN.use.yearavg.new.adj.tif',sep=""),NAflag=-9999,overwrite=TRUE)
-
-
+writeRaster(st0, file.path(for_zed_dir, paste(1999,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+writeRaster(st0, file.path(for_zed_dir, paste(1998,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+writeRaster(st0, file.path(for_zed_dir, paste(1997,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+writeRaster(st0, file.path(for_zed_dir, paste(1996,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+writeRaster(st0, file.path(for_zed_dir, paste(1995,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
 
 

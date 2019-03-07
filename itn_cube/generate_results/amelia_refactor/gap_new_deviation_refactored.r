@@ -346,5 +346,5 @@ plot(gc.dist(range[,1]),range[,2])
 variance=spde.res2$marginals.variance.nominal$variance.nominal.1
 print(paste('The mean range is',gc.dist(exp(spde.res2$summary.log.range.nominal$mean))))
 
-
+# TODO: switch to use gap name
 save.image(file.path(output_dir, 'ITN_cube_access_dynamic.Rdata'))

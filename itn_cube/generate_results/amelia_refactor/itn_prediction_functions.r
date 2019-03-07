@@ -1,14 +1,15 @@
-library(VGAM)
-#set window
-library(maptools)
-library(rgeos)
-library(png)
-library(sp)
-require('raster')
-require('rgdal')
-library(INLA)
-library(RColorBrewer)
-library(zoo)
+
+
+
+package_load <- function(package_list){
+  # package installation/loading
+  new_packages <- package_list[!(package_list %in% installed.packages()[,"Package"])]
+  if(length(new_packages)) install.packages(new_packages)
+  lapply(package_list, library, character.only=T)
+}
+
+package_load(c("zoo","raster", "data.table", "rgdal", "INLA", "RColorBrewer", "VGAM", "maptools", "rgeos", "png", "sp", "doParallel", "SDMTools"))
+
 
 
 #Create Map template
@@ -85,8 +86,8 @@ get.indicators.model<-function(mat,nc,nr){
 }
 
 
-get.pred.locs<-function(){
-  cn<-raster(paste('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif',sep="")) #load raster
+get.pred.locs<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
+  cn<-raster(file.path(in_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   pred_val<-getValues(cn)#get values again
   w<-is.na(pred_val) #find NAs again
@@ -104,19 +105,21 @@ get.pred.locs<-function(){
 
 
 
-get.pred.covariates.dynamic<-function(year,month){
-  library(zoo)
-  foldersd<-c('/home/drive/cubes/5km/LST_day/mean/',
-              #'/home/drive/cubes/5km/LST_delta/mean/',
-              '/home/drive/cubes/5km/LST_night/mean/',
-              '/home/drive/cubes/5km/EVI/mean/',
-              #'/home/drive/cubes/5km/TCB/mean/',
-              '/home/drive/cubes/5km/TCW/mean/',
-              '/home/drive/cubes/5km/TSI/mean/')
+get.pred.covariates.dynamic<-function(year,month, cov_dir="/mnt/data/input/gs/map_data_z/cubes_5km", 
+                                      joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
   
-  l=length(foldersd)
+  dynamic_covnames <- c("LST_day_mean", "LST_night_mean", "EVI_mean", "TCW_mean", "TSI_mean")
+  #' foldersd<-c('/home/drive/cubes/5km/LST_day/mean/',
+  #'             #'/home/drive/cubes/5km/LST_delta/mean/',
+  #'             '/home/drive/cubes/5km/LST_night/mean/',
+  #'             '/home/drive/cubes/5km/EVI/mean/',
+  #'             #'/home/drive/cubes/5km/TCB/mean/',
+  #'             '/home/drive/cubes/5km/TCW/mean/',
+  #'             '/home/drive/cubes/5km/TSI/mean/')
   
-  cn<-raster(paste('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif',sep="")) #load raster
+  l=length(dynamic_covnames)
+  
+  cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   pred_val<-getValues(cn)#get values again
   w<-is.na(pred_val) #find NAs again
@@ -128,10 +131,11 @@ get.pred.covariates.dynamic<-function(year,month){
   colnames(pred_locs)<-c('longitude','latitude')
   
   #compute covariates for unique year-months		
-  library(doParallel)
-  registerDoParallel(62)
+  
+  ncores <- detectCores()
+  registerDoParallel(ncores-2)
   covs.list.dyn<-foreach(i=1:l,.combine='cbind') %dopar% { # loop through unique names
-    r=raster(paste0(foldersd[i],year,'.',month,'.mean.tif'))
+    r=raster(file.path(cov_dir, dynamic_covnames[i], paste0(year,'.',month,'.mean.tif')))
     NAvalue(r)=-9999
     return(r[index])
   }
@@ -140,9 +144,10 @@ get.pred.covariates.dynamic<-function(year,month){
   return(covs.list.dyn)
 }
 
-get.pred.covariates.yearonly<-function(year){
-  foldery<-c('/home/drive/cubes/5km/IGBP_Landcover/Fraction/','/home/drive/cubes/5km/AfriPop/')
-  cn<-raster(paste('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif',sep="")) #load raster
+get.pred.covariates.yearonly<-function(year,cov_dir="/mnt/data/input/gs/map_data_z/cubes_5km", 
+                                       joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
+  # foldery<-c('/home/drive/cubes/5km/IGBP_Landcover/Fraction/','/home/drive/cubes/5km/AfriPop/')
+  cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   pred_val<-getValues(cn)#get values again
   w<-is.na(pred_val) #find NAs again
@@ -154,14 +159,14 @@ get.pred.covariates.yearonly<-function(year){
   colnames(pred_locs)<-c('longitude','latitude')
   l=17 # 17 fraction classes and 1 afripop
   
-  library(doParallel)
-  registerDoParallel(62)
+  ncores <- detectCores()
+  registerDoParallel(ncores-2)
   covs.list.year<-foreach(i=1:l,.combine='cbind') %dopar% { # loop through unique names
     # no land cover for 2013
     if(year>2012){
-      r=raster(paste0(foldery[1],'2012','.fraction.class.',i-1,'.tif'))
+      r=raster(file.path(cov_dir, "IGBP_Landcover_Fraction", paste0('2012','.fraction.class.',i-1,'.tif'))) 
     }else{
-      r=raster(paste0(foldery[1],year,'.fraction.class.',i-1,'.tif'))
+      r=raster(file.path(cov_dir, "IGBP_Landcover_Fraction", paste0(year,'.fraction.class.',i-1,'.tif')))
     }		
     NAvalue(r)=-9999
     return(r[index])
@@ -169,7 +174,7 @@ get.pred.covariates.yearonly<-function(year){
   covs.list.year<-covs.list.year[,-14]	#  # remove landcover 13  - Urban and built-up   - for collinearity with population
   covnames<-0:16
   covnames<-covnames[-14]	
-  r=raster(paste0(foldery[2],year,'.total.population.tif'))
+  r=raster(file.path(cov_dir, "AfriPop", paste0(year,'.total.population.tif')))
   NAvalue(r)=-9999
   pop<-r[index]
   covs.list.year<-cbind(covs.list.year,pop)
@@ -178,25 +183,35 @@ get.pred.covariates.yearonly<-function(year){
   return(covs.list.year)	
 }
 
-get.pred.covariates.static<-function(){
+get.pred.covariates.static<-function(cov_dir="/mnt/data/input/gs/map_data_z/cubes_5km", 
+                                     joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
   
   #### static covariates
   #### folders
-  folderss<-c('/home/drive/cubes/5km/Topographic/Africa_TMI_90m.mean.tif',
-              '/home/drive/cubes/5km/Topographic/Africa_SRTM_90m.mean.tif',
-              '/home/drive/cubes/5km/Topographic/Africa_slope_90m.mean.tif',
-              #	'/home/drive/cubes/5km/Topographic/Africa_FA_90m.mean.tif',
-              '/home/drive/cubes/5km/Seasonality/pf_seasonality.tif',
-              '/home/drive/cubes/5km/Poverty/PET_1950-2000_5km.mean.tif',
-              '/home/drive/cubes/5km/Poverty/AI_1950-2000_5km.mean.tif',
-              '/home/drive/cubes/5km/Poverty/accessibility_50k_5km.mean.tif',
-              #'/home/drive/cubes/5km/worldclim/prec57a0.tif',
-              '/home/drive/cubes/5km/Poverty/viirs_nighttime_5km.mean.tif')
-  #'/home/drive/cubes/5km/Poverty/DMSP_F18_5km.mean.tif')
+  #' folderss<-c('/home/drive/cubes/5km/Topographic/Africa_TMI_90m.mean.tif',
+  #'             '/home/drive/cubes/5km/Topographic/Africa_SRTM_90m.mean.tif',
+  #'             '/home/drive/cubes/5km/Topographic/Africa_slope_90m.mean.tif',
+  #'             #	'/home/drive/cubes/5km/Topographic/Africa_FA_90m.mean.tif',
+  #'             '/home/drive/cubes/5km/Seasonality/pf_seasonality.tif',
+  #'             '/home/drive/cubes/5km/Poverty/PET_1950-2000_5km.mean.tif',
+  #'             '/home/drive/cubes/5km/Poverty/AI_1950-2000_5km.mean.tif',
+  #'             '/home/drive/cubes/5km/Poverty/accessibility_50k_5km.mean.tif',
+  #'             #'/home/drive/cubes/5km/worldclim/prec57a0.tif',
+  #'             '/home/drive/cubes/5km/Poverty/viirs_nighttime_5km.mean.tif')
+  #' #'/home/drive/cubes/5km/Poverty/DMSP_F18_5km.mean.tif')
   
+  static_fnames <- c("Topographic/Africa_TMI_90m.mean.tif",
+                     "Topographic/Africa_SRTM_90m.mean.tif",
+                     "Topographic/Africa_slope_90m.mean.tif",
+                     "Seasonality/pf_seasonality.tif",
+                     "Poverty/PET_1950-2000_5km.mean.tif",
+                     "Poverty/AI_1950-2000_5km.mean.tif",
+                     "Poverty/accessibility_50k_5km.mean.tif",
+                     "Poverty/viirs_nighttime_5km.mean.tif")
   
-  foldery<-c('/home/drive/cubes/5km/IGBP_Landcover/Fraction/','/home/drive/cubes/5km/AfriPop/')
-  cn<-raster(paste('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif',sep="")) #load raster
+  static_covnames <- file.path(cov_dir, static_fnames)
+  
+  cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   pred_val<-getValues(cn)#get values again
   w<-is.na(pred_val) #find NAs again
@@ -205,7 +220,7 @@ get.pred.covariates.static<-function(){
   pred_locs<-xyFromCell(cn,1:ncell(cn))  #get prediction locations
   pred_locs<-pred_locs[!w,] #remove NA cells
   
-  st<-stack(folderss)
+  st<-stack(static_covnames)
   NAvalue(st)=-9999
   
   static.covs<-st[index]
@@ -250,7 +265,7 @@ Plot_raster<-function(r,bias,title){
   leg.locs<-signif(seq(r.range[1],r.range[2],length.out=100),2)
   cols<-match.cols(leg.locs,n,jet.colors)
   label<-c(as.character(signif(r.range[1],2)),as.character(signif(r.range[2],2)))
-  library(SDMTools)
+  
   # xmin ymin xmax ymax
   rect(-17, -13, -8.5, -37, col = "white", border = "black") 
   pnts = cbind(x =c(-16.5,-12.5,-12.5,-16.5), y =c(-15,-15,-35.6,-35.6))
@@ -301,7 +316,7 @@ Plot_points<-function(data,year,wh,title){
   leg.locs<-signif(seq(r.range[1],r.range[2],length.out=100),2)
   cols<-match.cols(leg.locs,n,jet.colors)
   label<-c(as.character(signif(r.range[1],2)),as.character(signif(r.range[2],2)))
-  library(SDMTools)
+
   # xmin ymin xmax ymax
   rect(-17, -13, -8.5, -37, col = "white", border = "black") 
   pnts = cbind(x =c(-16.5,-12.5,-12.5,-16.5), y =c(-15,-15,-35.6,-35.6))
@@ -331,10 +346,10 @@ relative_gain<-function(use,access){
   return(relativegain)
 }
 
-rel_gain_hist<-function(){
+rel_gain_hist<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"){
   h<-c()
-  P=raster::stack(paste0('/home/backup/ITNcube/ITN_',2000:2016,'.ACC.tif'))
-  P5=stack(paste0('/home/backup/ITNcube/ITN_',2000:2016,'.USE.tif'))
+  P=raster::stack(paste0(in_dir, '/ITN_',2000:2016,'.ACC.tif'))
+  P5=stack(paste0(in_dir, '/ITN_',2000:2016,'.USE.tif'))
   ranges<-matrix(nrow=nlayers(P5),ncol=2)
   for(i in 1:nlayers(P5)){
     tmp<-relative_gain(P5[[i]],P[[i]])
@@ -346,11 +361,11 @@ rel_gain_hist<-function(){
   
 }
 
-rel_gain_range<-function(){
+rel_gain_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"){
   
-  P=raster::stack(paste0('/home/backup/ITNcube/ITN_',2000:2016,'.ACC.tif'))
+  P=raster::stack(paste0(in_dir, '/ITN_',2000:2016,'.ACC.tif'))
   
-  P5=stack(paste0('/home/backup/ITNcube/ITN_',2000:2016,'.USE.tif'))
+  P5=stack(paste0(in_dir, '/ITN_',2000:2016,'.USE.tif'))
   ranges<-matrix(nrow=nlayers(P5),ncol=2)
   for(i in 1:nlayers(P5)){
     tmp<-relative_gain(P5[[i]],P[[i]])
@@ -361,8 +376,8 @@ rel_gain_range<-function(){
   
 }
 
-dev_range<-function(){
-  P=raster::stack(paste0('/home/backup/ITNcube/ITN_',2000:2016,'.DEV.tif'))
+dev_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"){
+  P=raster::stack(paste0(in_dir, '/ITN_',2000:2016,'.DEV.tif'))
   ranges<-matrix(nrow=nlayers(P),ncol=2)
   for(i in 1:nlayers(P)){
     ranges[i,]<-ranges[i,]<-cbind(cellStats(P[[i]],stat='min'),cellStats(P[[i]],stat='max'))
@@ -371,8 +386,8 @@ dev_range<-function(){
   
 }
 
-gap_range<-function(){
-  P=raster::stack(paste0('/home/backup/ITNcube/ITN_',2000:2016,'.GAP.tif'))
+gap_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"){
+  P=raster::stack(paste0(in_dir, '/ITN_',2000:2016,'.GAP.tif'))
   ranges<-matrix(nrow=nlayers(P),ncol=2)
   for(i in 1:nlayers(P)){
     ranges[i,]<-ranges[i,]<-cbind(cellStats(P[[i]],stat='min'),cellStats(P[[i]],stat='max'))
@@ -383,12 +398,12 @@ gap_range<-function(){
 
 
 ## what is cn? country? 
-get.cn.estimates<-function(r,pop){
-  database<-read.csv('/home/backup/country_table.csv')
-  cn<-raster('/home/drive/cubes/5km/Admin/african_cn5km_2013_no_disputes.tif') # master country layer
+get.cn.estimates<-function(r,pop, in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
+  database<-read.csv(file.path(in_dir, 'country_table.csv'))
+  cn<-raster(file.path(in_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   try(if(extent(cn)!=extent(r)) stop("extents do not match"))
-  limits<-raster('/home/drive/cubes/5km/Pf_limits/Pf_limits.tif')
+  limits<-raster(file.path(in_dir, 'Pf_limits/Pf_limits.tif'))
   NAvalue(limits)=-9999
   # stable only limits
   limits[limits==2]=2
