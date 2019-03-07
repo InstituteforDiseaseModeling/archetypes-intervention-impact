@@ -24,13 +24,15 @@ run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "Sweep_Novel"
+sim_root_name = "Sweep_Novel_Timing"
 baseline_interventions = ["itn", "irs", "al_cm"]
 baseline_intervention_coverages = [80]
-sweep_interventions = ["mAb", "tbv", "pev", "atsb", "larvicides", "ivermectin"]
+sweep_interventions = ["mAb", "tbv", "pev", "atsb", "ivermectin"]
 sweep_intervention_coverages = [0, 40, 80]
 sweep_intervention_class = "list"  # can be "combo" (combinatoric) or "list"
-vaccine_durations = [182, 365]
+start_days = [0, 91, 182, 274]
+vaccine_durations = [365]
+atsb_initial_effects = [0.115, 0.4]
 ivermectin_durations = [7, 14, 30]
 new_inputs = False
 
@@ -142,8 +144,9 @@ if __name__ == "__main__":
         df = pd.DataFrame([x.tags for x in expt.simulations])
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
-        # temp for testing
-        # df = df.iloc[0:3]
+        if "Testrun" in sim_root_name:
+            print("Running in Testing mode, only using 3 burnin sims")
+            df = df.iloc[0:3]
 
         # wrap each modfn in a tuple so it can be combined with the int lists using itertools
         from_burnin_list = [
@@ -156,124 +159,137 @@ if __name__ == "__main__":
             for x in df.index]
 
         intervention_dict = {
-            cov: {
-                "itn": [ModFn(add_annual_itns,
-                              year_count=years,
-                              n_rounds=1,
-                              coverage=cov / 100,
-                              discard_halflife=180,
-                              start_day=5,
-                              IP=[{"NetUsage": "LovesNets"}]
-                              )],
-                "irs": [ModFn(add_irs_group,
-                              coverage=cov / 100,
-                              decay=180,
-                              start_days=[365 * start for start in range(years)]
-                              )],
-                "al_cm": [ModFn(add_healthseeking_by_coverage,
-                                coverage=cov / 100,
-                                rate=0.15
-                                )],
-                "dp_cm": [ModFn(add_healthseeking_by_coverage,
-                                coverage=cov / 100,
-                                rate=0.15,
-                                drugname="DP"
-                                )],
-                "dp_mda": [ModFn(add_mda,
-                                 coverage=cov/100
-                                 )],
-                "mAb": [ModFn(add_vaccine,
-                              vaccine_type="PEV",
-                              coverage=cov/100,
-                              vaccine_params={
-                                  "Waning_Config": {
-                                      "class": "WaningEffectBox",
-                                      "Box_Duration": 90
-                                  }
-                              },
-                              target_group={"agemin": 15, "agemax": 49},
-                              start_days=[365 * start for start in range(years)]
-                              )],
-                "pev": [ModFn(add_vaccine,
-                              vaccine_type="PEV",
-                              coverage=cov/100,
-                              vaccine_params={
-                                  "Reduced_Acquire": 0.75,
-                                  "Waning_Config": {
-                                      "class": "WaningEffectExponential",
-                                      "Decay_Time_Constant": vaccine_hl / math.log(2)
-                                  }
-                              },
-                              trigger_condition_list=["Births"],
-                              start_days=[0],
-                              triggered_delay=182)
-                        for vaccine_hl in vaccine_durations
-                        ],
-                "tbv": [ModFn(add_vaccine,
-                              vaccine_type="TBV",
-                              coverage=cov/100,
-                              vaccine_params={
-                                  "Reduced_Transmit": 0.75,
-                                  "Waning_Config": {
-                                      "class": "WaningEffectExponential",
-                                      "Decay_Time_Constant": vaccine_hl / math.log(2)
-                                  }
-                              },
-                              target_group={"agemin": 15, "agemax": 49},
-                              start_days=[365 * start for start in range(years)]
-                              )
-                        for vaccine_hl in vaccine_durations
-                        ],
-                "atsb": [ModFn(add_atsb,
-                               coverage=cov / 100,
-                               start_days=[365 * start for start in range(years)]
-                               )],
-                "ors": [ModFn(add_ors,
-                              coverage=cov / 100,
-                              start_days=[365 * start for start in range(years)]
-                              )],
-                "larvicides": [ModFn(add_larvicide_wrapper,
-                                     coverage=cov / 100,
-                                     start_days=[365 * start for start in range(years)]
+            start_day: {
+                cov: {
+                    "itn": [ModFn(add_annual_itns,
+                                  year_count=years,
+                                  n_rounds=1,
+                                  coverage=cov / 100,
+                                  discard_halflife=180,
+                                  start_day=start_day,
+                                  IP=[{"NetUsage": "LovesNets"}]
+                                  )],
+                    "irs": [ModFn(add_irs_group,
+                                  coverage=cov / 100,
+                                  decay=180,
+                                  start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                                  )],
+                    "al_cm": [ModFn(add_healthseeking_by_coverage,
+                                    coverage=cov / 100,
+                                    rate=0.15
+                                    )],
+                    "dp_cm": [ModFn(add_healthseeking_by_coverage,
+                                    coverage=cov / 100,
+                                    rate=0.15,
+                                    drugname="DP"
+                                    )],
+                    "dp_mda": [ModFn(add_mda,
+                                     coverage=cov / 100
                                      )],
-                "ivermectin": [ModFn(add_ivermectin_wrapper,
-                                     coverage=cov / 100,
-                                     drug_duration=duration,
-                                     start_days=[365 * start for start in range(years)]
-                                     )
-                               for duration in ivermectin_durations
-                               ]
+                    "mAb": [ModFn(add_vaccine,
+                                  vaccine_type="PEV",
+                                  coverage=cov / 100,
+                                  vaccine_params={
+                                      "Waning_Config": {
+                                          "class": "WaningEffectBox",
+                                          "Box_Duration": 90
+                                      }
+                                  },
+                                  target_group={"agemin": 15, "agemax": 49},
+                                  start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                                  )],
+                    "pev": [ModFn(add_vaccine,
+                                  vaccine_type="PEV",
+                                  coverage=cov / 100,
+                                  vaccine_params={
+                                      "Reduced_Acquire": 0.75,
+                                      "Waning_Config": {
+                                          "class": "WaningEffectExponential",
+                                          "Decay_Time_Constant": vaccine_hl / math.log(2)
+                                      }
+                                  },
+                                  trigger_condition_list=["Births"],
+                                  start_days=[0],
+                                  triggered_delay=182)
+                            for vaccine_hl in vaccine_durations
+                            ],
+                    "tbv": [ModFn(add_vaccine,
+                                  vaccine_type="TBV",
+                                  coverage=cov / 100,
+                                  vaccine_params={
+                                      "Reduced_Transmit": 0.75,
+                                      "Waning_Config": {
+                                          "class": "WaningEffectExponential",
+                                          "Decay_Time_Constant": vaccine_hl / math.log(2)
+                                      }
+                                  },
+                                  target_group={"agemin": 15, "agemax": 49},
+                                  start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                                  )
+                            for vaccine_hl in vaccine_durations
+                            ],
+                    "atsb": [ModFn(add_atsb,
+                                   coverage=cov / 100,
+                                   # renew atsb every 6 months
+                                   start_days=[(365 * year_idx) + start_day + midyear_start
+                                               for year_idx in range(years) for midyear_start in [0, 182]],
+                                   initial_effect=initial_effect
+                                   )
+                             for initial_effect in atsb_initial_effects
+                             ],
+                    "ors": [ModFn(add_ors,
+                                  coverage=cov / 100,
+                                  start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                                  )],
+                    "larvicides": [ModFn(add_larvicide_wrapper,
+                                         coverage=cov / 100,
+                                         start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                                         )],
+                    "ivermectin": [ModFn(add_ivermectin_wrapper,
+                                         coverage=cov / 100,
+                                         drug_duration=duration,
+                                         start_days=[(365 * year_idx) + start_day for year_idx in range(years)],
+                                         monthly_rounds = 3
+                                         )
+                                   for duration in ivermectin_durations
+                                   ]
 
+                }
+                for cov in list(set(baseline_intervention_coverages + sweep_intervention_coverages))
             }
-            for cov in list(set(baseline_intervention_coverages + sweep_intervention_coverages))
-            }
+            for start_day in start_days
+        }
 
         def get_combos_and_flatten(old_list):
             combos = list(itertools.product(*old_list))
             return [list(itertools.chain.from_iterable(sublist)) for sublist in combos]
 
-        # find list of "base intervention" modfns
-        baseline_int_list = [[intervention_dict[cov][intname] for cov in baseline_intervention_coverages]
-                             for intname in baseline_interventions]
-        baseline_int_list = get_combos_and_flatten(baseline_int_list)
+        full_sim_list = []
+        for start_day in start_days:
 
-        # find list of "sweep" modfns:
-        if sweep_intervention_class == "list":
-            sweep_int_list = [intervention_dict[cov][intname] for intname in sweep_interventions
-                              for cov in sweep_intervention_coverages]
-            # flatten list
-            sweep_int_list = list(itertools.chain.from_iterable(sweep_int_list))
+            # find list of "base intervention" modfns
+            baseline_int_list = [[intervention_dict[start_day][cov][intname] for cov in baseline_intervention_coverages]
+                                 for intname in baseline_interventions]
+            baseline_int_list = get_combos_and_flatten(baseline_int_list)
 
-            # put everything back in a one-element list so chain.from_iterable will work
-            sweep_int_list = [[item] for item in sweep_int_list]
+            # find list of "sweep" modfns:
+            if sweep_intervention_class == "list":
+                sweep_int_list = [intervention_dict[start_day][cov][intname] for intname in sweep_interventions
+                                  for cov in sweep_intervention_coverages]
+                # flatten list
+                sweep_int_list = list(itertools.chain.from_iterable(sweep_int_list))
 
-        else:
-            sweep_int_list = [[intervention_dict[cov][intname] for cov in sweep_intervention_coverages]
-                              for intname in sweep_interventions]
-            sweep_int_list = get_combos_and_flatten(sweep_int_list)
+                # put everything back in a one-element list so chain.from_iterable will work
+                sweep_int_list = [[item] for item in sweep_int_list]
 
-        full_sim_list = [from_burnin_list, baseline_int_list, sweep_int_list]
-        full_sim_list = get_combos_and_flatten(full_sim_list)
+            else:
+                sweep_int_list = [[intervention_dict[start_day][cov][intname] for cov in sweep_intervention_coverages]
+                                  for intname in sweep_interventions]
+                sweep_int_list = get_combos_and_flatten(sweep_int_list)
+
+            startday_sim_list = [from_burnin_list, baseline_int_list, sweep_int_list]
+            startday_sim_list = get_combos_and_flatten(startday_sim_list)
+            full_sim_list = full_sim_list + startday_sim_list
 
         builder = ModBuilder.from_list(full_sim_list)
 
