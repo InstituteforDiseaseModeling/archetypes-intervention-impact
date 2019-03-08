@@ -484,7 +484,7 @@ for(i in time_points){
   
   
 }
-dev.off()
+graphics.off()
 
 # Plot relative gain (?) ----
 #use
@@ -567,7 +567,7 @@ print("end dopar")
 
 # Plot use as a function of access ----
 
-
+print("plotting summary.pdf")
 filename<-file.path(out_dir, 'Summary.pdf')
 file.remove(filename)
 pdf(filename,width=11.59, height=10.06,onefile=T) 
@@ -593,12 +593,14 @@ for(i in time_points){
   Plot_raster(P6,1,"Use as function of Access")
   
 }
-dev.off()
-
+graphics.off()
+print("summary.pdf plotted")
 
 # Final adjustments and plotting (ask Sam)----
 
+print("running final adjustments and plotting")
 # this routine adjust use numbers to zero in bad years and label files the same as before for backward compatibility
+print("loading indicators")
 indicators<-read.csv(file.path(joint_dir, 'indicators_access_qtr_new.csv'))
 
 ind<-matrix(nrow=nrow(indicators),ncol=17)
@@ -610,11 +612,13 @@ colnames(ind)<-seq(2000,2016,by=1)
 indicators<-ind
 
 # todo: does this POPULATIONS pull a different file than the one earlier in the script?
+print("loading populations")
 POPULATIONS<-read.csv(file.path(joint_dir, 'country_table_populations.csv')) # load table to match gaul codes to country names
 names<-as.character(rownames(ind))
 #for(i in 1:nrow(indicators)){
 #	names[i]=as.character(POPULATIONS[as.character(POPULATIONS$NAME)==names[i],'COUNTRY_ID']) # get 3 letter country codes
 #}
+print("generating indicator matrix")
 rownames(ind)<-as.character(names)
 threshold=0.02
 indmat<-matrix(data=0,nrow=nrow(indicators),ncol=ncol(indicators))
@@ -632,9 +636,18 @@ colnames(indmat)<-seq(2000,2016,by=1)
 rownames(indmat)<-names
 
 times<-seq(2000,2016,by=1)
+
+fnames_for_stack <- paste(out_dir, '/ITN_',times,'.USE.tif',sep="")
+print("contents of stack directory:")
+print(out_dir)
+list.files(out_dir)
+print("loading raster stack")
+print(fnames_for_stack)
+
 st<-stack(paste(out_dir, '/ITN_',times,'.USE.tif',sep=""))
+print("successfully loaded raster stack")
 stv<-getValues(st)
-cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif',sep=""))
+cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif'))
 cnv<-getValues(cn)
 for(i in 1:nrow(indmat)){
   gaul<-POPULATIONS[as.character(POPULATIONS$NAME)==rownames(ind)[i],'GAUL_CODE']
@@ -648,10 +661,12 @@ for(i in 1:nlayers(st)){
   st[[i]]<-setValues(st[[i]],stv[,i])
 }
 
+print("saving for z dir rasters")
 for_zed_dir <- file.path(out_dir, "for_z_drive")
+list.files(for_zed_dir)
 
 for(i in 1:nlayers(st)){
-  writeRaster(st[[i]],file.path(for_zed_dir, paste(times[i],'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+  writeRaster(st[[i]],file.path(out_dir, paste("for_z_", times[i],'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
   
 }
 
@@ -659,10 +674,10 @@ for(i in 1:nlayers(st)){
 st0<-st[[1]]
 NAvalue(st0)<--9999
 st0[!is.na(st0)]=0
-writeRaster(st0, file.path(for_zed_dir, paste(1999,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
-writeRaster(st0, file.path(for_zed_dir, paste(1998,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
-writeRaster(st0, file.path(for_zed_dir, paste(1997,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
-writeRaster(st0, file.path(for_zed_dir, paste(1996,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
-writeRaster(st0, file.path(for_zed_dir, paste(1995,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
-
+writeRaster(st0, file.path(out_dir, paste("for_z_", 1999,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+writeRaster(st0, file.path(out_dir, paste("for_z_", 1998,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+writeRaster(st0, file.path(out_dir, paste("for_z_", 1997,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+writeRaster(st0, file.path(out_dir, paste("for_z_", 1996,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+writeRaster(st0, file.path(out_dir, paste("for_z_", 1995,'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
+print("for z dir rasters saved")
 
