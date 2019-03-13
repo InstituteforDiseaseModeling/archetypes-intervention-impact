@@ -10,7 +10,7 @@ experimental_results <- T
 
 
 initial <- fread(file.path(main_dir, "../initial/MAP_II_New_Sites_Burnin.csv"))
-prelim_data <- fread(file.path(main_dir, "MAP_Sweep_Novel_Intervention.csv"))
+prelim_data <- fread(file.path(main_dir, "MAP_Sweep_Novel_Timing_Intervention.csv"))
 
 prelim_data[, Intervention:=""]
 
@@ -21,19 +21,21 @@ if (experimental_results==T){
   
   all_data <- prelim_data[, list(Site_Name, x_Temporary_Larval_Habitat, Run_Number,
                                  # IRS_Coverage, ITN_Coverage, AL_CM_Coverage=CM_Coverage,
+                                 Start_Day=ITN_Start,
                                  mAB = ifelse(PEV_Waning_Config_class=="WaningEffectBox", PEV_Coverage, NA),
-                                 PEV_6mo = ifelse(pev_half_life==182, PEV_Coverage, NA),
+                                 # PEV_6mo = ifelse(pev_half_life==182, PEV_Coverage, NA),
                                  PEV_12mo = ifelse(pev_half_life==365, PEV_Coverage, NA),
-                                 TBV_6mo = ifelse(tbv_half_life==182, TBV_Coverage, NA),
+                                 # TBV_6mo = ifelse(tbv_half_life==182, TBV_Coverage, NA),
                                  TBV_12mo = ifelse(tbv_half_life==365, TBV_Coverage, NA),
-                                 ATSB = ATSB_Coverage,
-                                 Larvicide = Larvicide_Coverage,
+                                 ATSB_11percent = ifelse(ATSB_Initial_Effect==0.115, ATSB_Coverage, NA),
+                                 ATSB_40percent = ifelse(ATSB_Initial_Effect==0.4, ATSB_Coverage, NA),
+                                 # Larvicide = Larvicide_Coverage,
                                  Ivermectin_7day = ifelse(Ivermectin_Duration==7, Ivermectin_Coverage, NA),
                                  Ivermectin_14day = ifelse(Ivermectin_Duration==14, Ivermectin_Coverage, NA),
                                  Ivermectin_30day = ifelse(Ivermectin_Duration==30, Ivermectin_Coverage, NA),
                                  final_prev)]
   
-  all_data <- melt(all_data, id.vars=c("Site_Name", "x_Temporary_Larval_Habitat", "Run_Number", "final_prev"), value.name = "Coverage", variable.name = "Intervention")
+  all_data <- melt(all_data, id.vars=c("Site_Name", "x_Temporary_Larval_Habitat", "Run_Number", "Start_Day", "final_prev"), value.name = "Coverage", variable.name = "Intervention")
   all_data <- all_data[!is.na(Coverage)]
   
 }else{
@@ -56,21 +58,37 @@ all_data <- merge(all_data, initial, by=c("Site_Name", "Run_Number", "x_Temporar
 
 all_data[, Run_Number:=factor(Run_Number)]
 
-all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage)]
-all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage)]
+all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Start_Day, Intervention, Coverage)]
+all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Start_Day, Intervention, Coverage)]
 
 # to_plot <- all_data[Site_Name=="aba"]
 
 # pdf(file.path(Sys.getenv("USERPROFILE"), 
 #               "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/writing_and_presentations/ii_paper",
 #               "figures/new_ints.pdf"), height=6, width=7)
-ggplot(all_data, aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
+
+for (sname in unique(all_data$Site_Name)){
+  site_plot <- ggplot(all_data[Site_Name==sname], aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
+                geom_line(size=1.5) +
+                geom_abline() +
+                scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
+                facet_grid(Start_Day ~ Intervention) +
+                theme_minimal() +
+                theme(legend.position="bottom") +
+                labs(title=sname)
+  
+  print(site_plot)
+}
+
+ggplot(all_data[Start_Day==0], aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
   geom_line(size=1.5) +
   geom_abline() +
   scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
   facet_grid(Site_Name ~ Intervention) +
   theme_minimal() +
   theme(legend.position="bottom")
+
+
 # graphics.off()
 
 # pdf(file.path(Sys.getenv("USERPROFILE"), 

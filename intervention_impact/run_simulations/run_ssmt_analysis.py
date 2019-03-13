@@ -18,15 +18,19 @@ if __name__ == "__main__":
 
     sites = pd.read_csv("site_details.csv")
 
-    experiments = {"interactions": "b72fbc1b-543e-e911-a2c5-c4346bcb7273"}
+    experiments = {"interactions": "c3c7f3db-cf40-e911-a2c0-c4346bcb1554"}
 
     tags = tags = {'Demo': 'dtktools SSMTAnalysis', 'WorkItem type': 'Docker'}
 
     for dirname, exp_id in experiments.items():
         args = dict(dir_name=dirname, report_names=sites["name"].tolist(),
-                    sweep_variables=["Run_Number", "x_Temporary_Larval_Habitat", "CM_Drug", "CM_Coverage",
-                                     "IRS_Coverage", "ITN_Coverage", "ATSB_Coverage", "Larvicide_Coverage",
-                                     "Ivermectin_Coverage", "Ivermectin_Duration",
+                    sweep_variables=["Run_Number", "x_Temporary_Larval_Habitat",
+                                     "CM_Drug", "CM_Coverage",
+                                     "IRS_Coverage",
+                                     "ITN_Coverage", "ITN_Start",
+                                     "ATSB_Coverage", "ATSB_Initial_Effect",
+                                     "Larvicide_Coverage",
+                                     "Ivermectin_Coverage", "Ivermectin_Duration", "Ivermectin_Monthly_Rounds",
                                      "PEV_Coverage", "PEV_Waning_Config_class", "PEV_Waning_Config_Decay_Time_Constant",
                                      "TBV_Coverage", "TBV_Waning_Config_Decay_Time_Constant"])
         # no need to set working_dir. using default working_dir as '.'
