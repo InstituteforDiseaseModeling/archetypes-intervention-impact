@@ -1,7 +1,7 @@
 
 
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive main_dir=gs://map_data_z/users/amelia/itn_cube cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code --input CODE=gs://map_data_z/users/amelia/itn_cube/code/itn_prediction_refactored.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/predictions --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive main_dir=gs://map_data_z/users/amelia/itn_cube cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code --input CODE=gs://map_data_z/users/amelia/itn_cube/code/itn_prediction_refactored.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/predictions/orig --command 'Rscript ${CODE}'
 
 # from access deviation and use gap, predict coverage and map all surfaces
 
@@ -12,7 +12,8 @@ package_load <- function(package_list){
   lapply(package_list, library, character.only=T)
 }
 
-package_load(c("zoo","raster", "data.table", "rgdal", "INLA", "RColorBrewer", "VGAM", "maptools", "rgeos", "png", "sp", "doParallel"))
+package_load(c("zoo","raster", "data.table", "rgdal", "INLA", "RColorBrewer",
+               "VGAM", "maptools", "rgeos", "png", "sp", "doParallel", "rasterVis", "ggplot2"))
 
 if(Sys.getenv("main_dir")=="") {
   main_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/"
@@ -645,7 +646,20 @@ print("loading raster stack")
 print(fnames_for_stack)
 
 st<-stack(paste(out_dir, '/ITN_',times,'.USE.tif',sep=""))
-print("successfully loaded raster stack")
+print("plotting original use stack")
+
+pal <- brewer.pal(8, "RdYlGn")
+breaks <- seq(0, 1, length.out = length(pal)+1)
+
+pdf(file.path(out_dir, "samdir_zdir_compare.pdf"), width=7, height=10)
+p <- levelplot(st,
+               par.settings=rasterTheme(region=pal), at=breaks,
+               xlab=NULL, ylab=NULL, scales=list(draw=F), margin=F,
+               main="Initial Use Rasters"
+)
+print(p)
+
+
 stv<-getValues(st)
 cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif'))
 cnv<-getValues(cn)
@@ -661,9 +675,15 @@ for(i in 1:nlayers(st)){
   st[[i]]<-setValues(st[[i]],stv[,i])
 }
 
+p <- levelplot(st,
+               par.settings=rasterTheme(region=pal), at=breaks,
+               xlab=NULL, ylab=NULL, scales=list(draw=F), margin=F,
+               main="Use Rasters for Z Drive"
+)
+print(p)
+graphics.off()
+
 print("saving for z dir rasters")
-for_zed_dir <- file.path(out_dir, "for_z_drive")
-list.files(for_zed_dir)
 
 for(i in 1:nlayers(st)){
   writeRaster(st[[i]],file.path(out_dir, paste("for_z_", times[i],'.ITN.use.yearavg.new.adj.tif',sep="")),NAflag=-9999,overwrite=TRUE)
