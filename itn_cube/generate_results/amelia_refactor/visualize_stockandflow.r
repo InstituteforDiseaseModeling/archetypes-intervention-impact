@@ -3,6 +3,7 @@ rm(list=ls())
 
 library(data.table)
 library(ggplot2)
+library(rstan)
 
 
 input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
@@ -36,13 +37,12 @@ stock_and_flow <- lapply(1:length(out), function(idx){
 stock_and_flow <- rbindlist(stock_and_flow)
 stock_and_flow[, hh_size:=as.factor(hh_size)]
 
-ggplot(stock_and_flow[hh_size==2], aes(x=time, y=prob_hasnet)) +
+ggplot(stock_and_flow[hh_size==2], aes(x=time, y=1-prob_hasnet)) +
   geom_line() + 
   facet_wrap(~iso3) +
   labs(x="Time",
        y="P0 (Probability HH has Any Nets)",
        title="Stock and Flow Means, HH Size=2")
-
 
 
 

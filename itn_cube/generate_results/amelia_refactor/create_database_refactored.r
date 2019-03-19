@@ -16,7 +16,7 @@ package_load <- function(package_list){
 package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 
 # current dsub:
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/input joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/create_database/output --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/input joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/create_database/output --command 'Rscript ${CODE}'
 
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
@@ -24,7 +24,7 @@ if(Sys.getenv("input_dir")=="") {
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output"
-  func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/create_database_functions.r"
+  func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/create_database_functions.r"
 } else {
   joint_dir <- Sys.getenv("joint_dir")
   input_dir <- Sys.getenv("input_dir")
@@ -34,7 +34,7 @@ if(Sys.getenv("input_dir")=="") {
 
 source(func_fname)
 
-out_fname <- file.path(output_dir, 'ITN_final_clean_access_9Feb2019.csv')
+out_fname <- file.path(output_dir, 'ITN_final_clean_access_18March2019.csv')
 
 # p0 & p1-- from stock & flow, nat'l time series of p0=p(hh has >0 nets) and p1=avg # of nets
 # 40 countries (list length), houshold size 1-10 (columns)
@@ -61,7 +61,7 @@ Surveys<-Surveys[!is.na(Surveys)]
 
 # find access (# with a net available) and use (# sleeping under net) per household 
 # todo: give these better names, put them in a dataset? check bounding of d against methods in document
-times<-seq(0.0,17,0.25)+2000 # 2000 to 2017, in quarter-year intervals
+times<-seq(0.0,18,0.25)+2000 # 2000 to 2018, in quarter-year intervals
 a=HH$n.individuals.that.slept.in.surveyed.hhs # number in household
 b=HH$n.ITN.per.hh # number of nets
 d=b*2 # number covered by nets

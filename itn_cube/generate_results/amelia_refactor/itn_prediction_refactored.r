@@ -40,13 +40,12 @@ print("loaded shapefiles and templates for plotting")
 # load access and gap estimates
 list.files(main_dir)
 list.files(file.path(main_dir, 'access_deviation'))
-load(file.path(main_dir, "access_deviation", "ITN_cube_access_dynamic_access deviation_25Feb2019.Rdata"))
+load(file.path(main_dir, "access_deviation", "ITN_cube_access_dynamic_access_deviation_18March2019.Rdata"))
 mod.pred.acc=mod.pred
 theta.acc<-theta
 mesh.acc<-mesh
 
-# TODO: change this filepath to use_gap, which is the data it represents
-load(file.path(main_dir, "use_gap", "ITN_cube_access_dynamic.Rdata"))
+load(file.path(main_dir, "use_gap", "ITN_cube_gap_dynamic_18March2019.Rdata"))
 mod.pred.use=mod.pred
 theta.use<-theta
 mesh.use<-mesh
@@ -154,7 +153,7 @@ for(xxx in 1:length(time_points)){
   for(i in 1:length(Country.gaul)){
     Country.gaul[i]<-POPULATIONS[as.character(POPULATIONS[,'ISO3'])==as.character(Country.list[i]),'GAUL_Code']
   }	
-  times_ind<-seq(0.0,17,0.25)+2000
+  times_ind<-seq(0.0,18,0.25)+2000
   Country.gaul = as.numeric(as.vector(Country.gaul))
   accdate1<-as.numeric(as.yearmon(paste(time_points[xxx],1,sep='-')))
   accdate2<-as.numeric(as.yearmon(paste(time_points[xxx],2,sep='-')))
