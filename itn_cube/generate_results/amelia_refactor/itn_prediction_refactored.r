@@ -1,7 +1,7 @@
 
 
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive main_dir=gs://map_data_z/users/amelia/itn_cube cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code --input CODE=gs://map_data_z/users/amelia/itn_cube/code/itn_prediction_refactored.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/predictions/orig --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive main_dir=gs://map_data_z/users/amelia/itn_cube cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code --input CODE=gs://map_data_z/users/amelia/itn_cube/code/itn_prediction_refactored.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/predictions/refactor --command 'Rscript ${CODE}'
 
 # from access deviation and use gap, predict coverage and map all surfaces
 
