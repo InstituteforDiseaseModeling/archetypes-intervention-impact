@@ -7,7 +7,7 @@
 # '/home/drive/cubes/5km/worldclim/prec57a0.tif'
 
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code --input database_fname=gs://map_data_z/users/amelia/itn_cube/create_database/output/ITN_final_clean_access_9Feb2019.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/acc_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/access_deviation --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code --input database_fname=gs://map_data_z/users/amelia/itn_cube/create_database/output/ITN_final_clean_access_18March2019.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/acc_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/access_deviation --command 'Rscript ${CODE}'
 
 
 
@@ -41,7 +41,7 @@ source(file.path(func_dir, "acc_deviation_functions.r"))
 source(file.path(func_dir, "algorithm.V1.R"))
 source(file.path(func_dir, "INLAFunctions.R"))
 
-output_fname <- file.path(output_dir, 'ITN_cube_access_dynamic_access deviation_25Feb2019.Rdata')
+output_fname <- file.path(output_dir, 'ITN_cube_access_dynamic_access_deviation_18March2019.Rdata')
 
 # Load data from create_database.r  ------------------------------------------------------------
 data<-read.csv(database_fname)
