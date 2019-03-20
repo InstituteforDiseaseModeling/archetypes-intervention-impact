@@ -18,7 +18,7 @@ if __name__ == "__main__":
 
     sites = pd.read_csv("site_details.csv")
 
-    experiments = {"interactions": "c3c7f3db-cf40-e911-a2c0-c4346bcb1554"}
+    experiments = {"interactions": "3d909a5e-a84a-e911-a2c0-c4346bcb1554"}
 
     tags = tags = {'Demo': 'dtktools SSMTAnalysis', 'WorkItem type': 'Docker'}
 

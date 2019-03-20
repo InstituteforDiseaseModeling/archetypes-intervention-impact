@@ -24,13 +24,13 @@ run_type = "intervention"  # set to "burnin" or "intervention"
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "Sweep_Novel_Timing"
+sim_root_name = "ATSB_Testrun"
 baseline_interventions = ["itn", "irs", "al_cm"]
-baseline_intervention_coverages = [80]
-sweep_interventions = ["mAb", "tbv", "pev", "atsb", "ivermectin"]
-sweep_intervention_coverages = [0, 40, 80]
+baseline_intervention_coverages = [0]
+sweep_interventions = ["atsb"]
+sweep_intervention_coverages = [40, 80]
 sweep_intervention_class = "list"  # can be "combo" (combinatoric) or "list"
-start_days = [0, 91, 182, 274]
+start_days = [0]
 vaccine_durations = [365]
 atsb_initial_effects = [0.115, 0.4]
 ivermectin_durations = [7, 14, 30]
@@ -63,6 +63,9 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Age_Initialization_Distribution_Type="DISTRIBUTION_COMPLEX",
                                     Num_Cores=1,
 
+                                    # spatial
+                                    Enable_Spatial_Output=1,
+
                                     # interventions
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One",
@@ -86,7 +89,9 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     )
 
 cb.update_params({"Disable_IP_Whitelist": 1,
-                  "Enable_Property_Output": 0})
+                  "Enable_Property_Output": 0,
+                  "Spatial_Output_Channels" : ["Air_Temperature", "Rainfall", "Relative_Humidity"],})
+
 
 if serialize:
     cb.update_params({"Serialization_Time_Steps": [365*years]})
@@ -132,7 +137,7 @@ if __name__ == "__main__":
                            },
                            description=row["name"])
     # add_event_counter_report(cb, ["Bednet_Using", "Received_Vaccine"])
-    # add_vector_stats_report(cb)
+    # add_vector_stats_report(cb))
 
     if pull_from_serialization:
         print("building from pickup")

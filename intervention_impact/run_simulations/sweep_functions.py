@@ -160,19 +160,20 @@ def add_mda(cb, coverage=0.8, drugname="DP", start_days=[0], reps=3):
 
 def add_atsb(cb, coverage=0.8, start_days=[0], duration=180, initial_effect=0.0377):
 
-    # default killing cfg
-    killing_cfg = {"Killing_Config":{
-                            "class": "WaningEffectBoxExponential",
-                            "Box_Duration": 180,
-                            "Decay_Time_Constant": 130,
-                            "Initial_Effect":initial_effect
-                            }}
-
     for start_day in start_days:
+
+        # default killing cfg
+        orig_killing_cfg = {"Killing_Config": {
+            "class": "WaningEffectBoxExponential",
+            "Box_Duration": 180,
+            "Decay_Time_Constant": 130,
+            "Initial_Effect": initial_effect
+        }}
+
         add_ATSB(cb, coverage=coverage,
                  start_day=start_day,
                  duration=duration,
-                 kill_cfg=killing_cfg
+                 kill_cfg=orig_killing_cfg
                  )
 
     return {"ATSB_Coverage": coverage, "ATSB_Start": start_days[0], "ATSB_Duration_Mean": duration,
