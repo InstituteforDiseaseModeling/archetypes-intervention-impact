@@ -14,6 +14,12 @@ prelim_data <- fread(file.path(main_dir, "MAP_Sweep_Novel_Timing_Intervention.cs
 
 prelim_data[, Intervention:=""]
 
+true_atsb_vals <- data.table(Intervention=c("ATSB_11percent", "ATSB_11percent", "ATSB_11percent", "ATSB_40percent", "ATSB_40percent", "ATSB_40percent"),
+                             Coverage=c(0, 0.4, 0.8, 0, 0.4, 0.8),
+                             ATSB_True_Initial_Killing=c(0, 0.00047104, 0.03014656, 0, 0.0016384, 0.1048576)
+                             )
+
+
 if (experimental_results==T){
   
   prelim_data[, tbv_half_life:=TBV_Waning_Config_Decay_Time_Constant*log(2)]
@@ -58,8 +64,15 @@ all_data <- merge(all_data, initial, by=c("Site_Name", "Run_Number", "x_Temporar
 
 all_data[, Run_Number:=factor(Run_Number)]
 
+all_data[, Start_Day:=factor(Start_Day)]
+
 all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Start_Day, Intervention, Coverage)]
 all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Start_Day, Intervention, Coverage)]
+
+all_data <- merge(all_data, true_atsb_vals, by=c("Intervention", "Coverage"), all=T)
+all_data[, Coverage:=factor(Coverage)]
+
+write.csv(all_data, file=file.path(main_dir, "lookup_outdoor_interventions_sweep_timing.csv"), row.names = F)
 
 # to_plot <- all_data[Site_Name=="aba"]
 
@@ -68,19 +81,21 @@ all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_H
 #               "figures/new_ints.pdf"), height=6, width=7)
 
 for (sname in unique(all_data$Site_Name)){
-  site_plot <- ggplot(all_data[Site_Name==sname], aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
+  png(paste0("/Users/bertozzivill/Desktop/", sname, ".png"), height=500, width=800)
+  site_plot <- ggplot(all_data[Site_Name==sname], aes(x=mean_initial, y=mean_final, color=Start_Day)) +
                 geom_line(size=1.5) +
                 geom_abline() +
-                scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
-                facet_grid(Start_Day ~ Intervention) +
+                # scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
+                facet_grid(Coverage ~ Intervention) +
                 theme_minimal() +
                 theme(legend.position="bottom") +
                 labs(title=sname)
   
   print(site_plot)
+  graphics.off()
 }
 
-ggplot(all_data[Start_Day==0], aes(x=mean_initial, y=mean_final, color=factor(Coverage))) +
+ggplot(all_data[Start_Day==0], aes(x=mean_initial, y=mean_final, color=Coverage)) +
   geom_line(size=1.5) +
   geom_abline() +
   scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
@@ -125,5 +140,5 @@ ggplot(all_data[Intervention=="ACT 0.8;"], aes(x=mean_initial, color=Vector_Life
 
 # graphics.off()
 
-write.csv(all_data, file=file.path(main_dir, "lookup_sensitivity_lifespan.csv"), row.names = F)
+
 
