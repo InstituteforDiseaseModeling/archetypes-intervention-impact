@@ -10,7 +10,7 @@ experimental_results <- T
 
 
 initial <- fread(file.path(main_dir, "../initial/MAP_II_New_Sites_Burnin.csv"))
-prelim_data <- fread(file.path(main_dir, "MAP_Sweep_Novel_Timing_Intervention.csv"))
+prelim_data <- fread(file.path(main_dir, "MAP_Test_Climate_Intervention.csv"))
 
 prelim_data[, Intervention:=""]
 
@@ -22,19 +22,19 @@ true_atsb_vals <- data.table(Intervention=c("ATSB_11percent", "ATSB_11percent", 
 
 if (experimental_results==T){
   
-  prelim_data[, tbv_half_life:=TBV_Waning_Config_Decay_Time_Constant*log(2)]
-  prelim_data[, pev_half_life:=PEV_Waning_Config_Decay_Time_Constant*log(2)]
-  
+  # prelim_data[, tbv_half_life:=TBV_Waning_Config_Decay_Time_Constant*log(2)]
+  # prelim_data[, pev_half_life:=PEV_Waning_Config_Decay_Time_Constant*log(2)]
+  # 
   all_data <- prelim_data[, list(Site_Name, x_Temporary_Larval_Habitat, Run_Number,
                                  # IRS_Coverage, ITN_Coverage, AL_CM_Coverage=CM_Coverage,
                                  Start_Day=ITN_Start,
-                                 mAB = ifelse(PEV_Waning_Config_class=="WaningEffectBox", PEV_Coverage, NA),
+                                 # mAB = ifelse(PEV_Waning_Config_class=="WaningEffectBox", PEV_Coverage, NA),
                                  # PEV_6mo = ifelse(pev_half_life==182, PEV_Coverage, NA),
-                                 PEV_12mo = ifelse(pev_half_life==365, PEV_Coverage, NA),
+                                 # PEV_12mo = ifelse(pev_half_life==365, PEV_Coverage, NA),
                                  # TBV_6mo = ifelse(tbv_half_life==182, TBV_Coverage, NA),
-                                 TBV_12mo = ifelse(tbv_half_life==365, TBV_Coverage, NA),
-                                 ATSB_11percent = ifelse(ATSB_Initial_Effect==0.115, ATSB_Coverage, NA),
-                                 ATSB_40percent = ifelse(ATSB_Initial_Effect==0.4, ATSB_Coverage, NA),
+                                 # TBV_12mo = ifelse(tbv_half_life==365, TBV_Coverage, NA),
+                                 # ATSB_11percent = ifelse(ATSB_Initial_Effect==0.115, ATSB_Coverage, NA),
+                                 # ATSB_40percent = ifelse(ATSB_Initial_Effect==0.4, ATSB_Coverage, NA),
                                  # Larvicide = Larvicide_Coverage,
                                  Ivermectin_7day = ifelse(Ivermectin_Duration==7, Ivermectin_Coverage, NA),
                                  Ivermectin_14day = ifelse(Ivermectin_Duration==14, Ivermectin_Coverage, NA),
@@ -69,10 +69,9 @@ all_data[, Start_Day:=factor(Start_Day)]
 all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Start_Day, Intervention, Coverage)]
 all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Start_Day, Intervention, Coverage)]
 
-all_data <- merge(all_data, true_atsb_vals, by=c("Intervention", "Coverage"), all=T)
 all_data[, Coverage:=factor(Coverage)]
 
-write.csv(all_data, file=file.path(main_dir, "lookup_outdoor_interventions_sweep_timing.csv"), row.names = F)
+# write.csv(all_data, file=file.path(main_dir, "lookup_outdoor_interventions_sweep_timing.csv"), row.names = F)
 
 # to_plot <- all_data[Site_Name=="aba"]
 
@@ -81,18 +80,18 @@ write.csv(all_data, file=file.path(main_dir, "lookup_outdoor_interventions_sweep
 #               "figures/new_ints.pdf"), height=6, width=7)
 
 for (sname in unique(all_data$Site_Name)){
-  png(paste0("/Users/bertozzivill/Desktop/", sname, ".png"), height=500, width=800)
-  site_plot <- ggplot(all_data[Site_Name==sname], aes(x=mean_initial, y=mean_final, color=Start_Day)) +
+  # png(paste0("/Users/bertozzivill/Desktop/", sname, ".png"), height=500, width=800)
+  site_plot <- ggplot(all_data, aes(x=mean_initial, y=mean_final, color=Start_Day)) +
                 geom_line(size=1.5) +
                 geom_abline() +
                 # scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
-                facet_grid(Coverage ~ Intervention) +
+                facet_grid(Site_Name ~ Intervention) +
                 theme_minimal() +
                 theme(legend.position="bottom") +
-                labs(title=sname)
+                labs(title="80% 3-round Ivermectin")
   
   print(site_plot)
-  graphics.off()
+  # graphics.off()
 }
 
 ggplot(all_data[Start_Day==0], aes(x=mean_initial, y=mean_final, color=Coverage)) +
