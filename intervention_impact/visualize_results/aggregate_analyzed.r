@@ -81,7 +81,7 @@ all_data[, Coverage:=factor(Coverage)]
 
 for (sname in unique(all_data$Site_Name)){
   # png(paste0("/Users/bertozzivill/Desktop/", sname, ".png"), height=500, width=800)
-  site_plot <- ggplot(all_data, aes(x=mean_initial, y=mean_final, color=Start_Day)) +
+  site_plot <- ggplot(all_data[Site_Name=="moine" & Start_Day==91], aes(x=initial_prev, y=final_prev, color=Run_Number)) +
                 geom_line(size=1.5) +
                 geom_abline() +
                 # scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
