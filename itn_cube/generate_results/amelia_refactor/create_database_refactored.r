@@ -21,9 +21,9 @@ package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
 if(Sys.getenv("input_dir")=="") {
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output"
+  joint_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/joint_data"
+  input_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/input"
+  output_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/output"
   func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/create_database_functions.r"
 } else {
   joint_dir <- Sys.getenv("joint_dir")
@@ -33,55 +33,59 @@ if(Sys.getenv("input_dir")=="") {
 }
 
 source(func_fname)
+out_fname <- file.path(output_dir, 'ITN_final_clean_access_18March2019_COMPARE.csv')
 
-out_fname <- file.path(output_dir, 'ITN_final_clean_access_18March2019.csv')
-
-# p0 & p1-- from stock & flow, nat'l time series of p0=p(hh has >0 nets) and p1=avg # of nets
+# p0 & p1-- from stock & flow, nat'l time series of p0=p(hh has 0 nets) and p1=avg # of nets
 # 40 countries (list length), houshold size 1-10 (columns)
 load(file.path(input_dir, "prop0prop1.rData"))
-KEY <- read.csv(file.path(input_dir, "KEY_080817.csv"))
+stock_and_flow_isos<-Cout # Cout is a vector of ISOs in prop0prop1.rData
 
-# Cout is a vector of ISOs in prop0prop1.rData
-Country.list<-Cout
-
-# load household data, keep only those in country list
-HH<-read.csv(file.path(input_dir, "ALL_HH_Data_20112017.csv"),stringsAsFactors=F)
-HH<-HH[HH$ISO3%in%Country.list,]
+# load household data and survey-to-country key, keep only those in country list
+survey_to_country_key <- read.csv(file.path(input_dir, "KEY_080817.csv"))  #TODO: is this used?
+HH<-fread(file.path(input_dir, "ALL_HH_Data_20112017.csv")) # todo: come back and delete cols we don't need. also rename this
+HH<-HH[ISO3 %in% stock_and_flow_isos]
+# TODO: remove missing values up here instead of at the end
 
 # Remove households with size zero or NA
-zerohh<-is.na(HH$n.individuals.that.slept.in.surveyed.hhs)
-HH<-HH[!zerohh,] 
+HH <- HH[!is.na(n.individuals.that.slept.in.surveyed.hhs) & n.individuals.that.slept.in.surveyed.hhs>0]
 
-zerohh<-(HH$n.individuals.that.slept.in.surveyed.hhs)==0
-HH<-HH[!zerohh,] 
-
-# update survey vector
-Surveys<-as.character(unique(HH$Survey.hh)) 
-Surveys<-Surveys[!is.na(Surveys)]
+# Find unique surveys
+unique_surveys <- unique(HH$Survey.hh)
 
 # find access (# with a net available) and use (# sleeping under net) per household 
 # todo: give these better names, put them in a dataset? check bounding of d against methods in document
-times<-seq(0.0,18,0.25)+2000 # 2000 to 2018, in quarter-year intervals
-a=HH$n.individuals.that.slept.in.surveyed.hhs # number in household
-b=HH$n.ITN.per.hh # number of nets
-d=b*2 # number covered by nets
-d[d>a]=a[d>a] # bounding to not exceed the number in the house
-e=HH$n.individuals.that.slept.under.ITN # use count
+times<-seq(2000, 2018,0.25) # quarter-year intervals
+# a=HH$n.individuals.that.slept.in.surveyed.hhs # number in household
+# b=HH$n.ITN.per.hh # number of nets
+# d=b*2 # number covered by nets
+# d[d>a]=a[d>a] # bounding to not exceed the number in the house
+# e=HH$n.individuals.that.slept.under.ITN # use count
+
+# NEW update HH with columns for the above values
+# a: already present as n.individuals.that.slept.in.surveyed.hhs
+# b: already present as n.ITN.per.hh
+# d: turn into n.covered.by.nets
+HH[, n.covered.by.nets:=pmin(n.ITN.per.hh*2, n.individuals.that.slept.in.surveyed.hhs)]
+# e: already present as n.individuals.that.slept.under.ITN
+
 
 # # test locally
-# orig_Surveys <- copy(Surveys)
-# Surveys <- Surveys[2:3]
+orig_unique_surveys <- copy(unique_surveys)
+unique_surveys <- unique_surveys[2:3]
+
+## STOP REFACTORING HERE FOR NOW -----------------------------------
+
 
 # Main loop: calculating access/gap for each household cluster  ------------------------------------------------------------
 
 ncores <- detectCores()
 print(paste("--> Machine has", ncores, "cores available"))
 registerDoParallel(ncores-2)
-output<-foreach(i=1:length(Surveys),.combine=rbind) %dopar% { #survey loop
-  svy<-Surveys[i] # store survey
+output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loop
+  svy<-unique_surveys[i] # store survey
 
   cc<-HH[HH$Survey.hh==svy,'ISO3'] # get country
-  p<-out[[which(Country.list==cc[1])]]
+  p<-out[[which(stock_and_flow_isos==cc[1])]]
   # both p0 and p1 are 69 x 10 datasets with row as time point and column as household size
   p0<-p[,,1] # get p0: probability of at least 1 net in household
   p1<-p[,,2] # get p1: average # of nets in household
