@@ -21,9 +21,13 @@ package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
 if(Sys.getenv("input_dir")=="") {
-  joint_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/joint_data"
-  input_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/input"
-  output_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/output"
+  # gcsfuse drives are just too laggy
+  # joint_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/joint_data"
+  # input_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/input"
+  # output_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/output"
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output"
   func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/create_database_functions.r"
 } else {
   joint_dir <- Sys.getenv("joint_dir")
@@ -55,25 +59,19 @@ HH <- HH[!is.na(n.individuals.that.slept.in.surveyed.hhs) & n.individuals.that.s
 unique_surveys <- unique(HH$Survey.hh)
 
 # find access (# with a net available) and use (# sleeping under net) per household 
-# todo: give these better names, put them in a dataset? check bounding of d against methods in document
 times<-seq(2000, 2018,0.25) # quarter-year intervals
-# a=HH$n.individuals.that.slept.in.surveyed.hhs # number in household
-# b=HH$n.ITN.per.hh # number of nets
-# d=b*2 # number covered by nets
-# d[d>a]=a[d>a] # bounding to not exceed the number in the house
-# e=HH$n.individuals.that.slept.under.ITN # use count
 
-# NEW update HH with columns for the above values
+#  update HH with columns for the above values
+# todo: check bounding of d against methods in document
 # a: already present as n.individuals.that.slept.in.surveyed.hhs
 # b: already present as n.ITN.per.hh
 # d: turn into n.covered.by.nets
 HH[, n.covered.by.nets:=pmin(n.ITN.per.hh*2, n.individuals.that.slept.in.surveyed.hhs)]
 # e: already present as n.individuals.that.slept.under.ITN
 
-
 # # test locally
 # orig_unique_surveys <- copy(unique_surveys)
-# unique_surveys <- c("TZ2007AIS")
+# unique_surveys <- c("SN2014DHS")
 
 
 # Main loop: calculating access/gap for each household cluster  ------------------------------------------------------------
@@ -89,8 +87,6 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
   un<-unique(this_survey_data$Cluster.hh) # get unique cluster IDs for that household survey
   
   ## find distribution of household sizes in this survey as measured by the number of people sleeping under a net the night before
-  
-  # still need to convince myself why this works
   this_survey_data[, sample.prop:=sample.w/sum(sample.w)]
   this_survey_data[, capped.n.sleeping.in.hhs:=pmin(n.individuals.that.slept.in.surveyed.hhs, 10)]
   household_props <- this_survey_data[, list(hh.size.prop=sum(sample.prop)), by=list(capped.n.sleeping.in.hhs)]
@@ -115,10 +111,16 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
   
   # define access for this survey-year based on household props
   # todo: refactor calc_access_matrix function
-  this_survey_access <- calc_access_matrix(unique(this_survey_data$year), func0, func1, household_props$hh.size.prop)
-  access_matrix_mean <- this_survey_access[11]
-  household_props$from_matrix_access <- this_survey_access[1:10]
-  this_survey_data <- merge(this_survey_data, household_props[, list(capped.n.sleeping.in.hhs, from_matrix_access)], by="capped.n.sleeping.in.hhs", all.x=T)
+  access_dt <- lapply(unique(this_survey_data$year), function(this_year){
+    this_survey_access <- calc_access_matrix(this_year, func0, func1, household_props$hh.size.prop)
+    this_access_dt <- household_props[, list(year=this_year, capped.n.sleeping.in.hhs, 
+                                        from_matrix_access=this_survey_access[1:10],
+                                        access_matrix_mean=this_survey_access[11])]
+    
+  })
+  access_dt <-rbindlist(access_dt)
+  
+  this_survey_data <- merge(this_survey_data, access_dt, by=c("year", "capped.n.sleeping.in.hhs"), all.x=T)
   
   
   # aggregate to cluster level
@@ -132,7 +134,7 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
                                                 T=sum(n.ITN.per.hh),
                                                 gap3=mean(1-n.individuals.that.slept.under.ITN/n.covered.by.nets, na.rm=T),
                                                 Amean=mean(from_matrix_access),
-                                                Tmean=access_matrix_mean
+                                                Tmean=mean(access_matrix_mean)
                                                 ),
                                          by=list(Cluster.hh)]
   summary_by_cluster[, gap:=( (P/N)-(Pu/N) ) / (P/N)] # (access-use)/access
