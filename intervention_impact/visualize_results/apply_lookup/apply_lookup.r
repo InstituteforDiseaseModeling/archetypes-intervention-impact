@@ -16,6 +16,7 @@ lookup_dir <- file.path(main_dir,
                       "lookup_tables/interactions")
 orig_pr_dir <- file.path(main_dir, 
                          "megatrends/pete_analysis/actual_ssp2_base2000_2050.tif")
+
 out_dir <- file.path(main_dir, "megatrends")
 base_label <- "Megatrends Base 2000"
 interventions <- c( "ITN 0.8; ACT 0.8;", "ITN 0.8; IRS 0.8; ACT 0.8;") 
@@ -81,11 +82,11 @@ pr_orig <- raster::mask(pr_orig, cluster_map)
 
 continent <- "africa"
 cluster_list <-  list("aba"=1,
-                      "kasama"=2,
-                      "djibo"=3,
-                      "kananga"=4,
-                      "moine"=5,
-                      "gode"=6)
+                      "kasama"=3,
+                      "djibo"=4,
+                      "kananga"=2,
+                      "moine"=6,
+                      "gode"=5)
 
   
 # I want the first panel of my plot to be intervention-delected values of either pfpr or r0
@@ -128,7 +129,6 @@ for (intervention in interventions){
 }
 
 
-  
 # save and plot
 stacked_layers <- stack(raster_list)
 if (repro==T){
