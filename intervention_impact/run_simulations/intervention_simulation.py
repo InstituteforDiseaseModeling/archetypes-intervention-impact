@@ -24,7 +24,7 @@ run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "Mac_Testrun"
+sim_root_name = "Longer_Oldclimate"
 baseline_interventions = ["itn", "irs", "al_cm"]
 baseline_intervention_coverages = [0]
 sweep_interventions = ["atsb"]
@@ -39,7 +39,7 @@ new_inputs = False
 # Serialization
 print("setting up")
 if run_type == "burnin":
-    years = 15
+    years = 40
     sweep_name = "MAP_" + sim_root_name + "_Burnin"
     serialize = True
     pull_from_serialization = False
@@ -301,12 +301,11 @@ if __name__ == "__main__":
     else:
 
         if "Testrun" in sim_root_name:
-    	    run_count = 1
-    	    hab_exps = [0, 1, 2]
+            run_count = 1
+            hab_exps = [0, 1, 2]
         else:
-    	    run_count = 10
-    	    hab_exps = np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
-
+            run_count = 10
+            hab_exps = np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
 
 
         print("building burnin")
@@ -317,7 +316,6 @@ if __name__ == "__main__":
         ]
             for run_num in range(run_count)
             for hab_exp in hab_exps
-
         ])
 
     run_sim_args = {"config_builder": cb,
