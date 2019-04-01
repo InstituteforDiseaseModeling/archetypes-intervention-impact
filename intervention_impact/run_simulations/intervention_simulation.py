@@ -18,21 +18,21 @@ from malaria.interventions.malaria_vaccine import add_vaccine
 from sweep_functions import *
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
+run_type = "intervention"  # set to "burnin" or "intervention"
 
 # below: burnin and asset exp ids for megatrends
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "Longer_Oldclimate"
+sim_root_name = "For_Symposium_ATSB_Lower_Existing"
 baseline_interventions = ["itn", "irs", "al_cm"]
-baseline_intervention_coverages = [0]
+baseline_intervention_coverages = [20]
 sweep_interventions = ["atsb"]
-sweep_intervention_coverages = [40, 80]
+sweep_intervention_coverages = [100]
 sweep_intervention_class = "list"  # can be "combo" (combinatoric) or "list"
 start_days = [0]
 vaccine_durations = [365]
-atsb_initial_effects = [0.115, 0.4]
+atsb_initial_effects = [0, 0.01, 0.03, 0.05, 0.07, 0.09, 0.11]
 ivermectin_durations = [7, 14, 30]
 new_inputs = False
 
@@ -158,7 +158,7 @@ if __name__ == "__main__":
             [ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames":
-                    [name for name in os.listdir(os.path.join(df["outpath"][x], "output")) if "state" in name],
+                    ["state-05475.dtk"], # TODO: PULL FROM BURNIN METADATA
                 "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})]
             for x in df.index]
