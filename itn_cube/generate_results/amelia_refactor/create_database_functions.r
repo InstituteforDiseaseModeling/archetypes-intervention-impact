@@ -3,10 +3,16 @@ library(zoo)
 library(raster)
 library(VGAM)
 
+# functions: 
+# -emplogit2: 2-input empirical logit
+# -reposition.points: adjust lat-longs (for what reason?)
+# -aggregate.data: sum to pixel level
+# -calc_access_matrix and get.access.mat: access calculations from (?)
+
+
 
 ######################################### FUNCTIONS ###########################################################
 
-emplogit<-function(Y,N) {top=Y*N+0.5;bottom=N*(1-Y)+0.5;return(log(top/bottom))} # empirical logit number (not used? --abv)
 emplogit2<-function(Y,N) {top=Y+0.5;bottom=N-Y+0.5;return(log(top/bottom))} # empirical logit two numbers
 
 reposition.points<-function(ls,points,square){
@@ -89,52 +95,71 @@ aggregate.data<-function(f,cn){
 
 
 calc_access_matrix<-function(accdate1,func0,func1,hh,nc=10,nr=40){
+  
+  # accdate1: time at which to calculate access
+  # func0: list of functions defining the probability a house of size n has no nets
+  # func1: list of mean # of nets per household for a house of size n
+  # hh: vector of proportion of houses at different sizes (1-10+)
+  # nc: number of columns (todo: calculate from length of func0, func1, or hh)
+  # nr: number of rows?
+  
+  # returns: a vector of access metrics.
+  
+  # find probability of no net and mean # of nets across household size for the time in question
   k1<-k0<-rep(NA,10)
   for(j in 1:length(func0)){
     k1[j]<-func1[[j]](accdate1)
     k0[j]<-func0[[j]](accdate1)
   }
+  
+  # fill na's (when would k0 be null?)
   k0[is.nan(k0)]<-0
+  
+  # make a 41x10 matrix
   matModel<-matrix(data=0,nrow=nr+1,ncol=nc)
   cnames<-colnames(matModel)<-1:nc
   rnames<-rownames(matModel)<-0:nr
   
+  # first row of matrix: household size distribution * probability of no net (weighted probability of no net ownership)
+  # don't think these values are ever used?
+  
   matModel[1,]<-hh*k0
   
+  # "remaining": household size distribution * probability of having a net (weighted probability of net ownership)
   remaining<-hh*(1-k0)
   for(i in 1:ncol(matModel)){
-    l<-k1[i]
+    l<-k1[i] # mean # of nets in household of size i
+    
+    # Find the probability of a household of size i having 1-nr nets, assuming a zero-truncated poisson distribution with mean equal 
+    # to the stock and flow mean. Multiply this by the (weighted) probability of having a net.
+    # Each column of matModel (not including the first row) sums to the corresponding value of "remaining".
     matModel[2:nrow(matModel),i]<-dpospois(1:(nrow(matModel)-1),l)*remaining[i]
   }	
   
-  allind<-get.access.mat(matModel,nc,nr)	
+  cnames<-colnames(matModel)<-1:nc
+  rnames<-rownames(matModel)<-0:nr
+  
+  # calculate access
+  ind3mat<-matrix(data=0,nrow=nrow(matModel),ncol=ncol(matModel))
+  ind3tot<-matrix(data=0,nrow=nrow(matModel),ncol=ncol(matModel))
+  
+  for(x in 1:ncol(matModel)){ # x is household size
+    for(y in 1:nrow(matModel)){ # y is net count
+      ind3mat[y,x]<-2*(y-1)*matModel[y,x] # prop of people with access (defined as 1-between-2) to y nets
+      ind3tot[y,x]<-x*matModel[y,x] # prop of people in this net-hhsize combo 
+      if(ind3mat[y,x]>ind3tot[y,x]) ind3mat[y,x]=ind3tot[y,x] #cap on estimate 
+    }
+  }	
   
   acc<-rep(NA,10)
+  
+  # access by household
   for(i in 1:10){
-    acc[i]<-sum(allind[[1]][,i])/sum(allind[[2]][,i])
+    acc[i]<-sum(ind3mat[,i])/sum(ind3tot[,i])
   }
-  acc<-c(acc,sum(allind[[1]])/sum(allind[[2]]))
+  
+  # overall access
+  acc<-c(acc,sum(ind3mat)/sum(ind3tot))
   return(acc)
 }
 
-get.access.mat<-function(mat,nc,nr){
-  cnames<-colnames(mat)<-1:nc
-  rnames<-rownames(mat)<-0:nr	
-  
-  ind3mat<-matrix(data=0,nrow=nrow(mat),ncol=ncol(mat))
-  ind3tot<-matrix(data=0,nrow=nrow(mat),ncol=ncol(mat))
-  
-  for(x in 1:ncol(mat)){
-    for(y in 1:nrow(mat)){
-      ind3mat[y,x]<-2*(y-1)*mat[y,x] 
-      ind3tot[y,x]<-x*mat[y,x] # total people
-      if(ind3mat[y,x]>ind3tot[y,x]) ind3mat[y,x]=ind3tot[y,x] #cap on estimate 
-    }
-  }
-  l<-list()
-  l[[1]]=ind3mat
-  l[[2]]=ind3tot
-  return(l)
-}
-
-######################################### END FUNCTIONS ###########################################################

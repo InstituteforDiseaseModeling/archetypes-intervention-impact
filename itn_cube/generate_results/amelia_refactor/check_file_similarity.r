@@ -2,8 +2,8 @@ library(data.table)
 
 main_dir <- "/Users/bertozzivill/Desktop"
 
-orig <- fread(file.path(main_dir, "create_database.csv"))
-new <- fread(file.path(main_dir, "create_database_COMPARE.csv"))
+orig <- fread(file.path(main_dir, "users_amelia_itn_cube_create_database_output_ITN_final_clean_access_18March2019.csv"))
+new <- fread(file.path(main_dir, "users_amelia_itn_cube_create_database_output_ITN_final_clean_access_18March2019_COMPARE.csv"))
 
 sameness_cutoff <- 1e-10 #past this point, values are similar to a rounding error
  

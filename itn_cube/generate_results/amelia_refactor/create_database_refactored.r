@@ -98,16 +98,15 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
   p0<-s_and_f_probs[,,1] # get p0: probability of no nets in household
   p1<-s_and_f_probs[,,2] # get p1: average # of nets in household
 
-  # define p0 and p1 interpolation functions. todo: make this clearer
-  func0<-list()
-  func1<-list()
-  # make these into continuous functions (via linear interpolation--abv)
-  for(f in 1:ncol(p0)){
-    eval(parse(text=paste0('func0[[',f,']]<-approxfun(times,p0[,',f,'])')))
-  }
-  for(f in 1:ncol(p0)){ # should this be p1? may not matter if they're the same length
-    eval(parse(text=paste0('func1[[',f,']]<-approxfun(times,p1[,',f,'])')))
-  }
+  # Sam defines a set of functions that linearly interpolate between these quarterly values, 
+  # but then goes on to only evaluate it at rounded years. Can we use the month information 
+  # from the dataset to do a better job?
+  
+  # make these into continuous functions via linear interpolation
+  func0 <- lapply(1:ncol(p0), function(col){
+    approxfun(times, p0[,col])})
+  func1 <- lapply(1:ncol(p1), function(col){
+    approxfun(times, p1[,col])})
   
   # define access for this survey-year based on household props
   # todo: refactor calc_access_matrix function
