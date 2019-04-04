@@ -1,3 +1,15 @@
+###############################################################################
+## check_file_similarity.r
+## Amelia Bertozzi-Villa
+## April 2019
+## 
+## I'm in the process of refactoring Sam Bhatt's ITN Cube code. This script 
+## compares original outputs to my new outputs to ensure the refactor is 
+## producing the same results.
+##############################################################################
+
+
+
 library(data.table)
 
 main_dir <- "/Users/bertozzivill/Desktop"
@@ -5,7 +17,7 @@ main_dir <- "/Users/bertozzivill/Desktop"
 orig <- fread(file.path(main_dir, "users_amelia_itn_cube_create_database_output_ITN_final_clean_access_18March2019.csv"))
 new <- fread(file.path(main_dir, "users_amelia_itn_cube_create_database_output_ITN_final_clean_access_18March2019_COMPARE.csv"))
 
-sameness_cutoff <- 1e-10 #past this point, values are similar to a rounding error
+sameness_cutoff <- 1e-10 # past this point, values are similar to a rounding error
  
 if (nrow(orig)!=nrow(new)){
   print("Datasets have varying lengths!")

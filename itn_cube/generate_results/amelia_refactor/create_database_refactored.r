@@ -69,10 +69,11 @@ times<-seq(2000, 2018,0.25) # quarter-year intervals
 HH[, n.covered.by.nets:=pmin(n.ITN.per.hh*2, n.individuals.that.slept.in.surveyed.hhs)]
 # e: already present as n.individuals.that.slept.under.ITN
 
-# # test locally
-# orig_unique_surveys <- copy(unique_surveys)
-# unique_surveys <- c("SN2014DHS")
-
+# test locally
+if(Sys.getenv("input_dir")=="") {
+  orig_unique_surveys <- copy(unique_surveys)
+  unique_surveys <- c("TZ2015DHS")
+}
 
 # Main loop: calculating access/gap for each household cluster  ------------------------------------------------------------
 
