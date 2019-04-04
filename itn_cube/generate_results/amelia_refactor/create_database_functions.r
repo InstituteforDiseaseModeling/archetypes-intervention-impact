@@ -2,11 +2,18 @@
 library(zoo)
 library(raster)
 library(VGAM)
+library(data.table)
+
+# functions: 
+# -emplogit2: 2-input empirical logit
+# -reposition.points: adjust lat-longs (for what reason?)
+# -aggregate.data: sum to pixel level
+# -calc_access_matrix and get.access.mat: access calculations from (?)
+
 
 
 ######################################### FUNCTIONS ###########################################################
 
-emplogit<-function(Y,N) {top=Y*N+0.5;bottom=N*(1-Y)+0.5;return(log(top/bottom))} # empirical logit number (not used? --abv)
 emplogit2<-function(Y,N) {top=Y+0.5;bottom=N-Y+0.5;return(log(top/bottom))} # empirical logit two numbers
 
 reposition.points<-function(ls,points,square){
@@ -88,53 +95,66 @@ aggregate.data<-function(f,cn){
 }
 
 
-calc_access_matrix<-function(accdate1,func0,func1,hh,nc=10,nr=40){
-  k1<-k0<-rep(NA,10)
-  for(j in 1:length(func0)){
-    k1[j]<-func1[[j]](accdate1)
-    k0[j]<-func0[[j]](accdate1)
+calc_access_matrix<-function(access_date, func0, func1, hh_props, max_nets=40){
+  
+  # access_date: time at which to calculate access
+  # func0: list of functions defining the probability a house of size n has no nets in this country
+  # func1: list of functions defining mean # of nets per household for a house of size n in this country
+  # hh_props: vector of proportion of houses at different sizes (1-10+) based on this survey
+  # max_nets: this function will calulate the probability of household-level ownership for a net count up to this variable
+  
+  hh_bins <- length(hh_props)
+  
+  # returns: a vector of length hh_bins+1, where the first hh_bins entries refer to access for a given household size 
+  # (1:hh_bins) and the last entry refers to survey-wise access
+  
+  # find probability of no net and mean # of nets across household size for the time in question
+
+  
+  net_stats <- data.table(hh_size=1:hh_bins,
+                          prob_no_nets=sapply(1:hh_bins, function(hh_size){func0[[hh_size]](access_date)}),
+                          mean_nets_per_hh=sapply(1:hh_bins, function(hh_size){func1[[hh_size]](access_date)}),
+                          hh_prop=hh_props)
+  net_stats[, weighted_prob_no_nets:=hh_prop*prob_no_nets]
+  net_stats[, weighted_prob_any_net:=hh_prop*(1-prob_no_nets)]
+  
+  # Find the probability of a household of size i having 1:max_nets nets, 
+  # assuming a zero-truncated poisson distribution with mean equal to the stock and flow mean. 
+  # Multiply this by the weighted probability of having a net.
+  
+  net_dist <- lapply(net_stats$hh_size, function(this_hh_size){
+    
+    these_net_stats <- net_stats[hh_size==this_hh_size]
+    
+    no_hh_subset <- data.table(hh_size=this_hh_size,
+                               net_count=0,
+                               weighted_net_prob=these_net_stats$weighted_prob_no_nets)
+    
+    net_hh_subset <- data.table(hh_size=this_hh_size,
+                                net_count=1:max_nets,
+                                weighted_net_prob=dpospois(1:max_nets, 
+                                                           these_net_stats$mean_nets_per_hh) * these_net_stats$weighted_prob_any_net
+                                )
+    
+    return(rbind(no_hh_subset, net_hh_subset))
+    
+  })
+  
+  net_dist <- rbindlist(net_dist)
+  
+  # calculate access 
+  net_dist[, prop_with_access:=net_count*2*weighted_net_prob]
+  net_dist[, prop_in_bin:=hh_size*weighted_net_prob]
+  net_dist[, prop_with_access:=pmin(prop_with_access, prop_in_bin)] # cap access proportion at proportion of population
+  
+  access_stats <- net_dist[, list(access=sum(prop_with_access)/sum(prop_in_bin)), by=hh_size] 
+  all_access_stats <- sum(net_dist$prop_with_access)/sum(net_dist$prop_in_bin)
+  
+  if (sum(net_dist$weighted_net_prob)!=1){
+    warning("Net probabilities do not sum properly!")
   }
-  k0[is.nan(k0)]<-0
-  matModel<-matrix(data=0,nrow=nr+1,ncol=nc)
-  cnames<-colnames(matModel)<-1:nc
-  rnames<-rownames(matModel)<-0:nr
   
-  matModel[1,]<-hh*k0
+  return(c(access_stats$access, all_access_stats))
   
-  remaining<-hh*(1-k0)
-  for(i in 1:ncol(matModel)){
-    l<-k1[i]
-    matModel[2:nrow(matModel),i]<-dpospois(1:(nrow(matModel)-1),l)*remaining[i]
-  }	
-  
-  allind<-get.access.mat(matModel,nc,nr)	
-  
-  acc<-rep(NA,10)
-  for(i in 1:10){
-    acc[i]<-sum(allind[[1]][,i])/sum(allind[[2]][,i])
-  }
-  acc<-c(acc,sum(allind[[1]])/sum(allind[[2]]))
-  return(acc)
 }
 
-get.access.mat<-function(mat,nc,nr){
-  cnames<-colnames(mat)<-1:nc
-  rnames<-rownames(mat)<-0:nr	
-  
-  ind3mat<-matrix(data=0,nrow=nrow(mat),ncol=ncol(mat))
-  ind3tot<-matrix(data=0,nrow=nrow(mat),ncol=ncol(mat))
-  
-  for(x in 1:ncol(mat)){
-    for(y in 1:nrow(mat)){
-      ind3mat[y,x]<-2*(y-1)*mat[y,x] 
-      ind3tot[y,x]<-x*mat[y,x] # total people
-      if(ind3mat[y,x]>ind3tot[y,x]) ind3mat[y,x]=ind3tot[y,x] #cap on estimate 
-    }
-  }
-  l<-list()
-  l[[1]]=ind3mat
-  l[[2]]=ind3tot
-  return(l)
-}
-
-######################################### END FUNCTIONS ###########################################################

@@ -26,7 +26,7 @@ asset_exp_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
 sim_root_name = "For_Symposium_ATSB_No_Existing"
 baseline_interventions = ["itn", "irs", "al_cm"]
-baseline_intervention_coverages = [20]
+baseline_intervention_coverages = [0]
 sweep_interventions = ["atsb"]
 sweep_intervention_coverages = [100]
 sweep_intervention_class = "list"  # can be "combo" (combinatoric) or "list"
