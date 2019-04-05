@@ -1,7 +1,12 @@
-
-## Amelia's first pass at parsing "Create_database_ITN access....r"
-
-## sam: takes Harry's data, does aggregating, find national level means at quarterly times 
+###############################################################################################################
+## create_database_refactored.r
+## Amelia Bertozzi-Villa
+## April 2019
+## 
+## A restructuring of Sam Bhatt's original code to prepare net-based survey metrics for the ITN cube model.
+## This script calcultes both national access and use metrics (from the stock and flow model) and 
+## cluster-level metrics from survey data, cleans that data, and saves it for the following script.
+##############################################################################################################
 
 rm(list=ls())
 tic <- Sys.time()
@@ -16,7 +21,7 @@ package_load <- function(package_list){
 package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 
 # current dsub:
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/input joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/create_database/output --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-4 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/input joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/create_database/output --command 'Rscript ${CODE}'
 
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
@@ -45,7 +50,6 @@ load(file.path(input_dir, "prop0prop1.rData")) # contains "out" (list of s$f tim
 stock_and_flow_isos<-Cout # Cout is a vector of ISOs in prop0prop1.rData
 names(out) <- stock_and_flow_isos
 
-
 # load household data and survey-to-country key, keep only those in country list
 survey_to_country_key <- read.csv(file.path(input_dir, "KEY_080817.csv"))  #TODO: is this used?
 HH<-fread(file.path(input_dir, "ALL_HH_Data_20112017.csv")) # todo: come back and delete cols we don't need. also rename this
@@ -65,15 +69,15 @@ times<-seq(2000, 2018,0.25) # quarter-year intervals
 # todo: check bounding of d against methods in document
 # a: already present as n.individuals.that.slept.in.surveyed.hhs
 # b: already present as n.ITN.per.hh
-# d: turn into n.covered.by.nets
-HH[, n.covered.by.nets:=pmin(n.ITN.per.hh*2, n.individuals.that.slept.in.surveyed.hhs)]
+# d: turn into n.with.access.to.nets
+HH[, n.with.access.to.ITN:=pmin(n.ITN.per.hh*2, n.individuals.that.slept.in.surveyed.hhs)]
 # e: already present as n.individuals.that.slept.under.ITN
 
 # test locally
-if(Sys.getenv("input_dir")=="") {
-  orig_unique_surveys <- copy(unique_surveys)
-  unique_surveys <- c("TZ2015DHS")
-}
+# if(Sys.getenv("input_dir")=="") {
+#   orig_unique_surveys <- copy(unique_surveys)
+#   unique_surveys <- c("TZ2015DHS")
+# }
 
 # Main loop: calculating access/gap for each household cluster  ------------------------------------------------------------
 
@@ -114,8 +118,8 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
   access_dt <- lapply(unique(this_survey_data$year), function(this_year){
     this_survey_access <- calc_access_matrix(this_year, func0, func1, household_props$hh.size.prop)
     this_access_dt <- household_props[, list(year=this_year, capped.n.sleeping.in.hhs, 
-                                        from_matrix_access=this_survey_access[1:10],
-                                        access_matrix_mean=this_survey_access[11])]
+                                        stock_and_flow_access=this_survey_access[1:10],
+                                        stock_and_flow_access_mean=this_survey_access[11])]
     
   })
   access_dt <-rbindlist(access_dt)
@@ -127,14 +131,14 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
   summary_by_cluster <- this_survey_data[, list(Survey=svy,
                                                 lat=mean(latitude),
                                                 lon=mean(longitude),
-                                                P=sum(n.covered.by.nets),
+                                                P=sum(n.with.access.to.ITN),
                                                 N=sum(n.individuals.that.slept.in.surveyed.hhs),
-                                                year=mean(year),
+                                                year=mean(year), # TODO: won't always be a round year! 
                                                 Pu=sum(n.individuals.that.slept.under.ITN),
                                                 T=sum(n.ITN.per.hh),
-                                                gap3=mean(1-n.individuals.that.slept.under.ITN/n.covered.by.nets, na.rm=T),
-                                                Amean=mean(from_matrix_access),
-                                                Tmean=mean(access_matrix_mean)
+                                                gap3=mean(1-n.individuals.that.slept.under.ITN/n.with.access.to.ITN, na.rm=T),
+                                                Amean=mean(stock_and_flow_access),
+                                                Tmean=mean(stock_and_flow_access_mean)
                                                 ),
                                          by=list(Cluster.hh)]
   summary_by_cluster[, gap:=( (P/N)-(Pu/N) ) / (P/N)] # (access-use)/access
@@ -146,39 +150,38 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
 }
 
 # renaming
-data<-data.frame(output)
+final_data<-copy(output)
 
 
 # Cleanup: remove flawed points, print summary messages, save ------------------------------------------------------------
 
 #print(paste('**OUTPUT MESSAGE** remove points with no cooridnates: there are - ',nrow(data[!complete.cases(data),])))
-data<-data[complete.cases(data),] # NOTE: do you want to be getting rid of cases where the only NA's are in the "gap" values?
+final_data<-final_data[complete.cases(final_data),] # TODO: do you want to be getting rid of cases where the only NA's are in the "gap" values?
 
-print(paste('**OUTPUT MESSAGE** remove points with 0 lat 0 lon: there are - ',nrow(data[data$lat==0 & data$lon==0,])))
-data<-data[data$lat!=0 & data$lon!=0,]
+print(paste('**OUTPUT MESSAGE** remove points with 0 lat 0 lon: there are - ', nrow(final_data[lat==0 & lon==0])))
+final_data<-final_data[lat!=0 & lon!=0]
 
 # Check for invalid points, and attempt to reposition them
 cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) # master country layer
 NAvalue(cn)=-9999
-data$yearqtr<-as.numeric(as.yearqtr(data$year))
+final_data$yearqtr<-as.numeric(as.yearqtr(final_data$year))
 
-print(paste('**OUTPUT MESSAGE** Atempting to reposition points'))
-data<-reposition.points(cn,data,4)
+print(paste('**OUTPUT MESSAGE** Attempting to reposition points'))
+final_data<-reposition.points(cn, final_data, 4)
 
-print(paste('-->Total number of household points', nrow(HH)))
-print(paste('-->Total number of cluster points', nrow(data)))
-print(paste('-->Total number countries', length(unique(HH$Country))))
-print(paste('-->Total number of surveys', length(unique(HH$Survey.hh))))
+print(paste('--> Total number of household points', nrow(HH)))
+print(paste('--> Total number of cluster points', nrow(final_data)))
+print(paste('--> Total number countries', length(unique(HH$Country))))
+print(paste('--> Total number of surveys', length(unique(HH$Survey.hh))))
 
 print(paste('**OUTPUT MESSAGE** Aggregating data at same pixel-quarter'))
-data<-aggregate.data(data,cn)
+final_data<-aggregate.data(cn, final_data)
 
 print(paste('**OUTPUT MESSAGE** get floored year '))
-
-data$flooryear<-floor(data$year)
+final_data$flooryear<-floor(final_data$year)
 
 print(paste("--> Writing to", out_fname))
-write.csv(data, out_fname, row.names=FALSE)
+write.csv(final_data, out_fname, row.names=FALSE)
 
 toc <- Sys.time()
 elapsed <- toc-tic
