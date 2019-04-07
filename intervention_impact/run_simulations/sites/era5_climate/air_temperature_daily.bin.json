@@ -1,0 +1,25 @@
+{
+    "Metadata": {
+        "DateCreated": "03/01/2019",
+        "Tool": "generate_dtk_weather.py",
+        "Author": "Institute for Disease Modeling",
+        "WeatherSchemaVersion": "2.0",
+        "IdReference": "Custom user",
+        "WeatherCellCount": 8,
+        "NodeCount": 8,
+        "OffsetEntryCount": 8,
+        "NumberDTKNodes": 8,
+        "DatavaluePerCell": 6210,
+        "DatavalueCount": 6210,
+        "UpdateResolution": "CLIMATE_UPDATE_DAY",
+        "OriginalDataYears": "2000-2016",
+        "StartDayOfYear": "January 1",
+        "DataProvenance": "From ERA5 hourly files (downloaded with C3S) and aggregated by day.",
+        "Resolution": "15arcmin",
+        "UpperLatitude": 17.4116,
+        "LeftLongitude": 7.58,
+        "BottomLatitude": -24.896,
+        "RightLongitude": 358.35
+    },
+    "NodeOffsets": "00000001000000000000000200006108000000030000c21000000004000123180000000500018420000000060001e5280000000700024630000000080002a738"
+}

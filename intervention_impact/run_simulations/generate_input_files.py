@@ -27,7 +27,7 @@ def update_demog(demographics, vectors, tot_vector_count=20000):
     demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
 
     # make idref line up with custom climate
-    demographics["Metadata"]["IdReference"] = "default"
+    # demographics["Metadata"]["IdReference"] = "default"
 
     # add node-specific vectors
     vectors = pd.melt(vectors, id_vars=["name", "node_id"], var_name="species", value_name="proportion")
@@ -96,15 +96,21 @@ def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
     # demographics
     print("demographics")
     demog_path = os.path.join(out_dir, "demographics.json")
-    sites["node_id"] = sites.apply(lambda row: nodeid_from_lat_lon(row["lat"], row["lon"], res/3600), axis=1)
+
+    if "node_id" not in sites.columns:
+        sites["node_id"] = sites.apply(lambda row: nodeid_from_lat_lon(row["lat"], row["lon"], res/3600), axis=1)
+
     nodes = [Node(this_site["lat"], this_site["lon"], pop,
-                  this_site["name"], extra_attributes = {"Country": this_site["birth_rate_country"]})
+                  this_site["name"],
+                  forced_id=this_site["node_id"],
+                  extra_attributes = {"Country": this_site["birth_rate_country"]})
              for ix, this_site in sites.iterrows()]
 
     all_vectors = pd.merge(sites[["name", "node_id", "lat", "lon"]], all_vectors)
     all_vectors.to_csv(os.path.join(out_dir, "vector_proportions.csv"), index=False)
 
-    site_demog = DemographicsGenerator(nodes, res_in_arcsec=res,
+
+    site_demog = DemographicsGenerator(nodes, res_in_arcsec=res if res in [30, 250] else "custom",
                                        update_demographics=update_demog,
                                        vectors= all_vectors)
 
