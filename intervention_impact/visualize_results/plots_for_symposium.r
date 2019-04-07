@@ -15,7 +15,8 @@ get_smooth <- function(x, y){
 
 anthro_endo_map <- data.table(Site_Name=c("aba", "kananga", "kasama", "djibo", "gode", "moine", "bajonapo", "karen"),
                               anthro=c(74.45, 65.02, 79.04, 76.6, 75, 75.78, 50, 50),
-                              endo=c(80, 85, 80.38, 55.6, 50, 52.73, 60, 24.6))
+                              endo=c(80, 85, 80.38, 55.6, 50, 52.73, 60, 24.6),
+                              map_color=c("#00A08A", "#D71B5A", "#F2AD00", "#F98400", "#902E57", "#5392C2", "#7DB548", "#8971B3"))
 anthro_endo_map[, human_indoor:= (anthro*endo)/100]
 
 atsb_runs <- c("MAP_For_Symposium_ATSB_Higher_Existing_Intervention.csv", 
@@ -44,6 +45,24 @@ minmaxes <- all_data[, list(mean_initial=unique(mean_initial),
 
 all_data <- merge(all_data, minmaxes, by=c("Site_Name", "x_Temporary_Larval_Habitat", "Intervention", "mean_initial"), all=T)
 all_data[, human_indoor:=as.factor(human_indoor)]
+
+these_colors <- unique(all_data[!Site_Name %in% c("karen", "bajonapo"), list(human_indoor, map_color)])
+these_colors <- these_colors[order(human_indoor)]$map_color
+
+# pdf(file.path(Sys.getenv("HOME"), "Desktop", "baseline_60.pdf"), width=7, height=5)
+ggplot(all_data[ITN_Coverage==0.6 & ATSB_Initial_Effect==0 & !Site_Name %in% c("karen", "bajonapo")], aes(x=mean_initial, y=mean_final)) +
+  geom_abline(size=1.5, alpha=0.25)+
+  geom_ribbon(aes(ymin=min_final, ymax=max_final, fill=human_indoor, group=Site_Name), alpha=0.25) +
+  geom_line(aes(color=human_indoor, group=Site_Name), size=2) +
+  scale_color_manual(values=these_colors, name="Indoor Biting %") + 
+  scale_fill_manual(values=these_colors, name="Indoor Biting %") +
+  theme(legend.position="left") + 
+  coord_fixed() +
+  labs(x="Initial PfPR",
+       y="Final PfPR",
+       title="60% ITN, IRS, ACT Coverage")
+# graphics.off()
+
 
 
 pdf(file.path(Sys.getenv("HOME"), "Desktop", "baseline_60.pdf"), width=7, height=5)

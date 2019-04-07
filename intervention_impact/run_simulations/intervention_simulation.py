@@ -18,13 +18,13 @@ from malaria.interventions.malaria_vaccine import add_vaccine
 from sweep_functions import *
 
 # variables
-run_type = "intervention"  # set to "burnin" or "intervention"
+run_type = "burnin"  # set to "burnin" or "intervention"
 
 # below: burnin and asset exp ids for megatrends
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
-asset_exp_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
+asset_exp_id =  None # "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "For_Symposium_ATSB_No_Existing"
+sim_root_name = "ERA5_Climate_Testrun"
 baseline_interventions = ["itn", "irs", "al_cm"]
 baseline_intervention_coverages = [0]
 sweep_interventions = ["atsb"]
@@ -34,19 +34,17 @@ start_days = [0]
 vaccine_durations = [365]
 atsb_initial_effects = [0, 0.01, 0.03, 0.05, 0.07, 0.09, 0.11]
 ivermectin_durations = [7, 14, 30]
-new_inputs = False
+new_inputs = True
 
 # Serialization
 print("setting up")
 if run_type == "burnin":
-    years = 40
+    years = 15
     sweep_name = "MAP_" + sim_root_name + "_Burnin"
-    serialize = True
     pull_from_serialization = False
 elif run_type == "intervention":
     years = 3
     sweep_name = "MAP_" + sim_root_name + "_Intervention"
-    serialize = False
     pull_from_serialization = True
 else:
     raise ValueError("Unknown run type " + run_type)
@@ -93,10 +91,6 @@ cb.update_params({"Disable_IP_Whitelist": 1,
                   "Spatial_Output_Channels" : ["Air_Temperature", "Rainfall", "Relative_Humidity"],})
 
 
-if serialize:
-    cb.update_params({"Serialization_Time_Steps": [365*years]})
-
-
 if __name__ == "__main__":
 
     SetupParser.init()
@@ -106,7 +100,7 @@ if __name__ == "__main__":
     sites = pd.read_csv("site_details.csv")
 
     print("finding collection ids and vector details")
-    site_input_dir = os.path.join("sites", "all")
+    site_input_dir = os.path.join("sites", "era5_climate")
 
     with open("species_details.json") as f:
         species_details = json.loads(f.read())
@@ -121,7 +115,7 @@ if __name__ == "__main__":
 
     if new_inputs:
         print("generating input files")
-        generate_input_files(site_input_dir, pop=2000, overwrite=True)
+        generate_input_files(site_input_dir, pop=2000, res=900, overwrite=True)
 
     # Find vector proportions for each vector in our site
     site_vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
@@ -307,12 +301,13 @@ if __name__ == "__main__":
             run_count = 10
             hab_exps = np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
 
-
         print("building burnin")
         builder = ModBuilder.from_list([[
             ModFn(DTKConfigBuilder.update_params, {
                 "Run_Number": run_num,
-                "x_Temporary_Larval_Habitat": 10 ** hab_exp}),
+                "x_Temporary_Larval_Habitat": 10 ** hab_exp,
+                "Serialization_Time_Steps": [365 * years]
+            }),
         ]
             for run_num in range(run_count)
             for hab_exp in hab_exps
