@@ -49,20 +49,52 @@ all_data[, human_indoor:=as.factor(human_indoor)]
 these_colors <- unique(all_data[!Site_Name %in% c("karen", "bajonapo"), list(human_indoor, map_color)])
 these_colors <- these_colors[order(human_indoor)]$map_color
 
-# pdf(file.path(Sys.getenv("HOME"), "Desktop", "baseline_60.pdf"), width=7, height=5)
-ggplot(all_data[ITN_Coverage==0.6 & ATSB_Initial_Effect==0 & !Site_Name %in% c("karen", "bajonapo")], aes(x=mean_initial, y=mean_final)) +
+pdf(file.path(Sys.getenv("HOME"), "Desktop", "overview.pdf"), width=7, height=5)
+ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 & !Site_Name %in% c("karen", "bajonapo")], aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5, alpha=0.25)+
-  geom_ribbon(aes(ymin=min_final, ymax=max_final, fill=human_indoor, group=Site_Name), alpha=0.25) +
   geom_line(aes(color=human_indoor, group=Site_Name), size=2) +
   scale_color_manual(values=these_colors, name="Indoor Biting %") + 
-  scale_fill_manual(values=these_colors, name="Indoor Biting %") +
-  theme(legend.position="left") + 
+  theme(legend.position="none") + 
   coord_fixed() +
   labs(x="Initial PfPR",
        y="Final PfPR",
-       title="60% ITN, IRS, ACT Coverage")
-# graphics.off()
+       title="")
+graphics.off()
 
+x_temps <- unique(all_data$x_Temporary_Larval_Habitat)
+
+
+pdf(file.path(Sys.getenv("HOME"), "Desktop", "aba_point_all.pdf"), width=7, height=5)
+ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 &
+                  Site_Name=="aba"], aes(x=initial_prev, y=final_prev)) +
+  geom_abline(size=1.5, alpha=0.25)+
+  geom_point(aes(color=human_indoor, group=Run_Number), size=3) +
+  scale_color_manual(values=unique(all_data[Site_Name=="aba"]$map_color), name="Indoor Biting %") + 
+  xlim(0,0.85)+
+  ylim(0,0.85) +
+  theme(legend.position="none") + 
+  coord_fixed() +
+  labs(x="Initial PfPR",
+       y="Final PfPR",
+       title="")
+graphics.off()
+
+pdf(file.path(Sys.getenv("HOME"), "Desktop", "aba_line.pdf"), width=7, height=5)
+ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 &
+                  Site_Name=="aba"], aes(x=mean_initial, y=mean_final)) +
+  geom_abline(size=1.5, alpha=0.25)+
+  geom_line(aes(color=human_indoor), size=1) +
+  geom_ribbon(aes(ymin=min_final, ymax=max_final, fill=human_indoor), alpha=0.25) +
+  scale_color_manual(values=unique(all_data[Site_Name=="aba"]$map_color), name="Indoor Biting %") + 
+  scale_fill_manual(values=unique(all_data[Site_Name=="aba"]$map_color), name="Indoor Biting %") + 
+  xlim(0,0.85)+
+  ylim(0,0.85) +
+  theme(legend.position="none") + 
+  coord_fixed() +
+  labs(x="Initial PfPR",
+       y="Final PfPR",
+       title="")
+graphics.off()
 
 
 pdf(file.path(Sys.getenv("HOME"), "Desktop", "baseline_60.pdf"), width=7, height=5)
