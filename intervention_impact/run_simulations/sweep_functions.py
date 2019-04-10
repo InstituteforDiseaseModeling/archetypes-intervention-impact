@@ -32,7 +32,7 @@ def simulation_setup(cb, species_details, site_vector_props, max_larval_capacity
                     "Air_Temperature_Filename": os.path.join(site_dir,
                                                              "air_temperature_daily.bin"),
                     "Land_Temperature_Filename": os.path.join(site_dir,
-                                                              "air_temperature_daily.bin"),
+                                                              "land_temperature_daily.bin"),
                     "Rainfall_Filename": os.path.join(site_dir,
                                                       "rainfall_daily.bin"),
                     "Relative_Humidity_Filename": os.path.join(site_dir,

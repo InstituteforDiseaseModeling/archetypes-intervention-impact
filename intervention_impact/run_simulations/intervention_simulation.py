@@ -24,7 +24,7 @@ run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id =  None # "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "ERA5_Climate_Testrun"
+sim_root_name = "ERA5_Climate_2000_2016_With_LandTemp"
 baseline_interventions = ["itn", "irs", "al_cm"]
 baseline_intervention_coverages = [0]
 sweep_interventions = ["atsb"]
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     sites = pd.read_csv("site_details.csv")
 
     print("finding collection ids and vector details")
-    site_input_dir = os.path.join("sites", "era5_climate")
+    site_input_dir = os.path.join("input_files", "era5_climate", "2016")
 
     with open("species_details.json") as f:
         species_details = json.loads(f.read())
