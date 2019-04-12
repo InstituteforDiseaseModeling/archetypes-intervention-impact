@@ -1,0 +1,24 @@
+{
+    "Metadata": {
+        "Tool": "weather-files",
+        "Author": "Institute for Disease Modeling",
+        "WeatherSchemaVersion": "2.0",
+        "IdReference": "Custom user",
+        "WeatherCellCount": 8,
+        "NodeCount": 8,
+        "OffsetEntryCount": 8,
+        "NumberDTKNodes": 8,
+        "DatavaluePerCell": 366,
+        "DatavalueCount": 366,
+        "UpdateResolution": "CLIMATE_UPDATE_DAY",
+        "OriginalDataYears": "2016-2016",
+        "StartDayOfYear": "January 1",
+        "DataProvenance": "From ERA5 hourly files (downloaded with C3S, March 2019) and aggregated by day.",
+        "Resolution": "15arcmin",
+        "UpperLatitude": 17.4116,
+        "LeftLongitude": 7.58,
+        "BottomLatitude": -24.896,
+        "RightLongitude": 358.35
+    },
+    "NodeOffsets": "000000010000000000000002000005b80000000300000b70000000040000112800000005000016e00000000600001c9800000007000022500000000800002808"
+}
