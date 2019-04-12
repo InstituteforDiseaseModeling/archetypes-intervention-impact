@@ -25,7 +25,7 @@ anthro_endo_map <- data.table(Site_Name=c("aba", "kananga", "kasama", "djibo", "
                               anthro=c(74.45, 65.02, 79.04, 76.6, 75, 75.78, 50, 50),
                               endo=c(80, 85, 80.38, 55.6, 50, 52.73, 60, 24.6),
                               map_color=c("#00A08A", "#D71B5A", "#F2AD00", "#F98400", "#902E57", "#5392C2", "#7DB548", "#8971B3"))
-anthro_endo_map[, human_indoor:= round((anthro*endo)/100, 2)]
+anthro_endo_map[, human_indoor:= round((anthro*endo)/100, 1)]
 
 
 atsb_runs <- c("MAP_For_Symposium_ATSB_Higher_Existing_Intervention.csv", 
@@ -69,57 +69,104 @@ all_data[, human_indoor:=as.factor(human_indoor)]
 these_colors <- unique(all_data[!Site_Name %in% c("karen", "bajonapo"), list(human_indoor, map_color)])
 these_colors <- these_colors[order(human_indoor)]$map_color
 
+x_temps <- unique(all_data$x_Temporary_Larval_Habitat)
+
 pdf(file.path(plot_dir, "overview.pdf"), width=7, height=5)
 ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 & !Site_Name %in% c("karen", "bajonapo")], aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5, alpha=0.5)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=human_indoor, group=Site_Name), alpha=0.25) +
-  geom_line(aes(color=human_indoor, group=Site_Name), size=2) +
+  geom_line(aes(color=human_indoor, group=Site_Name), size=1.25) +
   scale_color_manual(values=these_colors, name="Indoor Biting %") +
   scale_fill_manual(values=these_colors, name="Indoor Biting %") +
+  xlim(0,0.85) +
+  ylim(0,0.85) +
   theme(legend.position="none") + 
   coord_fixed() +
-  labs(x="Initial PfPR",
-       y="Final PfPR",
+  labs(x="Initial Prevalence",
+       y="Final Prevalence",
        title="")
 graphics.off()
 
 pdf(file.path(plot_dir,"overview_points.pdf"), width=7, height=5)
 ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 & !Site_Name %in% c("karen", "bajonapo")], aes(x=initial_prev, y=final_prev)) +
   geom_abline(size=1.5, alpha=0.5)+
-  geom_point(aes(color=human_indoor, group=Site_Name), size=3) +
+  geom_point(aes(color=human_indoor, group=Site_Name), size=1.5, alpha=0.75) +
   scale_color_manual(values=these_colors, name="Indoor Biting %") + 
   xlim(0,0.85) +
   ylim(0,0.85) +
   theme(legend.position="none") + 
   coord_fixed() +
-  labs(x="Initial PfPR",
-       y="Final PfPR",
+  labs(x="Initial Prevalence",
+       y="Final Prevalence",
        title="")
 graphics.off()
 
-x_temps <- unique(all_data$x_Temporary_Larval_Habitat)
+pdf(file.path(plot_dir,"twosite_points.pdf"), width=7, height=5)
+ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 & Site_Name %in% c("aba", "gode")], aes(x=initial_prev, y=final_prev)) +
+  geom_abline(size=1.5, alpha=0.5)+
+  geom_point(aes(color=human_indoor, group=Site_Name), size=1.5, alpha=0.75) +
+  scale_color_manual(values=c("#902E57","#00A08A"), name="Indoor Biting %") + 
+  xlim(0,0.85) +
+  ylim(0,0.85) +
+  theme(legend.position="none") + 
+  coord_fixed() +
+  labs(x="Initial Prevalence",
+       y="Final Prevalence",
+       title="")
+graphics.off()
+
+pdf(file.path(plot_dir, "aba_point_lower_init.pdf"), width=7, height=5)
+ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 &
+                  Site_Name=="aba" & x_Temporary_Larval_Habitat==x_temps[20]], aes(x=initial_prev, y=final_prev)) +
+  geom_abline(size=1.5, alpha=0.5)+
+  geom_point(aes(color=human_indoor, group=Run_Number), size=1.5, alpha=0.75) +
+  scale_color_manual(values=unique(all_data[Site_Name=="aba"]$map_color), name="Indoor Biting %") + 
+  xlim(0,0.85)+
+  ylim(0,0.85) +
+  theme(legend.position="none") + 
+  coord_fixed() +
+  labs(x="Initial Prevalence",
+       y="Final Prevalence",
+       title="")
+graphics.off()
+
+
+pdf(file.path(plot_dir, "aba_point_higher_init.pdf"), width=7, height=5)
+ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 &
+                  Site_Name=="aba" & x_Temporary_Larval_Habitat==x_temps[30]], aes(x=initial_prev, y=final_prev)) +
+  geom_abline(size=1.5, alpha=0.5)+
+  geom_point(aes(color=human_indoor, group=Run_Number), size=1.5, alpha=0.75) +
+  scale_color_manual(values=unique(all_data[Site_Name=="aba"]$map_color), name="Indoor Biting %") + 
+  xlim(0,0.85)+
+  ylim(0,0.85) +
+  theme(legend.position="none") + 
+  coord_fixed() +
+  labs(x="Initial Prevalence",
+       y="Final Prevalence",
+       title="")
+graphics.off()
 
 
 pdf(file.path(plot_dir, "aba_point_all.pdf"), width=7, height=5)
 ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 &
                   Site_Name=="aba"], aes(x=initial_prev, y=final_prev)) +
   geom_abline(size=1.5, alpha=0.5)+
-  geom_point(aes(color=human_indoor, group=Run_Number), size=3) +
+  geom_point(aes(color=human_indoor, group=Run_Number), size=1.5, alpha=0.75) +
   scale_color_manual(values=unique(all_data[Site_Name=="aba"]$map_color), name="Indoor Biting %") + 
   xlim(0,0.85)+
   ylim(0,0.85) +
   theme(legend.position="none") + 
   coord_fixed() +
-  labs(x="Initial PfPR",
-       y="Final PfPR",
+  labs(x="Initial Prevalence",
+       y="Final Prevalence",
        title="")
 graphics.off()
 
 pdf(file.path(plot_dir, "aba_line.pdf"), width=7, height=5)
 ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 &
                   Site_Name=="aba"], aes(x=mean_initial, y=mean_final)) +
-  geom_abline(size=1.5, alpha=0.25)+
-  geom_line(aes(color=human_indoor), size=1) +
+  geom_abline(size=1.5, alpha=0.5)+
+  geom_line(aes(color=human_indoor), size=1.25) +
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=human_indoor), alpha=0.25) +
   scale_color_manual(values=unique(all_data[Site_Name=="aba"]$map_color), name="Indoor Biting %") + 
   scale_fill_manual(values=unique(all_data[Site_Name=="aba"]$map_color), name="Indoor Biting %") + 
@@ -127,55 +174,55 @@ ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0 &
   ylim(0,0.85) +
   theme(legend.position="none") + 
   coord_fixed() +
-  labs(x="Initial PfPR",
-       y="Final PfPR",
+  labs(x="Initial Prevalence",
+       y="Final Prevalence",
        title="")
 graphics.off()
 
 
-pdf(file.path(plot_dir, "baseline_60.pdf"), width=7, height=5)
-ggplot(all_data[ITN_Coverage==0.6 & ATSB_Initial_Effect==0], aes(x=mean_initial, y=mean_final)) +
-  geom_abline(size=1.5, alpha=0.25)+
+pdf(file.path(plot_dir, "baseline_40.pdf"), width=7, height=5)
+ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0], aes(x=mean_initial, y=mean_final)) +
+  geom_abline(size=1.5, alpha=0.5)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=human_indoor, group=Site_Name), alpha=0.25) +
-  geom_line(aes(color=human_indoor, group=Site_Name), size=2) +
+  geom_line(aes(color=human_indoor, group=Site_Name), size=1.25) +
   scale_color_manual(values=brewer.pal(8, "Spectral"), name="Indoor Biting %") + 
   scale_fill_manual(values=brewer.pal(8, "Spectral"), name="Indoor Biting %") +
   xlim(0,0.85)+
   ylim(0,0.85) +
-  theme(legend.position="left") + 
+  theme(legend.position="right") + 
   coord_fixed() +
-  labs(x="Initial PfPR",
-       y="Final PfPR")
+  labs(x="Initial Prevalence",
+       y="Final Prevalence")
 graphics.off()
 
 pdf(file.path(plot_dir, "atsb_5.pdf"), width=7, height=5)
 ggplot(all_data[ITN_Coverage==0 & ATSB_Initial_Effect==0.05], aes(x=mean_initial, y=mean_final)) +
-  geom_abline(size=1.5, alpha=0.25)+
+  geom_abline(size=1.5, alpha=0.5)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=human_indoor, group=Site_Name), alpha=0.25) +
-  geom_line(aes(color=human_indoor, group=Site_Name), size=2) +
+  geom_line(aes(color=human_indoor, group=Site_Name), size=1.25) +
   scale_color_manual(values=brewer.pal(8, "Spectral"), name="Indoor Biting %") + 
   scale_fill_manual(values=brewer.pal(8, "Spectral"), name="Indoor Biting %") +
   xlim(0,0.85)+
   ylim(0,0.85) +
-  theme(legend.position="left") + 
+  theme(legend.position="right") + 
   coord_fixed() +
-  labs(x="Initial PfPR",
-       y="Final PfPR")
+  labs(x="Initial Prevalence",
+       y="Final Prevalence")
 graphics.off()
 
-pdf(file.path(plot_dir, "baseline_0.4_atsb_5.pdf"), width=7, height=5)
+pdf(file.path(plot_dir, "baseline_40_atsb_5.pdf"), width=7, height=5)
 ggplot(all_data[ITN_Coverage==0.4 & ATSB_Initial_Effect==0.05], aes(x=mean_initial, y=mean_final)) +
-  geom_abline(size=1.5, alpha=0.25)+
+  geom_abline(size=1.5, alpha=0.5)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=human_indoor, group=Site_Name), alpha=0.25) +
-  geom_line(aes(color=human_indoor, group=Site_Name), size=2) +
+  geom_line(aes(color=human_indoor, group=Site_Name), size=1.25) +
   scale_color_manual(values=brewer.pal(8, "Spectral"), name="Indoor Biting %") + 
   scale_fill_manual(values=brewer.pal(8, "Spectral"), name="Indoor Biting %") +
   xlim(0,0.85)+
   ylim(0,0.85) +
-  theme(legend.position="left") + 
+  theme(legend.position="right") + 
   coord_fixed() +
-  labs(x="Initial PfPR",
-       y="Final PfPR")
+  labs(x="Initial Prevalence",
+       y="Final Prevalence")
 graphics.off()
 
 
