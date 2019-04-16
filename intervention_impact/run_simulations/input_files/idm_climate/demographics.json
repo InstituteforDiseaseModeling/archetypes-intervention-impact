@@ -700,8 +700,8 @@
                 "InitialVectorsPerSpecies": {
                     "lat": -497920,
                     "lon": 650000,
-                    "arabiensis": 18437,
-                    "funestus": 1563,
+                    "arabiensis": 18997,
+                    "funestus": 1003,
                     "gambiae": 0,
                     "darlingi": 0,
                     "minimus": 0,
@@ -1444,7 +1444,7 @@
         "Author": "idm",
         "Tool": "dtk-tools",
         "IdReference": "default",
-        "DateCreated": "2018-11-10 12:20:39.412756",
+        "DateCreated": "2019-04-16 14:17:19.149634",
         "NodeCount": 8,
         "Resolution": 30
     }

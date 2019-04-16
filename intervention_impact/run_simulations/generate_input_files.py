@@ -20,14 +20,15 @@ sys.path.insert(0, '../..')
 from spatial import make_shapefile, extract_latlongs
 
 
-def update_demog(demographics, vectors, tot_vector_count=20000):
+def update_demog(demographics, vectors, update_resval="custom", tot_vector_count=20000):
 
     # impose heterogeneous biting risk:
     demographics["Defaults"]["IndividualAttributes"]["RiskDistributionFlag"] = 3
     demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
 
-    # make idref line up with custom climate
-    # demographics["Metadata"]["IdReference"] = "default"
+    if update_resval==30:
+        # make idref line up with custom climate
+        demographics["Metadata"]["IdReference"] = "default"
 
     # add node-specific vectors
     vectors = pd.melt(vectors, id_vars=["name", "node_id"], var_name="species", value_name="proportion")
@@ -57,7 +58,7 @@ def net_usage_overlay(base_demog_path, overlay_path):
     generate_demographics_properties(base_demog_path, overlay_path, IPs=IPs, NPs=NPs, as_overlay=True)
 
 
-def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
+def generate_input_files(out_dir, res=30, pop=1000, node_ids=False):
 
     # setup
     # SetupParser.init()
@@ -97,7 +98,7 @@ def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
     print("demographics")
     demog_path = os.path.join(out_dir, "demographics.json")
 
-    if "node_id" not in sites.columns:
+    if "node_id" not in sites.columns or node_ids==True:
         sites["node_id"] = sites.apply(lambda row: nodeid_from_lat_lon(row["lat"], row["lon"], res/3600), axis=1)
 
     nodes = [Node(this_site["lat"], this_site["lon"], pop,
@@ -109,10 +110,12 @@ def generate_input_files(out_dir, res=30, pop=1000, overwrite=False):
     all_vectors = pd.merge(sites[["name", "node_id", "lat", "lon"]], all_vectors)
     all_vectors.to_csv(os.path.join(out_dir, "vector_proportions.csv"), index=False)
 
+    res_val = res if res in [30, 250] else "custom"
 
-    site_demog = DemographicsGenerator(nodes, res_in_arcsec=res if res in [30, 250] else "custom",
+    site_demog = DemographicsGenerator(nodes, res_in_arcsec=res_val,
                                        update_demographics=update_demog,
-                                       vectors= all_vectors)
+                                       vectors= all_vectors,
+                                       update_resval=res_val)
 
     demographics = site_demog.generate_demographics()
 

@@ -24,7 +24,7 @@ run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id =  None # "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "ERA5_Climate_2000_2016_With_LandTemp"
+sim_root_name = "IDM_Climate_2016_Inset"
 baseline_interventions = ["itn", "irs", "al_cm"]
 baseline_intervention_coverages = [0]
 sweep_interventions = ["atsb"]
@@ -34,7 +34,9 @@ start_days = [0]
 vaccine_durations = [365]
 atsb_initial_effects = [0, 0.01, 0.03, 0.05, 0.07, 0.09, 0.11]
 ivermectin_durations = [7, 14, 30]
+
 new_inputs = True
+site_input_dir = os.path.join("input_files", "idm_climate")
 
 # Serialization
 print("setting up")
@@ -68,7 +70,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One",
                                                    "Bednet_Using", "Received_Vaccine"],
-                                    Enable_Default_Reporting=0,
+                                    Enable_Default_Reporting=1,
                                     Enable_Demographics_Risk=1,
                                     Enable_Vector_Species_Report=0,
 
@@ -100,7 +102,6 @@ if __name__ == "__main__":
     sites = pd.read_csv("site_details.csv")
 
     print("finding collection ids and vector details")
-    site_input_dir = os.path.join("input_files", "era5_climate", "2016")
 
     with open("species_details.json") as f:
         species_details = json.loads(f.read())
@@ -115,7 +116,8 @@ if __name__ == "__main__":
 
     if new_inputs:
         print("generating input files")
-        generate_input_files(site_input_dir, pop=2000, res=900, overwrite=True)
+        generate_input_files(site_input_dir, pop=2000, res=900 if "era5" in site_input_dir else 30,
+                             node_ids=True) # set res to 900 for ERA5
 
     # Find vector proportions for each vector in our site
     site_vectors = pd.read_csv(os.path.join(site_input_dir, "vector_proportions.csv"))
