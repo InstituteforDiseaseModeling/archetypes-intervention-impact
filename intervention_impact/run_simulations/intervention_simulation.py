@@ -24,7 +24,7 @@ run_type = "burnin"  # set to "burnin" or "intervention"
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id =  None # "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "ERA5_Climate_2000_2016_With_LandTemp"
+sim_root_name = "ERA5_Climate_2000_2016_Landtemp_Inset"
 baseline_interventions = ["itn", "irs", "al_cm"]
 baseline_intervention_coverages = [0]
 sweep_interventions = ["atsb"]
@@ -68,7 +68,7 @@ cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     # todo: do I need listed events?
                                     Listed_Events=["Bednet_Discarded", "Bednet_Got_New_One",
                                                    "Bednet_Using", "Received_Vaccine"],
-                                    Enable_Default_Reporting=0,
+                                    Enable_Default_Reporting=1,
                                     Enable_Demographics_Risk=1,
                                     Enable_Vector_Species_Report=0,
 
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     sites = pd.read_csv("site_details.csv")
 
     print("finding collection ids and vector details")
-    site_input_dir = os.path.join("input_files", "era5_climate", "2016")
+    site_input_dir = os.path.join("input_files", "era5_climate", "2000_2016")
 
     with open("species_details.json") as f:
         species_details = json.loads(f.read())
