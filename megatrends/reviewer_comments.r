@@ -2,7 +2,7 @@ library(data.table)
 library(ggplot2)
 
 ## response to reviewer #4 on burn-ins
-
+theme_set(theme_minimal(base_size = 18))
 
 rm(list=ls())
 
@@ -20,17 +20,22 @@ get_smooth <- function(x, y){
 main_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/lookup_tables/interactions")
 
+new_names <- data.table(Site_Name=c("aba", "bajonapo", "djibo", "gode", "kananga", "karen", "kasama", "moine"),
+                        Print_Name=c("Nigeria (teal)", "Americas", "Burkina Faso (orange)",
+                                     "Ethiopia (purple)", "DRC (magenta)", "SE Asia", "Zambia (blue)",
+                                     "Mozambique (yellow)"))
+
 # long burnin
 long_initial <- fread(file.path(main_dir, "../initial/MAP_Longer_Oldclimate_Burnin.csv"))
 long_final <- fread(file.path(main_dir, "MAP_CM_Caitlin_Longer_Burnin_Intervention.csv"))
 long_all <- merge(long_final, long_initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
-long_all[, burnin_type:="40-Year"]
+long_all[, burnin_type:="40-Year Burn-in"]
 
 short_initial <- fread(file.path(main_dir, "../initial/MAP_II_New_Sites_Burnin.csv"))
 short_final <- fread(file.path(main_dir, "MAP_II_New_Sites.csv"))
 short_final <- short_final[IRS_Coverage==0 & ITN_Coverage==0, list(Site_Name, Run_Number, x_Temporary_Larval_Habitat, CM_Drug, CM_Coverage, final_prev)]
 short_all <- merge(short_final, short_initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
-short_all[, burnin_type:="15-year"]
+short_all[, burnin_type:="15-Year Burn-in"]
 
 all_data <- rbind(long_all, short_all)
 
@@ -62,13 +67,29 @@ minmaxes_smooth <- rbindlist(minmaxes_smooth)
 all_data <- merge(all_data, minmaxes_smooth, by=c("burnin_type", "Site_Name", "x_Temporary_Larval_Habitat", "Coverage",
                                                   "mean_initial", "mean_final"), all=T)
 
-ggplot(all_data[Site_Name=="karen"], aes(x=mean_initial, y=mean_final, color=burnin_type)) +
+
+all_data <- merge(all_data, new_names, by="Site_Name", all=T)
+all_data[, Print_Name := factor(Print_Name, levels=c("Ethiopia (purple)",
+                                                     "Burkina Faso (orange)",
+                                                     "Nigeria (teal)",
+                                                     "DRC (magenta)",
+                                                     "Zambia (blue)",
+                                                     "Mozambique (yellow)",
+                                                     "Americas",
+                                                     "SE Asia"
+                                                     ))]
+
+png(file.path(Sys.getenv("HOME"), "Desktop/reviewer_burnin.png"))
+ggplot(all_data[Coverage==0.8], aes(x=mean_initial, y=mean_final, color=burnin_type)) +
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=burnin_type), alpha=0.25) +
   geom_line() +
   geom_abline() +
   # scale_color_manual(values=c("#E9806C", "#F1B657","#B1D066")) +
-  facet_grid(Site_Name ~ Coverage) +
-  theme_minimal() +
-  theme(legend.position="bottom")
-
+  facet_wrap(Print_Name~.) +
+  theme(legend.position="bottom",
+        legend.title = element_blank()) +
+  labs(title="80% ACT Use Over Three Years",
+       x="Initial Prevalence",
+       y="Final Prevalence")
+graphics.off()
 
