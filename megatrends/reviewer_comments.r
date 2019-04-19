@@ -79,7 +79,7 @@ all_data[, Print_Name := factor(Print_Name, levels=c("Ethiopia (purple)",
                                                      "SE Asia"
                                                      ))]
 
-png(file.path(Sys.getenv("HOME"), "Desktop/reviewer_burnin.png"))
+png(file.path(Sys.getenv("HOME"), "Desktop/reviewer_burnin.png"), height=500, width=600)
 ggplot(all_data[Coverage==0.8], aes(x=mean_initial, y=mean_final, color=burnin_type)) +
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=burnin_type), alpha=0.25) +
   geom_line() +
