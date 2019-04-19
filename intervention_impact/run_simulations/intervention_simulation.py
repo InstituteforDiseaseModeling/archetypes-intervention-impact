@@ -99,7 +99,7 @@ if __name__ == "__main__":
 
     # collect site-specific data to pass to builder functions
     COMPS_login("https://comps.idmod.org")
-    sites = pd.read_csv("site_details.csv")
+    sites = pd.read_csv("input_files/site_details.csv")
 
     print("finding collection ids and vector details")
 

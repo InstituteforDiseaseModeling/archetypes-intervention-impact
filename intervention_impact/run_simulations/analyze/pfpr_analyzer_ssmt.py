@@ -4,7 +4,8 @@ from simtools.Analysis.BaseAnalyzers import BaseAnalyzer
 
 class PfPRAnalyzer(BaseAnalyzer):
 
-    def __init__(self, dir_name, report_names=["AnnualAverage"], sweep_variables=None, working_dir="."):
+    def __init__(self, dir_name, report_names=["AnnualAverage"], sweep_variables=None, working_dir=".",
+                 last_year_only=True):
         super(PfPRAnalyzer, self).__init__(working_dir=working_dir,
                                         filenames=["output/MalariaSummaryReport_{name}.json".format(name=name)
                                                       for name in report_names]
@@ -13,6 +14,7 @@ class PfPRAnalyzer(BaseAnalyzer):
         self.sitenames=report_names
         self.report_names = report_names  #Sharon added
         self.dir_name = dir_name
+        self.last_year_only = last_year_only
 
     def select_simulation_data(self, data, simulation):
         colname = "initial_prev" if self.dir_name == "initial" else "final_prev"
@@ -23,12 +25,21 @@ class PfPRAnalyzer(BaseAnalyzer):
 
             try:
                 channeldata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTime"]["PfPR_2to10"]
+                timedata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTime"]["Time Of Report"]
             except:
                 print("file not found for sim" + simulation.id)
 
-            tempdata = pd.DataFrame({colname: channeldata,
-                                    "Site_Name": site_name})
-            tempdata = tempdata[-2:-1]
+            if self.last_year_only:
+                tempdata = pd.DataFrame({colname: channeldata,
+                                        "Site_Name": site_name})
+                tempdata = tempdata[-2:-1]
+
+            else:
+                tempdata = pd.DataFrame({"day": timedata,
+                                         colname: channeldata,
+                                         "Site_Name": site_name})
+                tempdata = tempdata[:-1]
+
             simdata.append(tempdata)
         simdata = pd.concat(simdata)
 
@@ -38,7 +49,7 @@ class PfPRAnalyzer(BaseAnalyzer):
         return simdata
 
     def filter(self, simulation):
-        return simulation.id != "87227af9-0fcf-e811-a2bd-c4346bcb1555"
+        return True
 
     def finalize(self, all_data):
         data_sets_per_experiment = {}

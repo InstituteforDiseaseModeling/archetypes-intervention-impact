@@ -75,7 +75,7 @@ def generate_input_files(out_dir, res=30, pop=1000, node_ids=False):
     if not os.path.isdir(out_dir):
         os.mkdir(out_dir)
 
-    sites = pd.read_csv("site_details.csv")
+    sites = pd.read_csv("input_files/site_details.csv")
 
     print("finding vector mix")
     africa_sites = sites.query("continent=='Africa'")
