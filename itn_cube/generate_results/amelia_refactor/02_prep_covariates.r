@@ -40,13 +40,13 @@ if(Sys.getenv("input_dir")=="") {
 
 output_fname <- file.path(output_dir, 'covariates_27April2019.csv')
 
-# TODO: function for extracting a raster stack and applying it to data
-extract_values <- function(raster_list, dataset, names=""){
+# function for extracting a raster stack and applying it to data
+extract_values <- function(raster_list, dataset, names=c()){
   
   cov_stack <- stack(raster_list)
   NAvalue(cov_stack)=-9999
   extracted_covs <- data.table(cov_stack[dataset$cellnumber])
-  if (names!=""){
+  if (length(names)>0){
     names(extracted_covs) <- names
   }
   
@@ -68,13 +68,17 @@ cov_details <- cov_details[used_sam==T]
 
 ### Static covariates: just extract and apply to all data  ----------------------------------------------------------------------------#######################  
 
+print("Extracting static covariates")
 static_fnames <- cov_details[type=="static", list(fname=file.path(input_dir, cov_name, fpath_append, fname))]
 
 # TODO: creates 3 NA values. Explore.
-data <- extract_values(static_fnames$fname, data)
+static_cov_dt <- extract_values(static_fnames$fname, data)
+write.csv(static_cov_dt, file.path(output_dir, paste0("static_", "covariates_27April2019.csv")), row.names = F)
+print("static covariates successfully extracted")
 
 ### Annual covariates: extract and apply by year  ----------------------------------------------------------------------------#######################  
 
+print("Extracting annual covariates")
 annual_covs <- cov_details[type=="year"]
 
 # find base fnames-- allows for the possibility of a non-year looping variable such as landcover fraction
@@ -83,8 +87,8 @@ base_fnames <- lapply(annual_covs$cov_name, function(this_covname){
   if (this_cov$other_var==""){
     fnames <- data.table(cov_name=this_covname,
                          base_fname=file.path(input_dir, this_covname, this_cov$fpath_append, this_cov$fname),
-                         year_start=this_cov$year_start,
-                         year_end=this_cov$year_end,
+                         start_year=this_cov$start_year,
+                         end_year=this_cov$end_year,
                          colname=this_covname 
     )
   }else{ 
@@ -94,8 +98,8 @@ base_fnames <- lapply(annual_covs$cov_name, function(this_covname){
     })
     fnames <- data.table(cov_name=this_covname,
                          base_fname=unlist(fname_list),
-                         year_start=this_cov$year_start,
-                         year_end=this_cov$year_end,
+                         start_year=this_cov$start_year,
+                         end_year=this_cov$end_year,
                          colname=this_cov$othervar_start:this_cov$othervar_end)
     fnames[, colname:=paste0(cov_name, "_", colname)]
   }
@@ -109,35 +113,54 @@ base_fnames <- rbindlist(base_fnames)
 annual_list <- lapply(unique(data$flooryear), function(this_year){
   print(this_year)
   these_fnames <- copy(base_fnames)
-  these_fnames[, year_to_use:=pmin(year_end, this_year)] # cap year by covariate availability
-  these_fnames[, year_to_use:=pmax(year_to_use, year_start)] 
+  these_fnames[, year_to_use:=pmin(end_year, this_year)] # cap year by covariate availability
+  these_fnames[, year_to_use:=pmax(year_to_use, start_year)] 
   these_fnames[, full_fname:=str_replace(base_fname, "YEAR", as.character(year_to_use))]
   
   subset <- extract_values(these_fnames$full_fname, data[flooryear==year], names=these_fnames$colname)
   return(subset)
 })
-data <- rbindlist(annual_list)
+annual_cov_dt <- rbindlist(annual_list)
 
+write.csv(annual_cov_dt, file.path(output_dir, paste0("annual_", "covariates_27April2019.csv")), row.names = F)
+print(warnings())
+print("annual covariates successfully extracted")
 
 ### Fully dynamic covariates: extract and apply by month and year  ----------------------------------------------------------------------------#######################  
 
-dynamic_covs <- cov_details[type=="yearmon" & cov_name!="LST_night"]
+print("Extracting dynamic covariates")
+
+dynamic_covs <- cov_details[type=="yearmon"]
 
 dynamic_list <- lapply(unique(data$fulldate), function(this_date){
-  this_month <- str_pad(month(this_date), 2, pad="0")
+  
+  print(this_date)
+  
+  this_month <- month(this_date)
   this_year <- year(this_date)
   
   these_fnames <- copy(dynamic_covs)
-  these_fnames[, year_to_use:=pmin(year_end, this_year)] # cap year by covariate availability
-  these_fnames[, year_to_use:=pmax(year_to_use, year_start)] 
+  these_fnames[, year_to_use:=pmin(end_year, this_year)] # cap year by covariate availability
+  these_fnames[, year_to_use:=pmax(year_to_use, start_year)] 
+  # cap to make sure the specific month_year is available (2000 and 2014 don't have all months)
+  these_fnames[end_year==year_to_use & end_month<this_month, year_to_use:=end_year-1]
+  these_fnames[start_year==year_to_use & start_month>this_month, year_to_use:=start_year+1]
+  
   these_fnames[, new_fname:=str_replace(fname, "YEAR", as.character(year_to_use))]
-  these_fnames[, new_fname:=str_replace(new_fname, "MONTH", this_month)]
+  these_fnames[, new_fname:=str_replace(new_fname, "MONTH", str_pad(this_month, 2, pad="0"))]
   these_fnames[, full_fname:=file.path(input_dir, cov_name, fpath_append, new_fname)]
   
   subset <- extract_values(these_fnames$full_fname, data[fulldate==this_date], names=these_fnames$cov_name) 
   
 })
-data <- rbindlist(dynamic_list)
+dynamic_cov_dt <- rbindlist(dynamic_list)
 
-write.csv(data, output_fname, row.names = F)
+write.csv(dynamic_cov_dt, file.path(output_dir, paste0("dynamic_", "covariates_27April2019.csv")), row.names = F)
+
+print("dynamic covariates successfully extracted")
+
+print("saving to file")
+# write.csv(data, output_fname, row.names = F)
+
+print(warnings())
 
