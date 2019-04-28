@@ -56,7 +56,6 @@ extract_values <- function(raster_list, dataset, names=c()){
 }
 
 
-
 # Load data from create_database.r, and list of covariates  ------------------------------------------------------------
 data<-fread(database_fname)
 data[, fulldate:=as.Date(as.yearmon(year))]
@@ -108,7 +107,6 @@ base_fnames <- lapply(annual_covs$cov_name, function(this_covname){
 
 base_fnames <- rbindlist(base_fnames)
 
-
 # subset data years, extracting year-specific covariates for each
 annual_list <- lapply(unique(data$flooryear), function(this_year){
   print(this_year)
@@ -117,7 +115,7 @@ annual_list <- lapply(unique(data$flooryear), function(this_year){
   these_fnames[, year_to_use:=pmax(year_to_use, start_year)] 
   these_fnames[, full_fname:=str_replace(base_fname, "YEAR", as.character(year_to_use))]
   
-  subset <- extract_values(these_fnames$full_fname, data[flooryear==year], names=these_fnames$colname)
+  subset <- extract_values(these_fnames$full_fname, data[flooryear==this_year], names=these_fnames$colname)
   return(subset)
 })
 annual_cov_dt <- rbindlist(annual_list)
