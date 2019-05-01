@@ -16,11 +16,14 @@ check_sameness <- function(orig, new, sameness_cutoff=1e-10){
   }else{
     for (this_name in names(orig)){
       
+      print(paste("assessing column", this_name))
+      
       mismatch <- copy(orig)
       setnames(mismatch, this_name, "old_val")
       mismatch$new_val <- new[[this_name]]
       
       mismatch <- mismatch[old_val!=new_val]
+      #print(mismatch)
 
       if (nrow(mismatch)>0){
         print(paste("discrepancy in", this_name))
@@ -31,6 +34,7 @@ check_sameness <- function(orig, new, sameness_cutoff=1e-10){
         if (max_diff>sameness_cutoff){
           print(paste("columns differ by at most", max_diff, "-- Explore further"))
           print(paste(nrow(mismatch[diff>sameness_cutoff]), "rows are above cutoff."))
+          print(summary(mismatch))
         }else{
           print(paste("columns differ by at most", max_diff, "-- No issue"))
         }
