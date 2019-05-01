@@ -26,7 +26,6 @@ if(Sys.getenv("input_dir")=="") {
   # todo: make database output go to joint_data
   database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output/ITN_final_clean_access_18March2019_COMPARE.csv"
   input_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
-  # input_dir <- "/Volumes/map_data/cubes/5km/"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/joint_data"
 } else {
@@ -59,6 +58,7 @@ extract_values <- function(raster_list, dataset, names=c()){
 # Load data from create_database.r, and list of covariates  ------------------------------------------------------------
 data<-fread(database_fname)
 data[, fulldate:=as.Date(as.yearmon(year))]
+data[, row_id:=row.names(data)]
 
 cov_details <- fread(file.path(func_dir, "covariate_key.csv"))
 cov_details[, used_sam:= as.logical(used_sam)]
