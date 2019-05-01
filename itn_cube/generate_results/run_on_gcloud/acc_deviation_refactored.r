@@ -7,7 +7,7 @@
 # '/home/drive/cubes/5km/worldclim/prec57a0.tif'
 
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code --input database_fname=gs://map_data_z/users/amelia/itn_cube/create_database/output/ITN_final_clean_access_18March2019.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/acc_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/access_deviation --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input database_fname=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam/01_database.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/acc_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam/ --command 'Rscript ${CODE}'
 
 
 
@@ -41,7 +41,8 @@ source(file.path(func_dir, "acc_deviation_functions.r"))
 source(file.path(func_dir, "algorithm.V1.R"))
 source(file.path(func_dir, "INLAFunctions.R"))
 
-output_fname <- file.path(output_dir, 'ITN_cube_access_dynamic_access_deviation_18March2019.Rdata')
+covariate_fname <- file.path(output_dir, "02_covariates.Rdata")
+output_fname <- file.path(output_dir, '03_access_deviation.Rdata')
 
 # Load data from create_database.r  ------------------------------------------------------------
 data<-read.csv(database_fname)
@@ -77,6 +78,7 @@ print(paste("--> Machine has", ncores, "cores available"))
 registerDoParallel(ncores-2)
 print("Extracting year-month covariates")
 covs.list.dyn<-foreach(i=1:nrow(uniques)) %dopar% { # loop through unique names
+  print(paste("unique date", i, "of", nrwo(uniques)))
   wh<-split.dates[,1]==uniques[i,1] & split.dates[,2]==uniques[i,2]
   un.cells<-cell[wh]
   tmp<-matrix(NA,nrow=length(un.cells),ncol=l)
@@ -192,15 +194,15 @@ all.covs<-cbind(static.covs,yearonly.covs,dynamic.covs)
 
 print("Static covariates extracted successfully")
 
-save.image(file.path(joint_dir, 'preload.Rdata'))
+save.image(covariate_fname)
 
 
 ##todo: start new script here 
 
 ### Load (what kind of?) data ----------------------------------------------------------------------------#######################  
 
-# what is this?
-load(file.path(joint_dir, 'preload.Rdata'))
+# load saved covariates
+load(covariate_fname)
 ## IHS: BURBRIDGE-- inverse hyperbolic sine transform
 
 
@@ -245,7 +247,7 @@ drow<-nrow(data) ## Number of data points
 # load country rasters
 cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif'))
 NAvalue(cn)<--9999
-POPULATIONS<-read.csv(file.path(joint_dir, 'country_table_populations.csv')) # load table to match gaul codes to country names
+POPULATIONS<-read.csv(file.path(joint_dir, 'For_Access_Dev/country_table_populations.csv')) # load table to match gaul codes to country names
 
 # adjust timing of data? this feels important****
 data$yearqtr[data$yearqtr>=2015]=2014.75

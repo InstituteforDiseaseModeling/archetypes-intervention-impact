@@ -16,7 +16,7 @@ package_load <- function(package_list){
 package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 
 # current dsub:
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/create_database/joint_data/For_Database joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/For_Database joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/create_database_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam --command 'Rscript ${CODE}'
 
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
