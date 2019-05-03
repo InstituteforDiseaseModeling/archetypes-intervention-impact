@@ -3,7 +3,7 @@
 ## Amelia Bertozzi-Villa
 ## April 2019
 ## 
-## Functions to accompany create_database_refactored.r-- prepping survey data to go into the ITN cube model. 
+## Functions to accompany 01_create_database.r-- prepping survey data to go into the ITN cube model. 
 ## -emplogit2: 2-input empirical logit
 ## -reposition.points: adjust impossibly-placed lat-longs
 ## -aggregate.data: sum to pixel level (TODO: fix column bug)
