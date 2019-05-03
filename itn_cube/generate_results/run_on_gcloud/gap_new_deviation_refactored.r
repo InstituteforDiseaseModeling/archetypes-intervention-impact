@@ -2,7 +2,7 @@
 ##########################################################################################
 
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code --input CODE=gs://map_data_z/users/amelia/itn_cube/code/gap_new_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/use_gap --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam/ joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/gap_new_deviation_refactored.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam/ --command 'Rscript ${CODE}'
 
 
 rm(list=ls())
@@ -21,6 +21,7 @@ if(Sys.getenv("joint_dir")=="") {
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/use_gap"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
+  input_dir <- Sys.getenv("input_dir")
   joint_dir <- Sys.getenv("joint_dir") # location for shared datasets across itn cube scripts
   output_dir <- Sys.getenv("output_dir")
   func_dir <- Sys.getenv("func_dir") # code directory for function scripts
@@ -32,8 +33,7 @@ if(Sys.getenv("joint_dir")=="") {
 # source(file.path(func_dir, "INLAFunctions.R"))
 # 
 # 
-load(file.path(joint_dir, 'preload.Rdata')) # same as access_new_deviation.R
-
+load(file.path(input_dir, '02_covariates.Rdata')) # same as access_new_deviation.R
 
 ## temp while you still load the entire environment with 'preload' (todo: save only the necessary components of the image) --------
 if(Sys.getenv("joint_dir")=="") {
@@ -47,6 +47,7 @@ if(Sys.getenv("joint_dir")=="") {
 }
 ##------
 
+out_fname <- file.path(output_dir, '04_use_gap.Rdata')
 
 data<-data[complete.cases(all.covs),]
 all.covs<-all.covs[complete.cases(all.covs),]
@@ -239,7 +240,6 @@ mod.pred =   inla(formula1,
  )      
 
 
-# save.image(file.path(output_dir, 'ITN_cube_gap_dynamic_18March2019.Rdata.Rdata'))
 
 # inla.ks.plot(models[[4]]$cpo$pit, punif)
 # 
@@ -346,4 +346,4 @@ plot(gc.dist(range[,1]),range[,2])
 variance=spde.res2$marginals.variance.nominal$variance.nominal.1
 print(paste('The mean range is',gc.dist(exp(spde.res2$summary.log.range.nominal$mean))))
 
-save.image(file.path(output_dir, 'ITN_cube_gap_dynamic_18March2019.Rdata'))
+save.image(out_fname)

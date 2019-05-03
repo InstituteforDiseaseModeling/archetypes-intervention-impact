@@ -52,7 +52,7 @@ data<-data[!is.na(data$year),]
 
 # Load dynamic covariates  ------------------------------------------------------------
 
-dynamic_covnames <- c("LST_day_mean", "LST_night_mean", "EVI_mean", "TCW_mean", "TSI_mean")
+dynamic_covnames <- c("LST_day/mean", "LST_night/mean", "EVI/mean", "TCW/mean", "TSI/mean")
 
 
 
@@ -78,8 +78,9 @@ print(paste("--> Machine has", ncores, "cores available"))
 registerDoParallel(ncores-2)
 print("Extracting year-month covariates")
 covs.list.dyn<-foreach(i=1:nrow(uniques)) %dopar% { # loop through unique names
-  print(paste("unique date", i, "of", nrwo(uniques)))
+  print(paste("unique date", i, "of", nrow(uniques)))
   wh<-split.dates[,1]==uniques[i,1] & split.dates[,2]==uniques[i,2]
+  print(uniques[i,])
   un.cells<-cell[wh]
   tmp<-matrix(NA,nrow=length(un.cells),ncol=l)
   for(j in 1:l){
@@ -91,7 +92,6 @@ covs.list.dyn<-foreach(i=1:nrow(uniques)) %dopar% { # loop through unique names
     }
     
     this_file_path <- paste0(cov_dir, "/", year,'.',uniques[i,2],'.mean.tif')
-    # print(this_file_path)
     
     r=raster(this_file_path)
     NAvalue(r)=-9999
@@ -112,7 +112,7 @@ print("year-month covariates extracted successfully")
 
 # Load year-only (??) covariates  ------------------------------------------------------------
 # foldery<-c('/home/drive/cubes/5km/IGBP_Landcover/Fraction/','/home/drive/cubes/5km/AfriPop/')
-year_covnames <- c("IGBP_Landcover_Fraction", "AfriPop")
+year_covnames <- c("IGBP_Landcover/Fraction", "AfriPop")
 
 uniques<-unique(split.dates[,1])
 
@@ -129,9 +129,9 @@ covs.list.year<-foreach(i=1:length(uniques)) %dopar% { # loop through unique nam
   for(j in 1:(l-1)){
     # no land cover for 2013
     if(uniques[i]>2012){
-      r=raster(paste0(file.path(input_dir, "IGBP_Landcover_Fraction"), "/",'2012','.fraction.class.',j-1,'.tif'))
+      r=raster(paste0(file.path(input_dir, "IGBP_Landcover/Fraction"), "/",'2012','.fraction.class.',j-1,'.tif'))
     }else{
-      r=raster(paste0(file.path(input_dir, "IGBP_Landcover_Fraction"), "/",uniques[i],'.fraction.class.',j-1,'.tif'))
+      r=raster(paste0(file.path(input_dir, "IGBP_Landcover/Fraction"), "/",uniques[i],'.fraction.class.',j-1,'.tif'))
     }		
     NAvalue(r)=-9999
     tmp[,j]<-r[un.cells]
@@ -247,7 +247,7 @@ drow<-nrow(data) ## Number of data points
 # load country rasters
 cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif'))
 NAvalue(cn)<--9999
-POPULATIONS<-read.csv(file.path(joint_dir, 'For_Access_Dev/country_table_populations.csv')) # load table to match gaul codes to country names
+POPULATIONS<-read.csv(file.path(joint_dir, 'country_table_populations.csv')) # load table to match gaul codes to country names
 
 # adjust timing of data? this feels important****
 data$yearqtr[data$yearqtr>=2015]=2014.75

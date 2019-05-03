@@ -108,7 +108,7 @@ get.pred.locs<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_c
 get.pred.covariates.dynamic<-function(year,month, cov_dir="/mnt/data/input/gs/map_data_z/cubes_5km", 
                                       joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
   
-  dynamic_covnames <- c("LST_day_mean", "LST_night_mean", "EVI_mean", "TCW_mean", "TSI_mean")
+  dynamic_covnames <- c("LST_day/mean", "LST_night/mean", "EVI/mean", "TCW/mean", "TSI/mean")
   #' foldersd<-c('/home/drive/cubes/5km/LST_day/mean/',
   #'             #'/home/drive/cubes/5km/LST_delta/mean/',
   #'             '/home/drive/cubes/5km/LST_night/mean/',
@@ -164,9 +164,9 @@ get.pred.covariates.yearonly<-function(year,cov_dir="/mnt/data/input/gs/map_data
   covs.list.year<-foreach(i=1:l,.combine='cbind') %dopar% { # loop through unique names
     # no land cover for 2013
     if(year>2012){
-      r=raster(file.path(cov_dir, "IGBP_Landcover_Fraction", paste0('2012','.fraction.class.',i-1,'.tif'))) 
+      r=raster(file.path(cov_dir, "IGBP_Landcover/Fraction", paste0('2012','.fraction.class.',i-1,'.tif'))) 
     }else{
-      r=raster(file.path(cov_dir, "IGBP_Landcover_Fraction", paste0(year,'.fraction.class.',i-1,'.tif')))
+      r=raster(file.path(cov_dir, "IGBP_Landcover/Fraction", paste0(year,'.fraction.class.',i-1,'.tif')))
     }		
     NAvalue(r)=-9999
     return(r[index])
@@ -346,7 +346,7 @@ relative_gain<-function(use,access){
   return(relativegain)
 }
 
-rel_gain_hist<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"){
+rel_gain_hist<-function(in_dir){ # previously: in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"
   h<-c()
   P=raster::stack(paste0(in_dir, '/ITN_',2000:2016,'.ACC.tif'))
   P5=stack(paste0(in_dir, '/ITN_',2000:2016,'.USE.tif'))
@@ -361,7 +361,7 @@ rel_gain_hist<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_c
   
 }
 
-rel_gain_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"){
+rel_gain_range<-function(in_dir){ # previously: in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"
   
   P=raster::stack(paste0(in_dir, '/ITN_',2000:2016,'.ACC.tif'))
   
@@ -376,7 +376,7 @@ rel_gain_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_
   
 }
 
-dev_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"){
+dev_range<-function(in_dir){ # previously: in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"
   P=raster::stack(paste0(in_dir, '/ITN_',2000:2016,'.DEV.tif'))
   ranges<-matrix(nrow=nlayers(P),ncol=2)
   for(i in 1:nlayers(P)){
@@ -386,7 +386,7 @@ dev_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/
   
 }
 
-gap_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"){
+gap_range<-function(in_dir){ # previously: in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/predictions"
   P=raster::stack(paste0(in_dir, '/ITN_',2000:2016,'.GAP.tif'))
   ranges<-matrix(nrow=nlayers(P),ncol=2)
   for(i in 1:nlayers(P)){
@@ -398,12 +398,12 @@ gap_range<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/
 
 
 ## what is cn? country? 
-get.cn.estimates<-function(r,pop, in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
+get.cn.estimates<-function(r,pop, in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data/For_Prediction"){
   database<-read.csv(file.path(in_dir, 'country_table.csv'))
-  cn<-raster(file.path(in_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
+  cn<-raster(file.path(in_dir, '../african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   try(if(extent(cn)!=extent(r)) stop("extents do not match"))
-  limits<-raster(file.path(in_dir, 'Pf_limits/Pf_limits.tif'))
+  limits<-raster(file.path(in_dir, 'Pf_Limits/Pf_limits.tif'))
   NAvalue(limits)=-9999
   # stable only limits
   limits[limits==2]=2
