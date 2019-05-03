@@ -1,5 +1,6 @@
 
 library(data.table)
+library(stringr)
 
 rm(list=ls())
 
@@ -8,12 +9,12 @@ main_dir <- "/Users/bertozzivill/Desktop"
 
 source(file.path(func_dir, "check_file_similarity.r"))
 
-old <- load(file.path(main_dir, "preload.Rdata"))
+old <- load(file.path(main_dir, "covariates.Rdata"))
 
 
-new_static <- fread(file.path(main_dir, "static_covariates_27April2019.csv"))
-new_annual <- fread(file.path(main_dir, "annual_covariates_27April2019.csv")) 
-new_dynamic <- fread(file.path(main_dir, "dynamic_covariates_27April2019.csv"))
+new_static <- fread(file.path(main_dir, "static_covariates.csv"))
+new_annual <- fread(file.path(main_dir, "annual_covariates.csv")) 
+new_dynamic <- fread(file.path(main_dir, "dynamic_covariates.csv"))
 
 data <- data.table(data)
 
