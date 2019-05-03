@@ -8,7 +8,7 @@
 ##############################################################################################################
 
 # todo: change dsub so that output path is joint_data
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input database_fname=gs://map_data_z/users/amelia/itn_cube/create_database/output/ITN_final_clean_access_18March2019_COMPARE.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/02_prep_covariates.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input database_fname=gs://map_data_z/users/amelia/itn_cube/results/20190503_total_refactor/01_database.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/02_prep_covariates.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190503_total_refactor/ --command 'Rscript ${CODE}'
 
 rm(list=ls())
 
@@ -22,14 +22,12 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/joint_data"
   # todo: make database output go to joint_data
   database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output/ITN_final_clean_access_18March2019_COMPARE.csv"
   input_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/joint_data"
 } else {
-  joint_dir <- Sys.getenv("joint_dir") # location for shared datasets across itn cube scripts
   database_fname <- Sys.getenv("database_fname") # location of output file from generate_database_refactored.r
   input_dir <- Sys.getenv("input_dir") # here, location of covariate data 
   func_dir <- Sys.getenv("func_dir") # code directory for function scripts
@@ -37,7 +35,7 @@ if(Sys.getenv("input_dir")=="") {
 }
 
 
-output_fname <- file.path(output_dir, 'covariates_27April2019.csv')
+output_fname <- file.path(output_dir, "02_covariates.csv")
 
 # function for extracting a raster stack and applying it to data
 extract_values <- function(raster_list, dataset, names=c()){
@@ -72,7 +70,7 @@ static_fnames <- cov_details[type=="static", list(fname=file.path(input_dir, cov
 
 # TODO: creates 3 NA values. Explore.
 static_cov_dt <- extract_values(static_fnames$fname, data)
-write.csv(static_cov_dt, file.path(output_dir, paste0("static_", "covariates_27April2019.csv")), row.names = F)
+write.csv(static_cov_dt, file.path(output_dir, "02_static_covariates.csv"), row.names = F)
 print("static covariates successfully extracted")
 
 ### Annual covariates: extract and apply by year  ----------------------------------------------------------------------------#######################  
@@ -120,7 +118,7 @@ annual_list <- lapply(unique(data$flooryear), function(this_year){
 })
 annual_cov_dt <- rbindlist(annual_list)
 
-write.csv(annual_cov_dt, file.path(output_dir, paste0("annual_", "covariates_27April2019.csv")), row.names = F)
+write.csv(annual_cov_dt, file.path(output_dir, "02_annual_covariates.csv"), row.names = F)
 print(warnings())
 print("annual covariates successfully extracted")
 
@@ -153,7 +151,7 @@ dynamic_list <- lapply(unique(data$fulldate), function(this_date){
 })
 dynamic_cov_dt <- rbindlist(dynamic_list)
 
-write.csv(dynamic_cov_dt, file.path(output_dir, paste0("dynamic_", "covariates_27April2019.csv")), row.names = F)
+write.csv(dynamic_cov_dt, file.path(output_dir, "02_dynamic_covariates.csv"), row.names = F)
 
 print("dynamic covariates successfully extracted")
 
