@@ -1,7 +1,7 @@
 
 
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive main_dir=gs://map_data_z/users/amelia/itn_cube cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code --input CODE=gs://map_data_z/users/amelia/itn_cube/code/itn_prediction_refactored.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/predictions/refactor --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive in_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam/05_predictions joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/ cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/itn_prediction_refactored.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam/ --command 'Rscript ${CODE}'
 
 # from access deviation and use gap, predict coverage and map all surfaces
 
@@ -15,18 +15,20 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "data.table", "rgdal", "INLA", "RColorBrewer",
                "VGAM", "maptools", "rgeos", "png", "sp", "doParallel", "rasterVis", "ggplot2"))
 
-if(Sys.getenv("main_dir")=="") {
-  main_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/"
+if(Sys.getenv("in_dir")=="") {
+  in_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
-  main_dir <- Sys.getenv("main_dir") 
+  in_dir <- Sys.getenv("in_dir") 
+  joint_dir <- Sys.getenv("joint_dir")
   cov_dir <- Sys.getenv("cov_dir") # cubes_5km
   out_dir <- Sys.getenv("out_dir")
   func_dir <- Sys.getenv("func_dir") # code directory for function scripts
 }
 
-joint_dir <- file.path(main_dir, "joint_data")
-
+joint_dir <- file.path(joint_dir, "For_Prediction")
+print(joint_dir)
+print(list.files(joint_dir))
 # load shapefiles and templates for plotting
 World<-readShapePoly(file.path(joint_dir, 'MAP_templates_Africa', 'afri_word.shp'))
 World <- gSimplify(World, tol=0.1, topologyPreserve=TRUE)
@@ -38,14 +40,13 @@ img <- readPNG(file.path(joint_dir, 'map-logo_bg.png'))
 print("loaded shapefiles and templates for plotting")
 
 # load access and gap estimates
-list.files(main_dir)
-list.files(file.path(main_dir, 'access_deviation'))
-load(file.path(main_dir, "access_deviation", "ITN_cube_access_dynamic_access_deviation_18March2019.Rdata"))
+list.files(in_dir)
+load(file.path(in_dir, "03_access_deviation.Rdata"))
 mod.pred.acc=mod.pred
 theta.acc<-theta
 mesh.acc<-mesh
 
-load(file.path(main_dir, "use_gap", "ITN_cube_gap_dynamic_18March2019.Rdata"))
+load(file.path(in_dir, "04_use_gap.Rdata"))
 mod.pred.use=mod.pred
 theta.use<-theta
 mesh.use<-mesh
@@ -53,13 +54,20 @@ mesh.use<-mesh
 #overwrite like-named functions in INLAfunctions.r
 source(file.path(func_dir, "itn_prediction_functions.r"))
 
+if (!joint_dir %like% "For_Prediction"){
+  joint_dir <- file.path(joint_dir, "For_Prediction")
+}
+
+
 # HUGE Prediction Loop ----------------------------------------------------------------------------####################### 
 time_points<-2000:2016
 static.covs<-get.pred.covariates.static()
 
 for(xxx in 1:length(time_points)){
+  
   dics<-cors<-c()
   pred_year=time_points[xxx]
+  print(paste("predicting for", pred_year))
   pred_month1="01"
   pred_month2="02"
   pred_month3="03"
@@ -80,6 +88,7 @@ for(xxx in 1:length(time_points)){
   
   ####################################################################################################################
   #extract covariates
+  print("extracting covariates")
   pred_mat1_s<-get.pred.covariates.dynamic(pred_year_cov,pred_month1)
   pred_mat2_s<-get.pred.covariates.dynamic(pred_year_cov,pred_month2)
   pred_mat3_s<-get.pred.covariates.dynamic(pred_year_cov,pred_month3)
@@ -106,6 +115,7 @@ for(xxx in 1:length(time_points)){
   pred_mat10<-cbind(static.covs,pred_mat_y,pred_mat10_s)
   pred_mat11<-cbind(static.covs,pred_mat_y,pred_mat11_s)
   pred_mat12<-cbind(static.covs,pred_mat_y,pred_mat12_s)
+  print("covariates extracted")
   
   ####################################################################################################################
   #standardise and transform covariates
@@ -116,6 +126,7 @@ for(xxx in 1:length(time_points)){
   #	}
   #}
   ####################################################################################################################
+  print("loading prediction locations and inla results")
   #get pred locations
   pred_locs<-get.pred.locs()
   ####################################################################################################################
@@ -134,10 +145,11 @@ for(xxx in 1:length(time_points)){
   A.pred_dynamic1=Apreds
   
   
-  
+  print("prediction locations and inla results loaded")
   ####################################################################################################################
   #### get access mean from stock and flow
-  cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
+  print("loading stock and flow means")
+  cn<-raster(file.path(joint_dir, '../african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   pred_val<-getValues(cn)#get values again
   w<-is.na(pred_val) #find NAs again
@@ -146,7 +158,7 @@ for(xxx in 1:length(time_points)){
   gauls<-cn[index]
   
   
-  load(file.path(main_dir, 'create_database/input', 'prop0prop1.rData'))
+  load(file.path(joint_dir, '../For_Database', 'prop0prop1.rData'))
   POPULATIONS<-read.csv(file.path(joint_dir, 'National_Config_Data.csv'))
   Country.list<-Cout
   Country.gaul<-Cout
@@ -182,6 +194,9 @@ for(xxx in 1:length(time_points)){
   acc11_p<-rep(NA,length(gauls))
   acc12_p<-rep(NA,length(gauls))	
   
+  print("stock and flow means loaded")
+  
+  print("calculating country-level access")
   for(i in 1:length(Country.list)){
     p<-out[[i]]
     p0<-p[,,1] # get p0 parameters
@@ -210,9 +225,7 @@ for(xxx in 1:length(time_points)){
     names(hh)<-1:10
     
     
-    
     #### calculate access
-    
     
     acc1<-calc_access(accdate1,func0,func1,hh)
     acc2<-calc_access(accdate2,func0,func1,hh)
@@ -242,8 +255,10 @@ for(xxx in 1:length(time_points)){
     acc12_p[cc]=emplogit(acc12,1000)
     
   }
+  print("country-level access calculated")
   ##### put it all together
   
+  print("predicting access for new locations")
   Beta<-c(mod.pred.acc$summary.fixed[,1])
   Beta_cov<-Beta[2:length(Beta)]
   
@@ -333,6 +348,8 @@ for(xxx in 1:length(time_points)){
   P3[!w]<-plogis(acc_mean)
   P3[!is.na(cn) & is.na(P3)]=0
   
+  print("access, access deviation, and mean access calculated, saving rasters")
+  
   writeRaster(P, file.path(out_dir, paste0('ITN_',time_points[xxx],'.ACC.tif')),NAflag=-9999,overwrite=TRUE)
   writeRaster(P2, file.path(out_dir, paste0('ITN_',time_points[xxx],'.DEV.tif')),NAflag=-9999,overwrite=TRUE)
   writeRaster(P3, file.path(out_dir, paste0('ITN_',time_points[xxx],'.MEAN.tif')),NAflag=-9999,overwrite=TRUE)
@@ -340,6 +357,7 @@ for(xxx in 1:length(time_points)){
   #############################################################################################################################################
   #now predict use
   
+  print("predicting use")
   pred_year1=pred_year
   Apreds<-inla.spde.make.A(mesh.use, loc=cbind(pred_locs[,'x'],pred_locs[,'y'],pred_locs[,'z']),group=rep(pred_year,nrow(pred_locs)),group.mesh=mesh1d)
   
@@ -420,6 +438,8 @@ for(xxx in 1:length(time_points)){
   P5[!w]<-(lp_use)
   P5[!is.na(cn) & is.na(P5)]=0
   
+  print("use predicted, saving rasters")
+  
   writeRaster(P4, file.path(out_dir, paste0('ITN_',time_points[xxx],'.GAP.tif')),NAflag=-9999,overwrite=TRUE)
   writeRaster(P5, file.path(out_dir, paste0('ITN_',time_points[xxx],'.USE.tif')),NAflag=-9999,overwrite=TRUE)
   
@@ -432,6 +452,8 @@ for(xxx in 1:length(time_points)){
 
 # Plotting ----------------------------------------------------------------------------####################### 
 
+print("plotting results")
+
 time_points<-2000:2016
 colfunc <- colorRampPalette(c("red","orange","yellow",'green'))
 
@@ -440,7 +462,7 @@ jet.colors <-
                      "#7FFF7F", "yellow", "#FF7F00", "red", "#7F0000"))
 
 gainr<-c(-2,1) # relative gain?
-data<-read.csv(file.path(main_dir, 'create_database/output/', 'ITN_final_clean_access_9Feb2019.csv'))
+data<-read.csv(file.path(in_dir, '01_database.csv'))
 
 # Plot access ----
 filename<-file.path(out_dir,'access.pdf')
@@ -613,7 +635,7 @@ indicators<-ind
 
 # todo: does this POPULATIONS pull a different file than the one earlier in the script?
 print("loading populations")
-POPULATIONS<-read.csv(file.path(joint_dir, 'country_table_populations.csv')) # load table to match gaul codes to country names
+POPULATIONS<-read.csv(file.path(joint_dir, '../country_table_populations.csv')) # load table to match gaul codes to country names
 names<-as.character(rownames(ind))
 #for(i in 1:nrow(indicators)){
 #	names[i]=as.character(POPULATIONS[as.character(POPULATIONS$NAME)==names[i],'COUNTRY_ID']) # get 3 letter country codes
@@ -660,7 +682,7 @@ print(p)
 
 
 stv<-getValues(st)
-cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif'))
+cn<-raster(file.path(joint_dir, '../african_cn5km_2013_no_disputes.tif'))
 cnv<-getValues(cn)
 for(i in 1:nrow(indmat)){
   gaul<-POPULATIONS[as.character(POPULATIONS$NAME)==rownames(ind)[i],'GAUL_CODE']
