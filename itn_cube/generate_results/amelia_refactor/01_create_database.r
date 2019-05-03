@@ -28,11 +28,9 @@ package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 if(Sys.getenv("joint_dir")=="") {
   # gcsfuse drives are just too laggy
   # joint_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/joint_data"
-  # input_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/input"
   # output_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/output"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
   func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/create_database_functions.r"
 } else {
   joint_dir <- Sys.getenv("joint_dir")
