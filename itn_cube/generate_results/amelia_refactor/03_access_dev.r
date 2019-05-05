@@ -1,5 +1,5 @@
 ###############################################################################################################
-## 03_model_access_dev.r
+## 03_access_dev.r
 ## Amelia Bertozzi-Villa
 ## May 2019
 ## 
@@ -8,7 +8,7 @@
 ## 
 ##############################################################################################################
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190503_total_refactor func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/02_prep_covariates.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190503_total_refactor/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190503_total_refactor func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/03_access_dev.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190503_total_refactor/ --command 'Rscript ${CODE}'
 
 
 rm(list=ls())
@@ -25,7 +25,7 @@ package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RCo
 if(Sys.getenv("input_dir")=="") {
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/joint_data"
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
   input_dir <- Sys.getenv("input_dir")
@@ -114,38 +114,42 @@ temporal_mesh=inla.mesh.1d(seq(2000,2015,by=2),interval=c(2000,2015),degree=2) #
 ### un-refactored from here down
 
 # prep data for model fitting
-data.cov<-data.est[,covariate.names]
-est.cov<-as.list(data.cov)
-est.cov$year<-data.est$yearqtr
-est.cov$gaul<-data$gaul
-est.cov$empmean<-data$empmean
+cov_list<-data_est[, cov_names, with=F]
+cov_list$year <- data_est$yearqtr
 
-# generate observation matrix (?)
-A.est =
-  inla.spde.make.A(mesh, loc=cbind(data.est[,'x'],data.est[,'y'],data.est[,'z']),group=data.est[,'yearqtr'],group.mesh=temporal_mesh)
-field.indices = inla.spde.make.index("field", n.spde=mesh$n,n.group=temporal_mesh$m)
+# TODO: work out whether gaul code and "empmean" covs shoudl be added here
+cov_list <-as.list(cov_list)
+
+
+# generate observation matrix
+A_est =
+  inla.spde.make.A(mesh, 
+                   loc=as.matrix(data_est[, list(x,y,z)]), 
+                   group=data_est$yearqtr,
+                   group.mesh=temporal_mesh)
+field_indices = inla.spde.make.index("field", n.spde=mesh$n,n.group=temporal_mesh$m)
 
 # what is this?
-stack.est = inla.stack(data=list(response=data.est$accdev),
-                       A=list(A.est,1),
+stack_est = inla.stack(data=list(response=data_est$ihs_emp_access_dev),
+                       A=list(A_est,1),
                        effects=
-                         list(c(field.indices,
+                         list(c(field_indices,
                                 list(Intercept=1)),
-                              c(est.cov)),
+                              c(cov_list)),
                        tag="est", remove.unused=TRUE)
-stack.est<-inla.stack(stack.est)
+stack_est<-inla.stack(stack_est)
 
-formula1<- as.formula(paste(
-  paste("response ~ -1 + Intercept  + "),
-  paste("f(field, model=spde,group=field.group, control.group=list(model='ar1')) + ",sep=""),
-  paste(covariate.names,collapse='+'),
-  sep=""))
+model_formula<- as.formula(paste(
+                          paste("response ~ -1 + Intercept  + "),
+                          paste("f(field, model=spde_matern, group=field.group, control.group=list(model='ar1')) + ",sep=""),
+                          paste(cov_names,collapse='+'),
+                          sep=""))
 
 #-- Call INLA and get results --#
-mod.pred =   inla(formula1,
-                  data=inla.stack.data(stack.est),
+mod_pred =   inla(model_formula,
+                  data=inla.stack.data(stack_est),
                   family=c("gaussian"),
-                  control.predictor=list(A=inla.stack.A(stack.est), compute=TRUE,quantiles=NULL),
+                  control.predictor=list(A=inla.stack.A(stack_est), compute=TRUE,quantiles=NULL),
                   control.compute=list(cpo=TRUE,waic=TRUE),
                   keep=FALSE, verbose=TRUE,
                   control.inla= list(strategy = 'gaussian',
@@ -156,8 +160,8 @@ mod.pred =   inla(formula1,
 )
 
 print(paste("Saving outputs to", output_fname))
-save.image(output_fname)
-inla.ks.plot(mod.pred$cpo$pit, punif)
+save(mod_pred, file=output_fname)
+# inla.ks.plot(mod.pred$cpo$pit, punif)
 
 
 
