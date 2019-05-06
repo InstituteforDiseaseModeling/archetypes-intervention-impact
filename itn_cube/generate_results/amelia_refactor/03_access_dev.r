@@ -46,6 +46,7 @@ output_fname <- file.path(output_dir, "03_access_deviation.Rdata")
 
 ## Load data 
 data <- fread(file.path(input_dir, "02_covariates.csv"))
+row_order <- fread(file.path(input_dir, "03_row_order_FROM_20190430_replicate_sam.csv"))
 
 ## Prep for modeling ## ---------------------------------------------------------
 
@@ -96,22 +97,40 @@ INLA:::inla.dynload.workaround()
 # make a copy of the data for estimation
 data_est <- copy(data)
 
+data_est <- merge(data_est, row_order, by="row_id", all=T)
+data_est <- data_est[order(shuffled_row_location)]
+
+load("/Users/bertozzivill/Desktop/old_access_deviation.Rdata")
+
+for_old_mesh <- data.table(cbind(data.est[dup,'x'],data.est[dup,'y'],data.est[dup,'z']))
+for_new_mesh <- unique(data_est[, list(x,y,z)])
+
+names(for_old_mesh) <- c("old_x", "old_y", "old_z")
+compare_xyz <- cbind(for_old_mesh, for_new_mesh)
+compare_xyz[, diff:=abs(z-old_z)]
+
+
+old_mesh <- inla.mesh.2d(loc= for_old_mesh,
+                         cutoff=0.006,
+                         min.angle=c(25,25),
+                         max.edge=c(0.06,500) )
+print(paste("Old mesh constructed:", old_mesh$n, "vertices"))
+
+
 # generate spatial mesh using unique xyz values 
 # TODO: is this all xyz is used for?
-mesh = inla.mesh.2d(loc= unique(data_est[, list(x,y,z)]),
+# TODO: ask Sam about discrepancy in mesh count. 
+spatial_mesh = inla.mesh.2d(loc= for_new_mesh,
                     cutoff=0.006,
                     min.angle=c(25,25),
                     max.edge=c(0.06,500) )
-print(paste("Mesh constructed:", mesh$n, "vertices"))
+print(paste("New mesh constructed:", spatial_mesh$n, "vertices"))
 
 # generate spde matern model from mesh
-spde_matern =inla.spde2.matern(mesh,alpha=2) # formerly spde
+spde_matern =inla.spde2.matern(spatial_mesh,alpha=2) # formerly spde
 
 # generate temporal mesh
 temporal_mesh=inla.mesh.1d(seq(2000,2015,by=2),interval=c(2000,2015),degree=2) # formerly mesh1d
-
-
-### un-refactored from here down
 
 # prep data for model fitting
 cov_list<-data_est[, cov_names, with=F]
@@ -123,11 +142,11 @@ cov_list <-as.list(cov_list)
 
 # generate observation matrix
 A_est =
-  inla.spde.make.A(mesh, 
+  inla.spde.make.A(spatial_mesh, 
                    loc=as.matrix(data_est[, list(x,y,z)]), 
                    group=data_est$yearqtr,
                    group.mesh=temporal_mesh)
-field_indices = inla.spde.make.index("field", n.spde=mesh$n,n.group=temporal_mesh$m)
+field_indices = inla.spde.make.index("field", n.spde=spatial_mesh$n,n.group=temporal_mesh$m)
 
 # what is this?
 stack_est = inla.stack(data=list(response=data_est$ihs_emp_access_dev),
@@ -160,7 +179,8 @@ mod_pred =   inla(model_formula,
 )
 
 print(paste("Saving outputs to", output_fname))
-save(mod_pred, file=output_fname)
+# save(mod_pred, file=output_fname)
+save.image(output_fname)
 # inla.ks.plot(mod.pred$cpo$pit, punif)
 
 
