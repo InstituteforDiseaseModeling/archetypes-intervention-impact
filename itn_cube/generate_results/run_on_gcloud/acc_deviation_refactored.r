@@ -41,8 +41,10 @@ source(file.path(func_dir, "acc_deviation_functions.r"))
 source(file.path(func_dir, "algorithm.V1.R"))
 source(file.path(func_dir, "INLAFunctions.R"))
 
-covariate_fname <- file.path(output_dir, "02_covariates.Rdata")
-output_fname <- file.path(output_dir, '03_access_deviation.Rdata')
+set.seed(212)
+
+covariate_fname <- file.path(output_dir, "02_covariates_TESTREPLICATION_TAKETWO.Rdata")
+output_fname <- file.path(output_dir, '03_access_deviation_TESTREPLICATION_TAKETWO.Rdata')
 
 # Load data from create_database.r  ------------------------------------------------------------
 data<-read.csv(database_fname)
@@ -336,6 +338,10 @@ mod.pred =   inla(formula1,
                                      step.factor=1,
                                      stupid.search=FALSE)
 )
+
+print("fixed effects:")
+print(mod.pred$summary.fixed)
+
 
 print(paste("Saving outputs to", output_fname))
 save.image(output_fname)

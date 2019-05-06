@@ -41,12 +41,14 @@ source(file.path(func_dir, "03_access_dev_functions.r"))
 # source(file.path(func_dir, "algorithm.V1.R"))
 # source(file.path(func_dir, "INLAFunctions.R"))
 
+set.seed(212)
+
 output_fname <- file.path(output_dir, "03_access_deviation.Rdata")
 
 
 ## Load data 
 data <- fread(file.path(input_dir, "02_covariates.csv"))
-row_order <- fread(file.path(input_dir, "03_row_order_FROM_20190430_replicate_sam.csv"))
+# row_order <- fread(file.path(input_dir, "03_row_order_FROM_20190430_replicate_sam.csv"))
 
 ## Prep for modeling ## ---------------------------------------------------------
 
@@ -97,30 +99,13 @@ INLA:::inla.dynload.workaround()
 # make a copy of the data for estimation
 data_est <- copy(data)
 
-data_est <- merge(data_est, row_order, by="row_id", all=T)
-data_est <- data_est[order(shuffled_row_location)]
-
-load("/Users/bertozzivill/Desktop/old_access_deviation.Rdata")
-
-for_old_mesh <- data.table(cbind(data.est[dup,'x'],data.est[dup,'y'],data.est[dup,'z']))
-for_new_mesh <- unique(data_est[, list(x,y,z)])
-
-names(for_old_mesh) <- c("old_x", "old_y", "old_z")
-compare_xyz <- cbind(for_old_mesh, for_new_mesh)
-compare_xyz[, diff:=abs(z-old_z)]
-
-
-old_mesh <- inla.mesh.2d(loc= for_old_mesh,
-                         cutoff=0.006,
-                         min.angle=c(25,25),
-                         max.edge=c(0.06,500) )
-print(paste("Old mesh constructed:", old_mesh$n, "vertices"))
-
+# data_est <- merge(data_est, row_order, by="row_id", all=T)
+# data_est <- data_est[order(shuffled_row_location)]
 
 # generate spatial mesh using unique xyz values 
 # TODO: is this all xyz is used for?
 # TODO: ask Sam about discrepancy in mesh count. 
-spatial_mesh = inla.mesh.2d(loc= for_new_mesh,
+spatial_mesh = inla.mesh.2d(loc= unique(data_est[, list(x,y,z)]),
                     cutoff=0.006,
                     min.angle=c(25,25),
                     max.edge=c(0.06,500) )
