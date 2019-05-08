@@ -1,7 +1,7 @@
 
 # STEP 3: ACCESS DEVIATION
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/03_access_deviation.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/03_acc_deviation.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/ --command 'Rscript ${CODE}'
 
 
 rm(list=ls())
@@ -59,8 +59,6 @@ set.seed(212)
 
 ### Load (what kind of?) data ----------------------------------------------------------------------------#######################  
 
-# load saved covariates
-load(covariate_fname)
 ## IHS: BURBRIDGE-- inverse hyperbolic sine transform
 
 
