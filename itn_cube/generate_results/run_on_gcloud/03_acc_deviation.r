@@ -1,14 +1,7 @@
-###############################################################################################################
-## 03_access_dev_TESTOLD.r
-## Amelia Bertozzi-Villa
-## May 2019
-## 
-## A restructuring of Sam Bhatt's original code to run the INLA model for access deviation (pixel-level
-## deviation from national mean of net access).
-## 
-##############################################################################################################
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/03_access_dev_TESTOLD.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190503_total_refactor/ --command 'Rscript ${CODE}'
+# STEP 3: ACCESS DEVIATION
+
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/03_access_deviation.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/ --command 'Rscript ${CODE}'
 
 
 rm(list=ls())
@@ -53,15 +46,22 @@ if(Sys.getenv("input_dir")=="") {
   func_dir <- Sys.getenv("func_dir") # code directory for function scripts
 }
 
-output_fname <- file.path(output_dir, "03_access_deviation_TESTOLD_NOPRELIM.Rdata")
+output_fname <- file.path(output_dir, "03_access_deviation.Rdata")
 
 # load relevant functions
-source(file.path(func_dir, "acc_deviation_functions.r"))
+source(file.path(func_dir, "03_acc_deviation_functions.r"))
+# source(file.path(func_dir, "03_algorithm.V1.R"))
+source(file.path(func_dir, "03_INLAFunctions.R")) 
 
 set.seed(212)
-run_prelim_model <- F
+
+
 
 ### Load (what kind of?) data ----------------------------------------------------------------------------#######################  
+
+# load saved covariates
+load(covariate_fname)
+## IHS: BURBRIDGE-- inverse hyperbolic sine transform
 
 
 # same "data" as above?
@@ -116,19 +116,16 @@ theta<-optimise(IHS.loglik, lower=0.001, upper=50, x=data$accdev, maximum=TRUE) 
 theta<-theta$maximum
 data$accdev=IHS(data$accdev,theta)
 
-if (run_prelim_model==T){
-  # run fixed-effects linear regression of access deviation on all covariates
-  formula<- as.formula(paste(paste("accdev ~ "),paste(covariate.names,collapse='+'),sep=""))
-  l<-lm(formula,data=data)
-  
-  # transform fitted values + data ... is this finding the gap? smoothing?
-  # what is the purpose of running this model at all?
-  lpacc<-plogis(emplogit(data$Amean,1000)+l$fitted.values)
-  #plot(data$P/data$N,lpacc)
-  cor(data$P/data$N,lpacc)
-  mean(abs((data$P/data$N-lpacc)))
-}
+# run fixed-effects linear regression of access deviation on all covariates
+formula<- as.formula(paste(paste("accdev ~ "),paste(covariate.names,collapse='+'),sep=""))
+l<-lm(formula,data=data)
 
+# transform fitted values + data ... is this finding the gap? smoothing?
+# what is the purpose of running this model at all?
+lpacc<-plogis(emplogit(data$Amean,1000)+l$fitted.values)
+#plot(data$P/data$N,lpacc)
+cor(data$P/data$N,lpacc)
+mean(abs((data$P/data$N-lpacc)))
 
 # initialize inla
 INLA:::inla.dynload.workaround() 
@@ -200,5 +197,119 @@ mod.pred =   inla(formula1,
 
 print(summary(mod.pred))
 
+
 print(paste("Saving outputs to", output_fname))
 save.image(output_fname)
+inla.ks.plot(mod.pred$cpo$pit, punif)
+
+
+# test: comment out everything south of here to see if that writes the results
+
+### Assess model ----------------------------------------------------------------------------#######################
+
+# compute summary statistics and information criteria (posterior fit)
+
+# watanabe-aikake information criterion-- this code seems to be expecting a list of models from which we can 
+# query waics, but the above code does not generate such a list.
+# waic<-c()
+# for(i in 1:4){
+#   waic[i]<-models[[i]]$waic$waic
+# }
+# a=(waic[1]-waic[2])/waic[1]
+# b=(waic[2]-waic[3])/waic[1]
+# c=(waic[3]-waic[4])/waic[1]
+# 
+# a/(a+b+c)
+# b/(a+b+c)
+# c/(a+b+c)
+
+# more model stats? what is lpgap?
+index= inla.stack.index(stack.est,"est")$data
+lp=mod.pred$summary.linear.predictor$mean[index]
+lp=Inv.IHS(lp,theta)
+
+# calculate fit
+lpgap<-plogis(emplogit(data$Amean,1000)+lp)
+plot(data$P/data$N,lpgap)
+cor(data$P/data$N,lpgap)
+mean(abs((data$P/data$N-lpgap)))
+
+a=mod.pred$summary.fixed$mean
+sig<-sign(mod.pred$summary.fixed$'0.025quant')==sign(mod.pred$summary.fixed$'0.975quant')
+names(a)<-rownames(mod.pred$summary.fixed)
+sort(a[sig])
+
+### Cross validation ----- (looc w/o re-running?)
+y=data.est$accdev
+
+Q.space = inla.spde.precision(spde, theta=c(mod.pred$summary.hyperpar$mean[2],mod.pred$summary.hyperpar$mean[3]))
+a=mod.pred$summary.hyperpar$mean[4]
+Q.time =
+  sparseMatrix(i=c(1:mesh1d$m, 1:(mesh1d$m-1)),
+               j=c(1:mesh1d$m, 2:mesh1d$m),
+               x=(c(c(1, rep((1+a^2), mesh1d$m-2), 1),
+                    rep(-a, mesh1d$m-1)) /(1-a^2)),
+               dims=mesh1d$m*c(1,1),
+               symmetric=TRUE)
+
+# Space-time precision: the magic
+Q = kronecker(Q.time, Q.space)
+
+#A =inla.spde.make.A(mesh, loc=cbind(data.est[,'x'],data.est[,'y'],data.est[,'z']))
+A= inla.spde.make.A(mesh, loc=cbind(data.est[,'x'],data.est[,'y'],data.est[,'z']),group=data.est[,'yearqtr'],group.mesh=mesh1d)
+
+# todo: work through this
+index= inla.stack.index(stack.est,"est")$data
+my=mod.pred$summary.linear.predictor$mean[index]-A%*%mod.pred$summary.random$field$mean
+Qe<-Diagonal(n=length(my),x=mod.pred$summary.hyperpar$mean[1])
+w=t(A)%*%Qe%*%(y-my)
+Qxy <- Q+t(A)%*%Qe%*%A
+z<- inla.qsolve(Qxy,w,method='solve')
+mu_xy <- drop(my + A%*%drop(z))
+S=inla.qinv(Qxy)
+V<-rowSums(A * (A %*% S))
+q=diag(Qe)
+
+
+### Anomaly -----
+
+# plot... more summaries? what is mval?
+mval<-rep(NA,nrow(data))
+for(i in 1:nrow(data)){
+  mval[i]<-y[i]-(y[i]-mu_xy[i])/(1-(q[i]*V[i]))
+}
+mval<-Inv.IHS(mval,theta)
+mval<-plogis(emplogit(data$Amean,1000)+mval)
+plot(data$P/data$N,mval)
+cor(data$P/data$N,mval)
+mean(abs((data$P/data$N-mval)))
+
+plot(y,mval)
+plot(data$P/data$N,plogis(emplogit(data$Amean,1000)+mval))
+cor(data$P/data$N,plogis(emplogit(data$Amean,1000)+mval))
+mean(abs(data$P/data$N-plogis(emplogit(data$Amean,1000)+mval)))
+
+
+un=unique(data$Survey)
+actual<-predicted<-c()
+
+for(i in 1:length(un)){
+  # sam: hammer this home (survey-level predictions are good)
+  actual[i]<-mean(data$P[data$Survey==un[i]]/data$N[data$Survey==un[i]])
+  predicted[i]<-mean(plogis(emplogit(data$Amean[data$Survey==un[i]],1000)+mval[data$Survey==un[i]]))
+  
+}
+
+plot(predicted,actual,pch=16,col=1:length(un))
+abline(0,1,col='red')
+cor(predicted,actual)
+mean(abs(predicted-actual))
+mean((predicted-actual)^2)
+
+
+spde.res2 <- inla.spde2.result(mod.pred, "field", spde)
+range=spde.res2$marginals.range.nominal$range.nominal.1
+plot(gc.dist(range[,1]),range[,2])
+variance=spde.res2$marginals.variance.nominal$variance.nominal.1
+print(paste('The mean range is',gc.dist(exp(spde.res2$summary.log.range.nominal$mean))))
+

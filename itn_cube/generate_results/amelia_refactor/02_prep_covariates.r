@@ -119,6 +119,11 @@ data <- rbindlist(annual_list)
 # remove Urban landcover for high collinearity with population
 data[, IGBP_Landcover_13:=NULL]
 
+# TEMP: name to correlate to old dataset
+new_names <- str_replace(names(data), "IGBP_Landcover_", "landcover")
+new_names <- str_replace(new_names, "AfriPop", "populatopn")
+names(data) <- new_names
+
 
 print("annual covariates successfully extracted")
 
@@ -150,7 +155,14 @@ dynamic_list <- lapply(unique(data$fulldate), function(this_date){
   
 })
 data <- rbindlist(dynamic_list)
+
+# TEMP: name to correlate to old dataset
+setnames(data, c("EVI", "LST_day", "LST_night", "TCW", "TSI"), c("evy", "lst_day", "lst_night", "tcw", "tsi"))
+
+
+# reorder
 data <- data[order(row_id)]
+
 
 print("dynamic covariates successfully extracted")
 
