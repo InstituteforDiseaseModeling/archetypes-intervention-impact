@@ -1,7 +1,7 @@
 
+# STEP 5: PREDICT
 
-
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive in_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam/05_predictions joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/ cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/itn_prediction_refactored.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/results/20190430_replicate_sam/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive in_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/05_predictions joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/ cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/05_itn_prediction.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/ --command 'Rscript ${CODE}'
 
 # from access deviation and use gap, predict coverage and map all surfaces
 
@@ -52,7 +52,7 @@ theta.use<-theta
 mesh.use<-mesh
 
 #overwrite like-named functions in INLAfunctions.r
-source(file.path(func_dir, "itn_prediction_functions.r"))
+source(file.path(func_dir, "05_itn_prediction_functions.r"))
 
 if (!joint_dir %like% "For_Prediction"){
   joint_dir <- file.path(joint_dir, "For_Prediction")
