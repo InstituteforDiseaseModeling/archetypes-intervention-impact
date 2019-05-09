@@ -23,8 +23,8 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190508_replicate_inla/"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190508_replicate_inla/"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
@@ -45,9 +45,10 @@ set.seed(212)
 
 output_fname <- file.path(output_dir, "03_access_deviation.Rdata")
 
-
 ## Load data 
 data <- fread(file.path(input_dir, "02_covariates.csv"))
+data <- data[order(row_id)]
+
 # row_order <- fread(file.path(input_dir, "03_row_order_FROM_20190430_replicate_sam.csv"))
 
 ## Prep for modeling ## ---------------------------------------------------------
@@ -56,9 +57,6 @@ data <- fread(file.path(input_dir, "02_covariates.csv"))
 dropped_rows <- nrow(data) - nrow(data[complete.cases(data)])
 print(paste("dropping", dropped_rows, "rows of data due to null values in covariates!"))
 data <- data[complete.cases(data)]
-
-# shuffle row order (why?)
-data <- data[sample(1:nrow(data),replace=F),]
 
 # check for collinearity
 cov_names <- names(data)[(which(names(data)=="row_id")+1):length(names(data))]
@@ -76,8 +74,7 @@ if (nrow(high_collin)>0){
 ## Run model ##-------------------------------------------------------------
 
 # adjust timing of data? this feels important****
-data[, yearqtr:=min(yearqtr, 2014.75)]
-
+data[, yearqtr:=pmin(yearqtr, 2014.75)]
 
 # calculate access deviation for data points, 
 # transform via empirical logit and inverse hyperbolic sine
@@ -91,7 +88,11 @@ data[, ihs_emp_access_dev:=IHS(emp_access_dev, theta)]
 
 # transform data from latlong to cartesian coordinates
 xyz<-ll.to.xyz(data[, list(row_id, longitude=lon, latitude=lat)])
+
 data <- merge(data, xyz, by="row_id", all=T)
+
+# shuffle row order (why?)
+data <- data[sample(1:nrow(data),replace=F),]
 
 # initialize inla
 INLA:::inla.dynload.workaround() 
@@ -166,8 +167,8 @@ mod_pred =   inla(model_formula,
 print(summary(mod_pred))
 
 print(paste("Saving outputs to", output_fname))
-# save(mod_pred, file=output_fname)
-save.image(output_fname)
+save(mod_pred, file=output_fname)
+# save.image(output_fname)
 # inla.ks.plot(mod.pred$cpo$pit, punif)
 
 
