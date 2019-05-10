@@ -16,8 +16,8 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/run_on_gcloud/"
 } else {
@@ -55,8 +55,6 @@ source(file.path(func_dir, "03_INLAFunctions.R"))
 
 set.seed(212)
 
-
-
 ### Load (what kind of?) data ----------------------------------------------------------------------------#######################  
 
 ## IHS: BURBRIDGE-- inverse hyperbolic sine transform
@@ -72,6 +70,7 @@ covariate.names<-colnames(all.covs)
 
 # merge data and covariates
 data<-cbind(data,all.covs)
+
 data<-data[sample(1:nrow(data),replace=F),]
 
 

@@ -29,9 +29,9 @@ if(Sys.getenv("joint_dir")=="") {
 }
 
 # # load relevant functions
-# source(file.path(func_dir, "acc_deviation_functions.r"))
+source(file.path(func_dir, "03_acc_deviation_functions.r"))
 # source(file.path(func_dir, "algorithm.V1.R"))
-# source(file.path(func_dir, "INLAFunctions.R"))
+source(file.path(func_dir, "03_INLAFunctions.R"))
 # 
 # 
 load(file.path(input_dir, '02_covariates.Rdata')) # same as access_new_deviation.R
@@ -49,6 +49,8 @@ if(Sys.getenv("joint_dir")=="") {
 ##------
 
 out_fname <- file.path(output_dir, '04_use_gap.Rdata')
+
+set.seed(212)
 
 data<-data[complete.cases(all.covs),]
 all.covs<-all.covs[complete.cases(all.covs),]
@@ -240,7 +242,7 @@ mod.pred =   inla(formula1,
 		 stupid.search=FALSE)
  )      
 
-
+print(summary(mod.pred))
 
 # inla.ks.plot(models[[4]]$cpo$pit, punif)
 # 
