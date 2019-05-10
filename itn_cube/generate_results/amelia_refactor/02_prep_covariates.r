@@ -55,7 +55,7 @@ extract_values <- function(raster_list, dataset, names=c()){
 # Load data from create_database.r, and list of covariates  ------------------------------------------------------------
 data<-fread(database_fname)
 data[, fulldate:=as.Date(as.yearmon(year))]
-data[, row_id:=row.names(data)]
+data[, row_id:=as.integer(row.names(data))]
 
 cov_details <- fread(file.path(func_dir, "covariate_key.csv"))
 cov_details[, used_sam:= as.logical(used_sam)]

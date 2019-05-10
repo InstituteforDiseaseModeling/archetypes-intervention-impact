@@ -18,9 +18,10 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "dismo", "gbm"))
 
 if(Sys.getenv("joint_dir")=="") {
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/use_gap"
-  func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
+  func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/run_on_gcloud/"
 } else {
   input_dir <- Sys.getenv("input_dir")
   joint_dir <- Sys.getenv("joint_dir") # location for shared datasets across itn cube scripts
@@ -100,6 +101,7 @@ POPULATIONS<-read.csv(file.path(joint_dir, 'country_table_populations.csv')) # l
 #POPULATIONS[POPULATIONS$NAME=='South Sudan','NAME']='Sudan'
 gauls<-extract(cn,data[,c('lon','lat')]) # extract gaul code for points
 data$african_cn<-gauls #update the gaul codes
+
 rm(gauls)
 
 
