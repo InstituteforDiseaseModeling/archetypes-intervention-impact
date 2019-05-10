@@ -1,14 +1,14 @@
 ###############################################################################################################
-## 03_access_dev.r
+## 04_use_gap.r
 ## Amelia Bertozzi-Villa
 ## May 2019
 ## 
-## A restructuring of Sam Bhatt's original code to run the INLA model for access deviation (pixel-level
-## deviation from national mean of net access).
+## A restructuring of Sam Bhatt's original code to run the INLA model for use gap (difference between access
+## and use.)
 ## 
 ##############################################################################################################
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190508_replicate_inla func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/03_access_dev.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190508_replicate_inla/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190508_replicate_inla func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/04_use_gap.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190508_replicate_inla/ --command 'Rscript ${CODE}'
 
 
 rm(list=ls())
@@ -39,7 +39,7 @@ source(file.path(func_dir, "03_access_dev_functions.r"))
 
 set.seed(212)
 
-output_fname <- file.path(output_dir, "03_access_deviation.Rdata")
+output_fname <- file.path(output_dir, "04_use_gap.Rdata")
 
 ## Load data 
 data <- fread(file.path(input_dir, "02_covariates.csv"))
@@ -68,17 +68,20 @@ if (nrow(high_collin)>0){
 
 ## Run model ##-------------------------------------------------------------
 
+## BUG?: (here and access dev: don't include country code in regression/don't merge s sudan and sudan)
+
+## BUG?: here, year is capped at 2014 instead of 2015 (but temporal mesh goes through 2015)
 # adjust timing of data? this feels important****
-data[, yearqtr:=pmin(yearqtr, 2014.75)]
+data[, yearqtr:=pmin(yearqtr, 2013.75)]
 
-# calculate access deviation for data points, 
+
+# calculate use gap for data points (USING GAP2 FROM DATABASE CREATION), 
 # transform via empirical logit and inverse hyperbolic sine
-data[, emp_access_dev:= emplogit2(P, N) - emplogit(Amean, 1000)]
 
-theta<-optimise(IHS.loglik, lower=0.001, upper=50, x=data$emp_access_dev, maximum=TRUE) # 2.0407
+theta<-optimise(IHS.loglik, lower=0.001, upper=50, x=data$gap2, maximum=TRUE) 
 theta<-theta$maximum
 
-data[, ihs_emp_access_dev:=IHS(emp_access_dev, theta)] 
+data[, ihs_gap2:=IHS(gap2, theta)] 
 
 # transform data from latlong to cartesian coordinates
 xyz<-ll.to.xyz(data[, list(row_id, longitude=lon, latitude=lat)])
@@ -97,9 +100,9 @@ data_est <- copy(data)
 # generate spatial mesh using unique xyz values 
 # TODO: is this all xyz is used for?
 spatial_mesh = inla.mesh.2d(loc= unique(data_est[, list(x,y,z)]),
-                    cutoff=0.006,
-                    min.angle=c(25,25),
-                    max.edge=c(0.06,500) )
+                            cutoff=0.006,
+                            min.angle=c(25,25),
+                            max.edge=c(0.06,500) )
 print(paste("New mesh constructed:", spatial_mesh$n, "vertices"))
 
 # generate spde matern model from mesh
@@ -125,21 +128,20 @@ A_est =
 field_indices = inla.spde.make.index("field", n.spde=spatial_mesh$n,n.group=temporal_mesh$m)
 
 # Generate "stack"
-stack_est = inla.stack(data=list(response=data_est$ihs_emp_access_dev),
+stack_est = inla.stack(data=list(response=data_est$ihs_gap2),
                        A=list(A_est,1),
                        effects=
                          list(c(field_indices,
                                 list(Intercept=1)),
                               c(cov_list)),
                        tag="est", remove.unused=TRUE)
-# TODO: why do you need to stack twice?
 stack_est<-inla.stack(stack_est)
 
 model_formula<- as.formula(paste(
-                          paste("response ~ -1 + Intercept  + "),
-                          paste("f(field, model=spde_matern, group=field.group, control.group=list(model='ar1')) + ",sep=""),
-                          paste(cov_names,collapse='+'),
-                          sep=""))
+  paste("response ~ -1 + Intercept  + "),
+  paste("f(field, model=spde_matern, group=field.group, control.group=list(model='ar1')) + ",sep=""),
+  paste(cov_names,collapse='+'),
+  sep=""))
 
 #-- Call INLA and get results --#
 mod_pred =   inla(model_formula,
@@ -158,8 +160,8 @@ mod_pred =   inla(model_formula,
 print(summary(mod_pred))
 
 print(paste("Saving outputs to", output_fname))
-# save(mod_pred, file=output_fname)
-save.image(output_fname)
+save(mod_pred, file=output_fname)
+# save.image(output_fname)
 
 
 
