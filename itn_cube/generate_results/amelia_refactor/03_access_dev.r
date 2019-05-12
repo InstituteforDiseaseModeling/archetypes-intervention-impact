@@ -76,9 +76,9 @@ data[, yearqtr:=pmin(yearqtr, 2014.75)]
 data[, emp_access_dev:= emplogit2(P, N) - emplogit(Amean, 1000)]
 
 theta<-optimise(IHS.loglik, lower=0.001, upper=50, x=data$emp_access_dev, maximum=TRUE) # 2.0407
-theta<-theta$maximum
+theta_acc<-theta$maximum
 
-data[, ihs_emp_access_dev:=IHS(emp_access_dev, theta)] 
+data[, ihs_emp_access_dev:=IHS(emp_access_dev, theta_acc)] 
 
 # transform data from latlong to cartesian coordinates
 xyz<-ll.to.xyz(data[, list(row_id, longitude=lon, latitude=lat)])
@@ -96,14 +96,14 @@ data_est <- copy(data)
 
 # generate spatial mesh using unique xyz values 
 # TODO: is this all xyz is used for?
-spatial_mesh = inla.mesh.2d(loc= unique(data_est[, list(x,y,z)]),
+spatial_mesh_acc = inla.mesh.2d(loc= unique(data_est[, list(x,y,z)]),
                     cutoff=0.006,
                     min.angle=c(25,25),
                     max.edge=c(0.06,500) )
-print(paste("New mesh constructed:", spatial_mesh$n, "vertices"))
+print(paste("New mesh constructed:", spatial_mesh_acc$n, "vertices"))
 
 # generate spde matern model from mesh
-spde_matern =inla.spde2.matern(spatial_mesh,alpha=2) # formerly spde
+spde_matern =inla.spde2.matern(spatial_mesh_acc,alpha=2) # formerly spde
 
 # generate temporal mesh
 temporal_mesh=inla.mesh.1d(seq(2000,2015,by=2),interval=c(2000,2015),degree=2) # formerly mesh1d
@@ -118,11 +118,11 @@ cov_list <-as.list(cov_list)
 
 # generate observation matrix
 A_est =
-  inla.spde.make.A(spatial_mesh, 
+  inla.spde.make.A(spatial_mesh_acc, 
                    loc=as.matrix(data_est[, list(x,y,z)]), 
                    group=data_est$yearqtr,
                    group.mesh=temporal_mesh)
-field_indices = inla.spde.make.index("field", n.spde=spatial_mesh$n,n.group=temporal_mesh$m)
+field_indices = inla.spde.make.index("field", n.spde=spatial_mesh_acc$n,n.group=temporal_mesh$m)
 
 # Generate "stack"
 stack_est = inla.stack(data=list(response=data_est$ihs_emp_access_dev),
@@ -142,7 +142,7 @@ model_formula<- as.formula(paste(
                           sep=""))
 
 #-- Call INLA and get results --#
-mod_pred =   inla(model_formula,
+mod_pred_acc =   inla(model_formula,
                   data=inla.stack.data(stack_est),
                   family=c("gaussian"),
                   control.predictor=list(A=inla.stack.A(stack_est), compute=TRUE,quantiles=NULL),
@@ -155,11 +155,11 @@ mod_pred =   inla(model_formula,
                                      stupid.search=FALSE)
 )
 
-print(summary(mod_pred))
+print(summary(mod_pred_acc))
 
 print(paste("Saving outputs to", output_fname))
-# save(mod_pred, file=output_fname)
-save.image(output_fname)
+save(mod_pred_acc, spatial_mesh_acc, theta_acc, file=output_fname)
+# save.image(output_fname)
 
 
 
