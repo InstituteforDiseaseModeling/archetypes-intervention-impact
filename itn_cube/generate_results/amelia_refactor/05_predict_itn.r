@@ -52,54 +52,12 @@ source(file.path(func_dir, "02_prep_covariate_functions.r"))
 prediction_years <- 2000:2016
 
 
-## Load Covariates  TODO: Move all of this covariate extraction to 02_prep_covariates.r    ## ---------------------------------------------------------
+## Load Covariates  ## ---------------------------------------------------------
 
-cov_dt <- fread(file.path(func_dir, "covariate_key.csv"))
-cov_dt[, used_sam:= as.logical(used_sam)]
-cov_dt <- cov_dt[used_sam==T]
+static_covs <- fread(file.path(input_dir, "02_static_covariates.csv"))
+annual_covs <- fread(file.path(input_dir, "02_annual_covariates.csv"))
+dynamic_covs <- fread(file.path(input_dir, "02_dynamic_covariates.csv"))
 
-# find non-null raster indices-- we want to extract values for all of these every time
-raster_indices <- which_non_null(file.path(joint_dir, '../african_cn5km_2013_no_disputes.tif'))
-
-
-# Extract static covariates
-static_fnames <- cov_dt[type=="static", list(fname=file.path(cov_dir, cov_name, fpath_append, fname))]
-
-static_covs <- extract_values(static_fnames$fname, raster_indices)
-
-# Extract annual covariates
-covariate_years <- c(min=2001, max=2013) # this is the year range for which there are full monthly and annual time series
-
-base_fnames <- lapply(cov_dt[type=="year"]$cov_name, get_annual_fnames, covariate_dt=cov_dt, input_dir=cov_dir)
-base_fnames <- rbindlist(base_fnames)
-
-# TODO: start year loop
-this_year <- 2013
-
-# make sure year is within the bounds of allowed covariate values
-year_to_use <- min(this_year, covariate_years[["max"]]) 
-year_to_use <- max(year_to_use, covariate_years[["min"]])
-
-these_fnames <- copy(base_fnames)
-
-these_fnames[, functional_year:=pmin(end_year, year_to_use)] # cap year by covariate availability
-these_fnames[, functional_year:=pmax(functional_year, start_year)] 
-these_fnames[, full_fname:=str_replace(base_fname, "YEAR", as.character(functional_year))]
-
-annual_covs <- extract_values(these_fnames$full_fname, raster_indices, names=these_fnames$colname)
-
-# Extract dynamic covariates
-
-# TODO: month loop
-
-this_month <- 3
-
-these_fnames <- copy(cov_dt[type=="yearmon"])
-these_fnames[, new_fname:=str_replace(fname, "YEAR", as.character(year_to_use))]
-these_fnames[, new_fname:=str_replace(new_fname, "MONTH", str_pad(this_month, 2, pad="0"))]
-these_fnames[, full_fname:=file.path(cov_dir, cov_name, fpath_append, new_fname)]
-
-dynamic_covs <- extract_values(these_fnames$full_fname, raster_indices, names=these_fnames$cov_name)
 
 
 
