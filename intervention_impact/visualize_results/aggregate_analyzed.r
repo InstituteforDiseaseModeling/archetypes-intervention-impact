@@ -17,7 +17,7 @@ anthro_endo_map[, human_indoor:= (anthro*endo)/100]
 
 
 initial <- fread(file.path(main_dir, "../initial/MAP_II_New_Sites_Burnin.csv"))
-prelim_data <- fread(file.path(main_dir, "MAP_For_Symposium_ATSB_No_Existing_Intervention.csv"))
+prelim_data <- fread(file.path(main_dir, "MAP_ATSB_To_Eliminate_Intervention.csv"))
 
 prelim_data[, Intervention:=""]
 
@@ -35,13 +35,9 @@ if (experimental_results==T){
                                  # PEV_12mo = ifelse(pev_half_life==365, PEV_Coverage, NA),
                                  # TBV_6mo = ifelse(tbv_half_life==182, TBV_Coverage, NA),
                                  # TBV_12mo = ifelse(tbv_half_life==365, TBV_Coverage, NA),
-                                 ATSB_0percent = ifelse(ATSB_Initial_Effect==0, ATSB_Initial_Effect, NA),
-                                 ATSB_1percent = ifelse(ATSB_Initial_Effect==0.01, ATSB_Initial_Effect, NA),
-                                 ATSB_3percent = ifelse(ATSB_Initial_Effect==0.03, ATSB_Initial_Effect, NA),
-                                 ATSB_5percent = ifelse(ATSB_Initial_Effect==0.05, ATSB_Initial_Effect, NA),
-                                 ATSB_7percent = ifelse(ATSB_Initial_Effect==0.07, ATSB_Initial_Effect, NA),
-                                 ATSB_9percent = ifelse(ATSB_Initial_Effect==0.09, ATSB_Initial_Effect, NA),
-                                 ATSB_11percent = ifelse(ATSB_Initial_Effect==0.11, ATSB_Initial_Effect, NA),
+                                 ATSB_10_5percent = ifelse(ATSB_Initial_Effect==0.105, ATSB_Initial_Effect, NA),
+                                 ATSB_15percent = ifelse(ATSB_Initial_Effect==0.15, ATSB_Initial_Effect, NA),
+                                 ATSB_25percent = ifelse(ATSB_Initial_Effect==0.25, ATSB_Initial_Effect, NA),
                                  
                                  # Larvicide = Larvicide_Coverage,
                                  # Ivermectin_7day = ifelse(Ivermectin_Duration==7, Ivermectin_Coverage, NA),
@@ -76,6 +72,15 @@ all_data[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Lar
 all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention, Coverage)]
 
 all_data[, Coverage:=factor(Coverage)]
+
+
+ggplot(all_data[Site_Name=="aba" & mean_initial>0.7], aes(x=mean_initial, y=mean_final)) +
+  geom_line(aes(color=Coverage)) +
+  facet_wrap(~Site_Name)
+
+ggplot(unique(all_data[Site_Name=="aba" & Coverage==0.105, list(mean_initial, mean_final)]), aes(x=mean_initial, y=mean_final)) +
+  geom_line()
+
 
 # write.csv(all_data, file=file.path(main_dir, "lookup_outdoor_interventions_sweep_timing.csv"), row.names = F)
 
