@@ -18,10 +18,7 @@ if __name__ == "__main__":
 
     sites = pd.read_csv("../input_files/site_details.csv")
 
-    experiments = {"compare_climate": ["3cf83e05-8d60-e911-a2c0-c4346bcb1554",
-                                       "621c6ea4-7b60-e911-a2c0-c4346bcb1554",
-                                       "0a78b0c8-7b60-e911-a2c0-c4346bcb1554",
-                                       "9efbbbec-7b60-e911-a2c0-c4346bcb1554"
+    experiments = {"interventions": ["664a7c04-ba75-e911-a2c0-c4346bcb1554"
                                        ]
                    }
 
@@ -38,7 +35,7 @@ if __name__ == "__main__":
                                      "Ivermectin_Coverage", "Ivermectin_Duration", "Ivermectin_Monthly_Rounds",
                                      "PEV_Coverage", "PEV_Waning_Config_class", "PEV_Waning_Config_Decay_Time_Constant",
                                      "TBV_Coverage", "TBV_Waning_Config_Decay_Time_Constant"],
-                    last_year_only=False)
+                    last_year_only=True)
 
         exp_ids = exp_ids if isinstance(exp_ids, list) else [exp_ids]
 

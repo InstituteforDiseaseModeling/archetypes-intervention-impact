@@ -18,24 +18,24 @@ from malaria.interventions.malaria_vaccine import add_vaccine
 from sweep_functions import *
 
 # variables
-run_type = "burnin"  # set to "burnin" or "intervention"
+run_type = "intervention"  # set to "burnin" or "intervention"
 
 # below: burnin and asset exp ids for megatrends
 burnin_id = "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 asset_exp_id =  None # "96e9c858-a8ce-e811-a2bd-c4346bcb1555"
 
-sim_root_name = "IDM_Climate_2016_Inset"
+sim_root_name = "ATSB_To_Eliminate"
 baseline_interventions = ["itn", "irs", "al_cm"]
-baseline_intervention_coverages = [0]
+baseline_intervention_coverages = [80]
 sweep_interventions = ["atsb"]
 sweep_intervention_coverages = [100]
 sweep_intervention_class = "list"  # can be "combo" (combinatoric) or "list"
 start_days = [0]
 vaccine_durations = [365]
-atsb_initial_effects = [0, 0.01, 0.03, 0.05, 0.07, 0.09, 0.11]
+atsb_initial_effects = [10.5, 15, 25]
 ivermectin_durations = [7, 14, 30]
 
-new_inputs = True
+new_inputs = False
 site_input_dir = os.path.join("input_files", "idm_climate")
 
 # Serialization
@@ -103,7 +103,7 @@ if __name__ == "__main__":
 
     print("finding collection ids and vector details")
 
-    with open("species_details.json") as f:
+    with open("input_files/species_details.json") as f:
         species_details = json.loads(f.read())
 
     if asset_exp_id:
@@ -234,7 +234,7 @@ if __name__ == "__main__":
                                    # renew atsb every 6 months
                                    start_days=[(365 * year_idx) + start_day + midyear_start
                                                for year_idx in range(years) for midyear_start in [0, 182]],
-                                   initial_effect=initial_effect
+                                   initial_effect=initial_effect/100
                                    )
                              for initial_effect in atsb_initial_effects
                              ],
