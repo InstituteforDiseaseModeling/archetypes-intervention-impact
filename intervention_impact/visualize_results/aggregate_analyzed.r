@@ -74,7 +74,11 @@ all_data[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_H
 all_data[, Coverage:=factor(Coverage)]
 
 
-ggplot(all_data[Site_Name=="aba" & mean_initial>0.7], aes(x=mean_initial, y=mean_final)) +
+for_lookup <- all_data[, list(Intervention, Coverage, ATSB_True_Initial_Killing=Coverage, Site_Name, Run_Number, x_Temporary_Larval_Habitat, initial_prev, final_prev, mean_initial, mean_final)]
+write.csv(for_lookup, file=file.path(main_dir, "lookup_atsbs_to_elim.csv"))
+
+
+ggplot(all_data, aes(x=mean_initial, y=mean_final)) +
   geom_line(aes(color=Coverage)) +
   facet_wrap(~Site_Name)
 
