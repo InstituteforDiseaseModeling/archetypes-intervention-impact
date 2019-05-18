@@ -18,7 +18,7 @@ package_load <- function(package_list){
   lapply(package_list, library, character.only=T)
 }
 
-package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
+package_load(c("zoo","raster","VGAM", "doParallel", "data.table", "lubridate"))
 
 # current dsub:
 # dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-4 --logging gs://map_data_z/users/amelia/logs --input-recursive joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/01_create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/01_create_database.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190508_replicate_inla/ --command 'Rscript ${CODE}'
@@ -30,8 +30,8 @@ if(Sys.getenv("joint_dir")=="") {
   # joint_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/joint_data"
   # output_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/output"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
-  func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/create_database_functions.r"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190517_refactor_database/"
+  func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/01_create_database_functions.r"
 } else {
   joint_dir <- Sys.getenv("joint_dir")
   output_dir <- Sys.getenv("output_dir")
@@ -44,9 +44,39 @@ input_dir <- file.path(joint_dir, "For_Database")
 
 # p0 & p1-- from stock & flow, nat'l time series of p0=p(hh has 0 nets) and p1=avg # of nets
 # 40 countries (list length), houshold size 1-10 (columns)
-load(file.path(input_dir, "prop0prop1.rData")) # contains "out" (list of s$f time series) and "Cout" (country names)
+load(file.path(input_dir, "prop0prop1.rData")) # contains "out" (list of stock and flow time series) and "Cout" (country names)
 stock_and_flow_isos<-Cout # Cout is a vector of ISOs in prop0prop1.rData
 names(out) <- stock_and_flow_isos
+
+# format and name stock and flow data 
+print("formatting stock and flow outputs")
+stock_and_flow_outputs <- lapply(stock_and_flow_isos, function(iso){
+  country_list <- out[[iso]]
+  
+  # interpolate  from quarterly to monthly values
+  quarterly_times <- as.numeric(rownames(country_list))
+  start_year <- ceiling(min(quarterly_times))
+  end_year <- floor(max(quarterly_times))
+  # get your desired monthly outputs as decimal dates
+  # TODO: change from beginning to middle of month when you properly account for months in hh data
+  monthly_times <- decimal_date(seq(as.Date(paste0(start_year, "/1/1")), by = "month", length.out = (end_year-start_year)*12))
+  
+  country_subset <- lapply(1:2, function(layer){
+    data.table(sapply(colnames(country_list), function(col){approx(quarterly_times, country_list[,col,layer], monthly_times)$y}))
+    })
+  country_subset <- rbindlist(country_subset)
+  
+  # add identifying information
+  country_subset[, year:=rep(monthly_times, 2)]
+  country_subset[, iso3:=iso]
+  country_subset[, metric:=c(rep("SF_prob_no_nets", length(monthly_times)), rep("SF_mean_nets_per_hh", length(monthly_times)))]
+  country_subset <- data.table::melt(country_subset, id.vars=c("iso3", "metric", "year"), variable.name="hh_size")
+  country_subset <- dcast.data.table(country_subset, iso3 + year + hh_size ~ metric)
+
+  return(country_subset)
+})
+stock_and_flow_outputs <- rbindlist(stock_and_flow_outputs)
+stock_and_flow_outputs[, hh_size:=as.integer(hh_size)]
 
 # load household data and survey-to-country key, keep only those in country list
 survey_to_country_key <- read.csv(file.path(input_dir, "KEY_080817.csv"))  #TODO: is this used?
@@ -61,7 +91,6 @@ HH <- HH[!is.na(n.individuals.that.slept.in.surveyed.hhs) & n.individuals.that.s
 unique_surveys <- unique(HH$Survey.hh)
 
 # find access (# with a net available) and use (# sleeping under net) per household 
-times<-seq(2000, 2018,0.25) # quarter-year intervals
 
 #  update HH with columns for the above values
 # todo: check bounding of d against methods in document
@@ -75,6 +104,7 @@ HH[, n.with.access.to.ITN:=pmin(n.ITN.per.hh*2, n.individuals.that.slept.in.surv
 # if(Sys.getenv("input_dir")=="") {
 #   orig_unique_surveys <- copy(unique_surveys)
 #   unique_surveys <- c("TZ2015DHS")
+#   i <- 1
 # }
 
 # Main loop: calculating access/gap for each household cluster  ------------------------------------------------------------
@@ -90,39 +120,34 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
   un<-unique(this_survey_data$Cluster.hh) # get unique cluster IDs for that household survey
   
   ## find distribution of household sizes in this survey as measured by the number of people sleeping under a net the night before
-  this_survey_data[, sample.prop:=sample.w/sum(sample.w)]
+  this_survey_data[, sample.prop:=sample.w/sum(sample.w), by=Survey.hh]
   this_survey_data[, capped.n.sleeping.in.hhs:=pmin(n.individuals.that.slept.in.surveyed.hhs, 10)]
-  household_props <- this_survey_data[, list(hh.size.prop=sum(sample.prop)), by=list(capped.n.sleeping.in.hhs)]
-  household_props <- household_props[order(capped.n.sleeping.in.hhs)] # used to be called "hh"
+  household_props <- this_survey_data[, list(hh.size.prop=sum(sample.prop)), by=list(Survey.hh, capped.n.sleeping.in.hhs)]
   
-  svy_country <- unique(this_survey_data[Survey.hh==svy]$ISO3)
-  s_and_f_probs<-out[[svy_country]]
-  # both p0 and p1 are 69 x 10 datasets with row as time point and column as household size
-  p0<-s_and_f_probs[,,1] # get p0: probability of no nets in household
-  p1<-s_and_f_probs[,,2] # get p1: average # of nets in household
-
-  # Sam defines a set of functions that linearly interpolate between these quarterly values, 
-  # but then goes on to only evaluate it at rounded years. Can we use the month information 
-  # from the dataset to do a better job?
+  household_props <- household_props[order(Survey.hh, capped.n.sleeping.in.hhs)] # used to be called "hh"
   
-  # make these into continuous functions via linear interpolation
-  func0 <- lapply(1:ncol(p0), function(col){
-    approxfun(times, p0[,col])})
-  func1 <- lapply(1:ncol(p1), function(col){
-    approxfun(times, p1[,col])})
+  these_years <- unique(this_survey_data$year)
+  household_props <- rbindlist(replicate(length(these_years), household_props, simplify=F))
+  household_props[, year:=sort(rep(these_years, 10))]
+  household_props[, iso3:=unique(this_survey_data$ISO3)]
+  setnames(household_props, "capped.n.sleeping.in.hhs", "hh_size")
   
-  # define access for this survey-year based on household props
-  # todo: refactor calc_access_matrix function
-  access_dt <- lapply(unique(this_survey_data$year), function(this_year){
-    this_survey_access <- calc_access_matrix(this_year, func0, func1, household_props$hh.size.prop)
-    this_access_dt <- household_props[, list(year=this_year, capped.n.sleeping.in.hhs, 
-                                        stock_and_flow_access=this_survey_access[1:10],
-                                        stock_and_flow_access_mean=this_survey_access[11])]
-    
-  })
-  access_dt <-rbindlist(access_dt)
+  # merge on stock and flow values
+  household_props <- merge(household_props, stock_and_flow_outputs, by=c("iso3", "hh_size", "year"), all.x=T)
   
-  this_survey_data <- merge(this_survey_data, access_dt, by=c("year", "capped.n.sleeping.in.hhs"), all.x=T)
+  if (nrow(household_props[is.na(SF_mean_nets_per_hh)])>0 | nrow(household_props[is.na(SF_prob_no_nets)])>0){
+    warning("Your stock and flow values did not merge properly")
+  }
+  
+  # weight stock and flow values by survey propotions to calculate survey-based access
+  household_props[, weighted_prob_no_nets:=hh.size.prop*SF_prob_no_nets]
+  household_props[, weighted_prob_any_net:=hh.size.prop*(1-SF_prob_no_nets)]
+  
+  household_props[, stock_and_flow_access:=calc_access(hh_size, weighted_prob_no_nets, weighted_prob_any_net, SF_mean_nets_per_hh), 
+                  by=list(hh_size, year)]
+  
+  this_survey_data <- merge(this_survey_data, household_props[, list(year, capped.n.sleeping.in.hhs=hh_size, stock_and_flow_access)],
+                            by=c("year", "capped.n.sleeping.in.hhs"), all.x=T)
   
   
   # aggregate to cluster level
@@ -135,8 +160,8 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
                                                 Pu=sum(n.individuals.that.slept.under.ITN),
                                                 T=sum(n.ITN.per.hh),
                                                 gap3=mean(1-n.individuals.that.slept.under.ITN/n.with.access.to.ITN, na.rm=T),
-                                                Amean=mean(stock_and_flow_access),
-                                                Tmean=mean(stock_and_flow_access_mean)
+                                                Amean=mean(stock_and_flow_access)
+                                                # Tmean=mean(stock_and_flow_access_mean)
                                                 ),
                                          by=list(Cluster.hh)]
   summary_by_cluster[, gap:=( (P/N)-(Pu/N) ) / (P/N)] # (access-use)/access
@@ -180,6 +205,7 @@ final_data$flooryear<-floor(final_data$year)
 
 print(paste("--> Writing to", out_fname))
 write.csv(final_data, out_fname, row.names=FALSE)
+write.csv(stock_and_flow_outputs, file=file.path(output_dir, "01_stock_and_flow_prepped.csv"), row.names=F)
 
 toc <- Sys.time()
 elapsed <- toc-tic
