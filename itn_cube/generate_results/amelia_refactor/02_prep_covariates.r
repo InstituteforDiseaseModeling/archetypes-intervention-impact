@@ -95,6 +95,12 @@ all_annual <- foreach(this_year=prediction_years) %dopar%{
   subset[, year:=this_year]
   subset[, cellnumber:=raster_indices]
   setcolorder(subset, c("year", "cellnumber", these_fnames$colname))
+  
+  # TEMP: name to correlate to old dataset
+  new_names <- str_replace(names(subset), "IGBP_Landcover_", "landcover")
+  new_names <- str_replace(new_names, "AfriPop", "populatopn")
+  names(subset) <- new_names
+  
   return(subset)
 }
 
@@ -106,12 +112,6 @@ setnames(all_annual, "year", "flooryear")
 data <- merge(data, all_annual, by=c("flooryear", "cellnumber"), all.x=T)
 setnames(all_annual, "flooryear", "year")
 write.csv(all_annual, file.path(output_dir, "02_annual_covariates.csv"), row.names = F)
-
-# TEMP: name to correlate to old dataset
-new_names <- str_replace(names(data), "IGBP_Landcover_", "landcover")
-new_names <- str_replace(new_names, "AfriPop", "populatopn")
-names(data) <- new_names
-
 
 print("annual covariates successfully extracted")
 
@@ -125,6 +125,11 @@ all_yearmons <- data.table(expand.grid(1:12, prediction_years))
 names(all_yearmons) <- c("month", "year")
 
 registerDoParallel(ncores-2)
+
+dynamic_outdir <- file.path(output_dir, "02_dynamic_covariates")
+if (!dir.exists(dynamic_outdir)){
+  dir.create(dynamic_outdir)
+}
 
 all_dynamic <- foreach(month_index=1:nrow(all_yearmons)) %dopar% {
   
@@ -150,6 +155,11 @@ all_dynamic <- foreach(month_index=1:nrow(all_yearmons)) %dopar% {
   subset[, cellnumber:=raster_indices]
   setcolorder(subset, c("year", "month", "cellnumber", these_fnames$cov_name))
   
+  # TEMP: name to correlate to old dataset
+  setnames(subset, c("EVI", "LST_day", "LST_night", "TCW", "TSI"), c("evy", "lst_day", "lst_night", "tcw", "tsi"))
+  ###
+  
+  return(subset)
 }
 all_dynamic <- rbindlist(all_dynamic)
 
@@ -174,11 +184,13 @@ setnames(all_dynamic, "sub_cellnumber", "cellnumber")
 ### -----------------------------------
 
 setnames(all_dynamic, "flooryear", "year")
-write.csv(all_dynamic, file.path(output_dir, "02_dynamic_covariates.csv"), row.names=F)
 
-# TEMP: name to correlate to old dataset
-setnames(data, c("EVI", "LST_day", "LST_night", "TCW", "TSI"), c("evy", "lst_day", "lst_night", "tcw", "tsi"))
+# save dynamic covariates(by year)
+for (this_year in prediction_years){
+  write.csv(all_dynamic[year==this_year], file.path(dynamic_outdir, paste0("dynamic_", this_year,".csv")), row.names=F)
+}
 
+# write.csv(all_dynamic, file.path(output_dir, "02_dynamic_covariates.csv"), row.names=F)
 
 # reorder
 data <- data[order(row_id)]

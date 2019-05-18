@@ -157,7 +157,7 @@ mod_pred_use =   inla(model_formula,
                                      stupid.search=FALSE)
 )
 
-print(summary(mod_pred_use)
+print(summary(mod_pred_use))
 
 print(paste("Saving outputs to", output_fname))
 save(mod_pred_use, spatial_mesh_use, theta_use, file=output_fname)
