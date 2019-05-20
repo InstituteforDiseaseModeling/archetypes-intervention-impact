@@ -22,8 +22,8 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190508_replicate_inla/"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190508_replicate_inla/"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190517_refactor_database/"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190517_refactor_database/"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
   cov_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
@@ -37,6 +37,7 @@ if(Sys.getenv("input_dir")=="") {
 
 # directories
 joint_dir <- file.path(joint_dir, "For_Prediction")
+set.seed(212)
 
 # TODO: load shapefiles and templates only when you're actually plotting (objects named World, Africa, Water, img)
 
@@ -47,6 +48,7 @@ joint_dir <- file.path(joint_dir, "For_Prediction")
 # load function script
 source(file.path(func_dir, "05_predict_itn_functions.r"))
 source(file.path(func_dir, "02_prep_covariate_functions.r"))
+source(file.path(func_dir, "03_access_dev_functions.r"))
 
 # why does *this* go to 2016 when our inla only goes to 2014/15?
 prediction_years <- 2000:2016
@@ -54,12 +56,85 @@ prediction_years <- 2000:2016
 
 ## Load Covariates  ## ---------------------------------------------------------
 
-static_covs <- fread(file.path(input_dir, "02_static_covariates.csv"))
-annual_covs <- fread(file.path(input_dir, "02_annual_covariates.csv"))
-dynamic_covs <- fread(file.path(input_dir, "02_dynamic_covariates.csv"))
+this_year <- 2007
+# static_covs <- fread(file.path(input_dir, "02_static_covariates.csv"))
+# annual_covs <- fread(file.path(input_dir, "02_annual_covariates.csv"))
+
+# dynamic_covs <- fread(file.path(input_dir, paste0("02_dynamic_covariates/dynamic_", this_year, ".csv")))
+
+## Get locations in x-y-z space of each pixel centroid for prediction ## ---------------------------------------------------------
+national_raster_dir <- file.path(joint_dir, "../african_cn5km_2013_no_disputes.tif")
+national_raster <- raster(national_raster_dir)
+
+prediction_indices <- which_non_null(national_raster_dir)
+prediction_cells <- data.table(row_id=prediction_indices, gaul=extract(national_raster, prediction_indices))
+
+prediction_cells <- cbind(prediction_cells, data.table(xyFromCell(national_raster, prediction_indices)))
+setnames(prediction_cells, c("x", "y"), c("longitude", "latitude"))
+prediction_xyz <- ll.to.xyz(prediction_cells)
+
+
+## Get national access means from stock and flow  ## ---------------------------------------------------------
+
+stock_and_flow <- fread(file.path(input_dir, "01_stock_and_flow_prepped.csv"))
+iso_gaul_map <- fread(file.path(joint_dir, "National_Config_Data.csv"))
+iso_gaul_map <- iso_gaul_map[ISO3 %in% stock_and_flow$iso3, list(ISO3, GAUL_Code, Name=IHME_Location_ASCII_Name)]
+
+# load household size distributions for each survey
+hh_sizes<-fread(file.path(joint_dir, 'Bucket_Model/HHsize.csv'))
+survey_key=fread(file.path(joint_dir, 'Bucket_Model/KEY.csv'))
+
+# format hh_sizes
+hh_sizes[, V1:=NULL]
+hh_sizes <- melt.data.table(hh_sizes, id.vars="HHSurvey", variable.name="hh_size", value.name="prop")
+hh_sizes[, hh_size:=as.integer(hh_size)]
+
+# BUG: The original script seems like it subsets on country-specific survey, 
+# but I think it always uses the entire dataset to calculate home distributions because it filters on ISO instead of full country name
+# (and also )
+
+# update country names to fit with iso_gaul_map (for use when you actually DO calculate props by country name)
+survey_key[, Status:=NULL]
+setnames(survey_key, "Svy Name", "HHSurvey")
+survey_key[Name=="Coted'Ivoire", Name:="Cote d'Ivoire"]
+survey_key[Name=="Dem. Rep. of Congo", Name:="Democratic Republic of the Congo"]
+survey_key[Name=="SaoTome & Principe", Name:="Sao Tome And Principe"]
+
+# add two surveys not present in key
+survey_key <- rbind(survey_key, data.table(HHSurvey=c("Kenya 2007", "Rwanda 2013"),
+                                           Name=c("Kenya", "Rwanda")))
+
+# merge with name map and survey distribution
+survey_key <- merge(survey_key, iso_gaul_map, by="Name", all.x=T)
+hh_sizes <- merge(hh_sizes, survey_key, by="HHSurvey", all.x=T)
+
+# find size distribution across full dataset (make country-specific later);
+# collapse such that the final bin is 10+
+denominator <- sum(hh_sizes$prop)
+hh_dist <- hh_sizes[, list(summary_prop=sum(prop)/denominator), by="hh_size"]
+ten_plus <- sum(hh_dist[hh_size>=10]$summary_prop)
+hh_dist <- hh_dist[hh_size<=10]
+hh_dist[hh_size==10, summary_prop:=ten_plus]
+
+if (sum(hh_dist$summary_prop)!=1){
+  warning("Household size distribution improperly computed!")
+}
 
 
 
 
+## Create INLA Prediction objects  ## ---------------------------------------------------------
 
+INLA:::inla.dynload.workaround() 
+
+spatial_mesh = inla.mesh.2d(loc= unique(prediction_xyz[, list(x,y,z)]),
+                                cutoff=0.006,
+                                min.angle=c(25,25),
+                                max.edge=c(0.06,500) )
+temporal_mesh=inla.mesh.1d(seq(2000,2015,by=2),interval=c(2000,2015),degree=2)
+
+predictive_A <-inla.spde.make.A(spatial_mesh, 
+                               loc=prediction_xyz[, list(x,y,z)], 
+                               group=rep(min(this_year, 2015), length(prediction_indices)),
+                               group.mesh=temporal_mesh ) 
 
