@@ -17,6 +17,9 @@ package_load(c("zoo","raster", "data.table", "rgdal", "INLA", "RColorBrewer",
 
 if(Sys.getenv("in_dir")=="") {
   in_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/"
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
+  cov_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
+  out_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190508_replicate_inla/05_predictions"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
   in_dir <- Sys.getenv("in_dir") 
@@ -197,6 +200,7 @@ for(xxx in 1:length(time_points)){
   
   print("calculating country-level access")
   for(i in 1:length(Country.list)){
+    print(Country.list[i])
     p<-out[[i]]
     p0<-p[,,1] # get p0 parameters
     p1<-p[,,2] # get p1 parameters	
@@ -214,8 +218,10 @@ for(xxx in 1:length(time_points)){
     cn_nm<-as.character(KEY[KEY$Name%in%Country.list[i],'Svy.Name'])
     hh_val<-hh[hh$HHSurvey%in%cn_nm,]
     if(nrow(hh_val)!=0){
+      print("USING COUNTRY SUBSET FOR HOUSEHOLD SIZE DISTRIBUTION")
       hh_val<-colSums(hh_val[,3:ncol(hh_val)])/sum(colSums(hh_val[,3:ncol(hh_val)]))
     } else {
+      print("USING ENTIRE HSIZE FOR HOUSEHOLD SIZE DISTRIBUTION")
       hh_val<-colSums(hh[,3:ncol(hh)])/sum(colSums(hh[,3:ncol(hh)]))
     }
     hh_size<-hh_val[1:10]
