@@ -47,8 +47,8 @@ set.seed(212)
 
 # load function script
 source(file.path(func_dir, "05_predict_itn_functions.r"))
-source(file.path(func_dir, "02_prep_covariate_functions.r"))
-source(file.path(func_dir, "03_access_dev_functions.r"))
+source(file.path(func_dir, "01_create_database_functions.r")) # for calc_access
+source(file.path(func_dir, "03_access_dev_functions.r")) # for 1-val emplogit
 
 # why does *this* go to 2016 when our inla only goes to 2014/15?
 prediction_years <- 2000:2016
@@ -57,26 +57,32 @@ prediction_years <- 2000:2016
 ## Load Covariates  ## ---------------------------------------------------------
 
 this_year <- 2007
-# static_covs <- fread(file.path(input_dir, "02_static_covariates.csv"))
-# annual_covs <- fread(file.path(input_dir, "02_annual_covariates.csv"))
 
-# dynamic_covs <- fread(file.path(input_dir, paste0("02_dynamic_covariates/dynamic_", this_year, ".csv")))
+developing <- T
 
-## Get locations in x-y-z space of each pixel centroid for prediction ## ---------------------------------------------------------
-national_raster_dir <- file.path(joint_dir, "../african_cn5km_2013_no_disputes.tif")
-national_raster <- raster(national_raster_dir)
+if (!developing){
+  static_covs <- fread(file.path(input_dir, "02_static_covariates.csv"))
+  annual_covs <- fread(file.path(input_dir, "02_annual_covariates.csv"))
+  dynamic_covs <- fread(file.path(input_dir, paste0("02_dynamic_covariates/dynamic_", this_year, ".csv")))
+  
+  ## Get locations in x-y-z space of each pixel centroid for prediction ## ---------------------------------------------------------
+  national_raster_dir <- file.path(joint_dir, "../african_cn5km_2013_no_disputes.tif")
+  national_raster <- raster(national_raster_dir)
+  
+  prediction_indices <- which_non_null(national_raster_dir)
+  prediction_cells <- data.table(row_id=prediction_indices, gaul=extract(national_raster, prediction_indices))
+  
+  prediction_cells <- cbind(prediction_cells, data.table(xyFromCell(national_raster, prediction_indices)))
+  setnames(prediction_cells, c("x", "y"), c("longitude", "latitude"))
+  prediction_xyz <- ll.to.xyz(prediction_cells)
+}
 
-prediction_indices <- which_non_null(national_raster_dir)
-prediction_cells <- data.table(row_id=prediction_indices, gaul=extract(national_raster, prediction_indices))
-
-prediction_cells <- cbind(prediction_cells, data.table(xyFromCell(national_raster, prediction_indices)))
-setnames(prediction_cells, c("x", "y"), c("longitude", "latitude"))
-prediction_xyz <- ll.to.xyz(prediction_cells)
 
 
 ## Get national access means from stock and flow  ## ---------------------------------------------------------
 
-stock_and_flow <- fread(file.path(input_dir, "01_stock_and_flow_prepped.csv"))
+orig_stock_and_flow <- fread(file.path(input_dir, "01_stock_and_flow_prepped.csv"))
+stock_and_flow <- orig_stock_and_flow[year>=this_year & year<(this_year+1)] # keep only the years we want to predict
 iso_gaul_map <- fread(file.path(joint_dir, "National_Config_Data.csv"))
 iso_gaul_map <- iso_gaul_map[ISO3 %in% stock_and_flow$iso3, list(ISO3, GAUL_Code, Name=IHME_Location_ASCII_Name)]
 
@@ -111,16 +117,26 @@ hh_sizes <- merge(hh_sizes, survey_key, by="HHSurvey", all.x=T)
 # find size distribution across full dataset (make country-specific later);
 # collapse such that the final bin is 10+
 denominator <- sum(hh_sizes$prop)
-hh_dist <- hh_sizes[, list(summary_prop=sum(prop)/denominator), by="hh_size"]
-ten_plus <- sum(hh_dist[hh_size>=10]$summary_prop)
+hh_dist <- hh_sizes[, list(hh_size_prop=sum(prop)/denominator), by="hh_size"]
+ten_plus <- sum(hh_dist[hh_size>=10]$hh_size_prop)
 hh_dist <- hh_dist[hh_size<=10]
-hh_dist[hh_size==10, summary_prop:=ten_plus]
+hh_dist[hh_size==10, hh_size_prop:=ten_plus]
 
-if (sum(hh_dist$summary_prop)!=1){
+if (sum(hh_dist$hh_size_prop)!=1){
   warning("Household size distribution improperly computed!")
 }
 
+# merge onto stock and flow values
+stock_and_flow <- merge(stock_and_flow, hh_dist, by="hh_size", all=T)
 
+# weight stock and flow values by household propotions 
+stock_and_flow[, weighted_prob_no_nets:=hh_size_prop*SF_prob_no_nets]
+stock_and_flow[, weighted_prob_any_net:=hh_size_prop*(1-SF_prob_no_nets)]
+
+# calculate year-month-country access
+stock_and_flow[, nat_access:=calc_access(hh_size, weighted_prob_no_nets, weighted_prob_any_net, SF_mean_nets_per_hh), 
+                by=list(iso3, hh_size, year)]
+stock_and_flow[, emplogit_nat_access:=emplogit(nat_access, 1000)] # todo: still don't understand this emplogit calc
 
 
 ## Create INLA Prediction objects  ## ---------------------------------------------------------
