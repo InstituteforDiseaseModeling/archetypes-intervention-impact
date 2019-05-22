@@ -132,7 +132,11 @@ calc_access <- function(hh_size, prob_no_nets, prob_any_net, mean_net_count, max
   net_dist <- rbind(nonet_hh, net_hh)
   
   if (sum(net_dist$weighted_net_prob)!=prob_no_nets + prob_any_net){
-    warning("Net probabilities do not sum properly!")
+    cutoff <- 1e-16
+    if ( abs( sum(net_dist$weighted_net_prob) - (prob_no_nets + prob_any_net) ) > cutoff ){
+      vals <- paste("Weighted prob is", sum(net_dist$weighted_net_prob), "and sum of probs is", prob_no_nets + prob_any_net)
+      warning(paste("Net probabilities do not sum properly!", vals))
+    }
   }
   
   net_dist[, prop_with_access:=net_count*2*weighted_net_prob] # proportion of people in households with n*2 nets *and* hh_size people
