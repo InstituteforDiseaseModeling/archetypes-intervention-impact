@@ -42,7 +42,7 @@ set.seed(212)
 output_fname <- file.path(output_dir, "03_access_deviation.Rdata")
 
 ## Load data 
-data <- fread(file.path(input_dir, "02_covariates.csv"))
+data <- fread(file.path(input_dir, "02_data_covariates.csv"))
 data <- data[order(row_id)]
 
 
