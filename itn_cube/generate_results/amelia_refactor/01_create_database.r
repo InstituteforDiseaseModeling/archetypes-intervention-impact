@@ -122,7 +122,7 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
   ## find distribution of household sizes in this survey as measured by the number of people sleeping under a net the night before
   this_survey_data[, sample.prop:=sample.w/sum(sample.w), by=Survey.hh]
   this_survey_data[, capped.n.sleeping.in.hhs:=pmin(n.individuals.that.slept.in.surveyed.hhs, 10)]
-  household_props <- this_survey_data[, list(hh.size.prop=sum(sample.prop)), by=list(Survey.hh, capped.n.sleeping.in.hhs)]
+  household_props <- this_survey_data[, list(hh_size_prop=sum(sample.prop)), by=list(Survey.hh, capped.n.sleeping.in.hhs)]
   
   household_props <- household_props[order(Survey.hh, capped.n.sleeping.in.hhs)] # used to be called "hh"
   
@@ -140,11 +140,17 @@ output<-foreach(i=1:length(unique_surveys),.combine=rbind) %dopar% { #survey loo
   }
   
   # weight stock and flow values by survey propotions to calculate survey-based access
-  household_props[, weighted_prob_no_nets:=hh.size.prop*SF_prob_no_nets]
-  household_props[, weighted_prob_any_net:=hh.size.prop*(1-SF_prob_no_nets)]
+  household_props[, weighted_prob_no_nets:=hh_size_prop*SF_prob_no_nets]
+  household_props[, weighted_prob_any_net:=hh_size_prop*(1-SF_prob_no_nets)]
   
-  household_props[, stock_and_flow_access:=calc_access(hh_size, weighted_prob_no_nets, weighted_prob_any_net, SF_mean_nets_per_hh), 
-                  by=list(hh_size, year)]
+  household_props <- lapply(unique(household_props$year), function(this_year){
+    subset <- household_props[year==this_year]
+    access_stats <- calc_access(subset)
+    subset <- merge(subset, access_stats, by="hh_size", all=T)
+    return(subset)
+  })
+  
+  household_props <- rbindlist(household_props)
   
   this_survey_data <- merge(this_survey_data, household_props[, list(year, capped.n.sleeping.in.hhs=hh_size, stock_and_flow_access)],
                             by=c("year", "capped.n.sleeping.in.hhs"), all.x=T)
