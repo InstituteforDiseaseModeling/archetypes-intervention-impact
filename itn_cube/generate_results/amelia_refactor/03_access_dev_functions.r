@@ -56,7 +56,6 @@ IHS.loglik <- function(theta,x){
   return(log.lik)
 }
 
-
 ll.to.xyz<-function(ll){
   
   ## ll: data.table with columns "row_id", "longitude", "latitude"

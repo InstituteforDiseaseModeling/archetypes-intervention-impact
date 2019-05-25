@@ -116,36 +116,52 @@ aggregate.data<-function(nat_raster, data){
 
 }
 
-calc_access <- function(hh_size, prob_no_nets, prob_any_net, mean_net_count, max_nets=40){
+calc_access <- function(hh_props, max_nets=40, return_mean=F){
   
   # Find the probability of a household of size hh_size having 1:max_nets nets, 
   # assuming a zero-truncated poisson distribution with mean equal to the stock and flow mean. 
   # Multiply this by the weighted probability of having a net to get the weighted probability 
   # of an hh_sized household having a given number of nets. This is the same as the proportion of hh-sized households
   # expected to have a given number of nets
-  nonet_hh <- data.table(hh_size=hh_size, net_count=0,
-                         weighted_net_prob=prob_no_nets)
   
-  net_hh <- data.table(hh_size=hh_size, net_count=1:max_nets,
-                       weighted_net_prob=dpospois(1:max_nets, mean_net_count) * prob_any_net)
+  net_dist <- lapply(hh_props$hh_size, function(this_hh_size){
+    
+    these_net_stats <- hh_props[hh_size==this_hh_size]
+    
+    no_hh_subset <- data.table(hh_size=this_hh_size,
+                               net_count=0,
+                               weighted_net_prob=these_net_stats$weighted_prob_no_nets)
+    
+    net_hh_subset <- data.table(hh_size=this_hh_size,
+                                net_count=1:max_nets,
+                                weighted_net_prob=dpospois(1:max_nets, 
+                                                           these_net_stats$SF_mean_nets_per_hh) * these_net_stats$weighted_prob_any_net
+    )
+    
+    return(rbind(no_hh_subset, net_hh_subset))
+    
+  })
   
-  net_dist <- rbind(nonet_hh, net_hh)
+  net_dist <- rbindlist(net_dist)
   
-  if (sum(net_dist$weighted_net_prob)!=prob_no_nets + prob_any_net){
-    cutoff <- 1e-16
-    if ( abs( sum(net_dist$weighted_net_prob) - (prob_no_nets + prob_any_net) ) > cutoff ){
-      vals <- paste("Weighted prob is", sum(net_dist$weighted_net_prob), "and sum of probs is", prob_no_nets + prob_any_net)
-      warning(paste("Net probabilities do not sum properly!", vals))
+  # calculate access 
+  net_dist[, prop_with_access:=net_count*2*weighted_net_prob]
+  net_dist[, prop_in_bin:=hh_size*weighted_net_prob]
+  net_dist[, prop_with_access:=pmin(prop_with_access, prop_in_bin)] # cap access proportion at proportion of population
+  
+  if (sum(net_dist$weighted_net_prob)!=1){
+    if (abs(sum(net_dist$weighted_net_prob)-1)>1e-10){
+      warning("Net probabilities do not sum properly!")
     }
   }
   
-  net_dist[, prop_with_access:=net_count*2*weighted_net_prob] # proportion of people in households with n*2 nets *and* hh_size people
-  net_dist[, prop_in_bin:=hh_size*weighted_net_prob] # proportion of people in households with n nets
-  net_dist[, prop_with_access:=pmin(prop_with_access, prop_in_bin)] # actual access proportion: the lesser of (prop with access, prop in net bin)
+  access_stats <- net_dist[, list(stock_and_flow_access=sum(prop_with_access)/sum(prop_in_bin)), by=hh_size] 
+  all_access_stats <- sum(net_dist$prop_with_access)/sum(net_dist$prop_in_bin)
   
-  access <- net_dist[, sum(prop_with_access)/sum(prop_in_bin)]
-  
-  return(access)
+  if(return_mean){
+    return(all_access_stats)
+  }else{
+    return(access_stats)
+  }
 }
-
 
