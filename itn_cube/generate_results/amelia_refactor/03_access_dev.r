@@ -23,8 +23,8 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190508_replicate_inla/"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190508_replicate_inla/"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
