@@ -30,7 +30,7 @@ if(Sys.getenv("joint_dir")=="") {
   # joint_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/joint_data"
   # output_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/output"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190517_refactor_database/"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction/"
   func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/01_create_database_functions.r"
 } else {
   joint_dir <- Sys.getenv("joint_dir")

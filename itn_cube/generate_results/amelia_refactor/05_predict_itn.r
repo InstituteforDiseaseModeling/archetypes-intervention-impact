@@ -22,8 +22,8 @@ package_load <- function(package_list){
 package_load(c("zoo", "VGAM", "raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190517_refactor_database/"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190517_refactor_database/"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
   cov_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
@@ -53,6 +53,8 @@ source(file.path(func_dir, "05_predict_itn_functions.r"))
 # why does *this* go to 2016 when our inla only goes to 2014/15?
 prediction_years <- 2000:2016
 
+# temp
+prediction_years <- 2000:2003
 
 ## Load Covariates  ## ---------------------------------------------------------
 
@@ -259,9 +261,9 @@ for (this_year in prediction_years){
   
   # write files
   print("writing access tifs")
-  writeRaster(access_map, file.path(out_dir, paste0('ITN_',this_year,'.ACC.tif')),NAflag=-9999,overwrite=TRUE)
-  writeRaster(deviation_map, file.path(out_dir, paste0('ITN_',this_year,'.DEV.tif')),NAflag=-9999,overwrite=TRUE)
-  writeRaster(nat_mean_map, file.path(out_dir, paste0('ITN_', this_year,'.MEAN.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(access_map, file.path(output_dir, paste0('ITN_',this_year,'.ACC.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(deviation_map, file.path(output_dir, paste0('ITN_',this_year,'.DEV.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(nat_mean_map, file.path(output_dir, paste0('ITN_', this_year,'.MEAN.tif')),NAflag=-9999,overwrite=TRUE)
   
   
   ## Predict use  ## ---------------------------------------------------------
@@ -275,7 +277,7 @@ for (this_year in prediction_years){
   setnames(use_gap_predictions, "final_prediction", "use_gap")
   
   use_gap_predictions <- merge(use_gap_predictions, acc_dev_predictions, by=c("iso3", "year", "month", "cellnumber"), all=T)
-  use_gap_predictions[, emplogit_use:= emplogit_access + use_gap]
+  use_gap_predictions[, emplogit_use:= emplogit_access - use_gap]
   
   use_gap_predictions <- use_gap_predictions[, list(iso3, year, month, cellnumber, 
                                                     use=plogis(emplogit_use),
@@ -297,8 +299,8 @@ for (this_year in prediction_years){
   
   # write files
   print("writing use tifs")
-  writeRaster(use_map, file.path(out_dir, paste0('ITN_',this_year,'.GAP.tif')),NAflag=-9999,overwrite=TRUE)
-  writeRaster(use_gap_map, file.path(out_dir, paste0('ITN_',this_year,'.USE.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(use_map, file.path(output_dir, paste0('ITN_',this_year,'.GAP.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(use_gap_map, file.path(output_dir, paste0('ITN_',this_year,'.USE.tif')),NAflag=-9999,overwrite=TRUE)
   
 }
 

@@ -1,10 +1,12 @@
 
 library(data.table)
 library(raster)
+library(rasterVis)
+library(stats)
 
 rm(list=ls())
 
-new_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190517_refactor_database/"
+new_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction/"
 old_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
 func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 
@@ -81,6 +83,61 @@ old_hyperpar <- data.table(old_hyperpar)
 
 check_sameness(old_use_fixed, new_use_fixed, sameness_cutoff = 1e-04)
 check_sameness(old_hyperpar, new_hyperpar, sameness_cutoff = 1e-04)
+
+
+# 05: .tifs
+
+this_year <- 2003
+
+old_raster_dir <- file.path(old_dir, "05_predictions")
+new_raster_dir <- file.path(new_dir, "05_predictions")
+
+compare_tifs <- function(old_tif, new_tif, cutoff=0.001){
+  
+  new_tif[old_tif==0] <- 0
+  old_tif[new_tif==0] <- 0
+  diff <- old_tif-new_tif
+  old_diff <- old_tif[abs(diff)>cutoff]
+  
+  if (length(old_diff)>0){
+    print(paste(length(old_diff), "values above cutoff"))
+    if (max(old_diff==0)){
+      print("Discrepancy comes from zeros in old tiff, no issue")
+    }else{
+      print("Problem: see discrepancies below")
+      print(summary(old_diff))
+    }
+  }else{
+    print("No discrepancy")
+  }
+  
+  print(levelplot(stack(old_tif, new_tif)))
+  return(diff)
+}
+
+
+old_access_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".ACC.tif")))
+new_access_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".ACC.tif")))
+compare_tifs(old_access_tif, new_access_tif)
+
+
+old_dev_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
+old_dev_tif <- calc(old_dev_tif, plogis)
+new_dev_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
+dev_diff <- compare_tifs(old_dev_tif, new_dev_tif) # emplogit is weird so I can live with this
+
+old_mean_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
+new_mean_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
+mean_diff <- compare_tifs(old_mean_tif, new_mean_tif) # this looks real, possibly related to how islands are treated
+
+old_use_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
+new_use_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
+compare_tifs(old_use_tif, new_use_tif) # added instead of subtracting; fixing now
+
+old_gap_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
+old_gap_tif <- calc(old_gap_tif, plogis)
+new_gap_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
+compare_tifs(old_gap_tif, new_gap_tif)
 
 
 

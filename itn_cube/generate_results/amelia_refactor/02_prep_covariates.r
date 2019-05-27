@@ -22,11 +22,11 @@ package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RCo
 
 if(Sys.getenv("input_dir")=="") {
   # todo: make database output go to joint_data
-  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/01_database.csv"
+  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//01_database.csv"
   input_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190503_total_refactor/"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
 } else {
   database_fname <- Sys.getenv("database_fname") # location of output file from generate_database_refactored.r
   input_dir <- Sys.getenv("input_dir") # here, location of covariate data 
