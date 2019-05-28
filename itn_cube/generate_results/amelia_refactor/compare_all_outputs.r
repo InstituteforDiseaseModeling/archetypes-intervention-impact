@@ -131,12 +131,13 @@ new_mean_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".MEA
 mean_diff <- compare_tifs(old_mean_tif, new_mean_tif) # this looks real, possibly related to how islands are treated
 
 old_use_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
-new_use_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
+new_use_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, "USE")))
 compare_tifs(old_use_tif, new_use_tif) # added instead of subtracting; fixing now
 
 old_gap_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
 old_gap_tif <- calc(old_gap_tif, plogis)
 new_gap_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
+levelplot(stack(old_gap_tif, new_gap_tif))
 compare_tifs(old_gap_tif, new_gap_tif)
 
 

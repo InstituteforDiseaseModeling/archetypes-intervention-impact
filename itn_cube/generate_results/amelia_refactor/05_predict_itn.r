@@ -54,7 +54,7 @@ source(file.path(func_dir, "05_predict_itn_functions.r"))
 prediction_years <- 2000:2016
 
 # temp
-prediction_years <- 2000:2003
+prediction_years <- 2000:2008
 
 ## Load Covariates  ## ---------------------------------------------------------
 
@@ -299,8 +299,8 @@ for (this_year in prediction_years){
   
   # write files
   print("writing use tifs")
-  writeRaster(use_map, file.path(output_dir, paste0('ITN_',this_year,'.GAP.tif')),NAflag=-9999,overwrite=TRUE)
-  writeRaster(use_gap_map, file.path(output_dir, paste0('ITN_',this_year,'.USE.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(use_map, file.path(output_dir, paste0('ITN_',this_year,'.USE.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(use_gap_map, file.path(output_dir, paste0('ITN_',this_year,'.GAP.tif')),NAflag=-9999,overwrite=TRUE)
   
 }
 
