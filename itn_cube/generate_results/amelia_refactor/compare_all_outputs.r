@@ -3,6 +3,7 @@ library(data.table)
 library(raster)
 library(rasterVis)
 library(stats)
+library(gridExtra)
 
 rm(list=ls())
 
@@ -86,13 +87,12 @@ check_sameness(old_hyperpar, new_hyperpar, sameness_cutoff = 1e-04)
 
 
 # 05: .tifs
-
-this_year <- 2003
-
 old_raster_dir <- file.path(old_dir, "05_predictions")
 new_raster_dir <- file.path(new_dir, "05_predictions")
 
-compare_tifs <- function(old_tif, new_tif, cutoff=0.001){
+compare_tifs <- function(old_tif, new_tif, name="", cutoff=0.001){
+  
+  print(name)
   
   new_tif[old_tif==0] <- 0
   old_tif[new_tif==0] <- 0
@@ -111,34 +111,50 @@ compare_tifs <- function(old_tif, new_tif, cutoff=0.001){
     print("No discrepancy")
   }
   
-  print(levelplot(stack(old_tif, new_tif)))
-  return(diff)
+  stacked <- stack(old_tif, new_tif)
+  names(stacked) <- c(paste("Old", name), paste("New", name))
+  
+  stackplot <- levelplot(stacked,
+                         par.settings=rasterTheme(region=brewer.pal(8, "RdYlGn")),
+                         xlab=NULL, ylab=NULL, scales=list(draw=F), margin=F)
+  
+  
+  return(stackplot)
 }
 
 
-old_access_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".ACC.tif")))
-new_access_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".ACC.tif")))
-compare_tifs(old_access_tif, new_access_tif)
+pdf(file.path(new_dir, "compare_tifs.pdf"))
+for (this_year in 2000:2016){
+  print(this_year)
+  old_mean_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
+  new_mean_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
+  mean_stack <- compare_tifs(old_mean_tif, new_mean_tif, name="National Access") # this looks real, possibly related to how islands are treated
+  
+  old_dev_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
+  old_dev_tif <- calc(old_dev_tif, plogis)
+  new_dev_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
+  dev_stack <- compare_tifs(old_dev_tif, new_dev_tif, name="Access Dev") # emplogit is weird so I can live with this
+  
+  old_access_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".ACC.tif")))
+  new_access_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".ACC.tif")))
+  access_stack <- compare_tifs(old_access_tif, new_access_tif, name="Access")
+  
+  old_gap_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
+  old_gap_tif <- calc(old_gap_tif, plogis)
+  new_gap_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
+  use_gap_stack <- compare_tifs(old_gap_tif, new_gap_tif, name="Use Gap")
+  
+  old_use_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
+  new_use_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
+  use_stack <- compare_tifs(old_use_tif, new_use_tif, name="Use") # added instead of subtracting; fixing now
+  
+  full_stack <- list(mean_stack, dev_stack, access_stack, use_gap_stack, use_stack)
+  full_plot <- grid.arrange(grobs=full_stack, ncol=3, top=paste(this_year))
+  
+}
+graphics.off()
 
 
-old_dev_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
-old_dev_tif <- calc(old_dev_tif, plogis)
-new_dev_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
-dev_diff <- compare_tifs(old_dev_tif, new_dev_tif) # emplogit is weird so I can live with this
-
-old_mean_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
-new_mean_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
-mean_diff <- compare_tifs(old_mean_tif, new_mean_tif) # this looks real, possibly related to how islands are treated
-
-old_use_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
-new_use_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, "USE")))
-compare_tifs(old_use_tif, new_use_tif) # added instead of subtracting; fixing now
-
-old_gap_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
-old_gap_tif <- calc(old_gap_tif, plogis)
-new_gap_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
-levelplot(stack(old_gap_tif, new_gap_tif))
-compare_tifs(old_gap_tif, new_gap_tif)
 
 
 
