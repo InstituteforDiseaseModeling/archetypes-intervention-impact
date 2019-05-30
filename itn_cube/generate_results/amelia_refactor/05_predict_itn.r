@@ -54,7 +54,7 @@ source(file.path(func_dir, "05_predict_itn_functions.r"))
 prediction_years <- 2000:2016
 
 # temp
-prediction_years <- 2000:2008
+prediction_years <- 2007:2007
 
 ## Load Covariates  ## ---------------------------------------------------------
 
@@ -157,7 +157,7 @@ for (this_year in prediction_years){
   
   stock_and_flow_access <- lapply(unique(stock_and_flow$iso3), function(this_iso){
     country_access <- lapply(unique(stock_and_flow$year), function(this_time){
-      # print(paste(this_iso, ":", this_time))
+      print(paste(this_iso, ":", this_time))
       subset <- stock_and_flow[iso3==this_iso & year==this_time]
       access <- calc_access(subset, return_mean = T)
       return(data.table(iso3=this_iso, 
@@ -175,6 +175,7 @@ for (this_year in prediction_years){
                                  by="year", all=T)
   stock_and_flow_access <- stock_and_flow_access[, list(iso3, year=this_year, month, nat_access, emplogit_nat_access)]
   
+  write.csv(stock_and_flow_access, file=file.path(output_dir, "national_access_2007_for_comparison.csv"), row.names = F)
   
   ## Create INLA Prediction objects  ## ---------------------------------------------------------
   
@@ -233,6 +234,10 @@ for (this_year in prediction_years){
   acc_dev_predictions <- merge(acc_dev_predictions, stock_and_flow_access, by=c("iso3", "year", "month"), all.x=T)
   acc_dev_predictions[, emplogit_access:= emplogit_nat_access + access_deviation]
   
+  if (this_year==2007){
+    write.csv(acc_dev_predictions, file=file.path(output_dir, "acc_dev_2007_for_comparison.csv"), row.names = F)
+  }
+  
   # todo: definitely something weird with emplogit and access dev
   acc_dev_predictions <- acc_dev_predictions[, list(iso3, year, month, cellnumber, 
                                                     emplogit_access=emplogit_access,
@@ -278,6 +283,11 @@ for (this_year in prediction_years){
   
   use_gap_predictions <- merge(use_gap_predictions, acc_dev_predictions, by=c("iso3", "year", "month", "cellnumber"), all=T)
   use_gap_predictions[, emplogit_use:= emplogit_access - use_gap]
+  
+  if (this_year==2007){
+    write.csv(use_gap_predictions, file=file.path(output_dir, "use_gap_2007_for_comparison.csv"), row.names = F)
+  }
+  
   
   use_gap_predictions <- use_gap_predictions[, list(iso3, year, month, cellnumber, 
                                                     use=plogis(emplogit_use),
