@@ -58,8 +58,10 @@ stock_and_flow_outputs <- lapply(stock_and_flow_isos, function(iso){
   start_year <- ceiling(min(quarterly_times))
   end_year <- floor(max(quarterly_times))
   # get your desired monthly outputs as decimal dates
-  # TODO: change from beginning to middle of month when you properly account for months in hh data
-  monthly_times <- decimal_date(seq(as.Date(paste0(start_year, "/1/1")), by = "month", length.out = (end_year-start_year)*12))
+  # TODO: change from year divided equally by 12 to beginning/middle of month when you properly account for months in hh data
+  # monthly_times <- decimal_date(seq(as.Date(paste0(start_year, "/1/1")), by = "month", length.out = (end_year-start_year)*12))
+  monthly_times <- expand.grid(1:12, start_year:end_year)
+  monthly_times <- as.numeric(as.yearmon(paste(monthly_times[,2], monthly_times[,1], sep="-")))
   
   country_subset <- lapply(1:2, function(layer){
     data.table(sapply(colnames(country_list), function(col){approx(quarterly_times, country_list[,col,layer], monthly_times)$y}))
