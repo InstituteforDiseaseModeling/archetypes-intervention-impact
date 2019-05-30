@@ -1,15 +1,39 @@
 
-library(data.table)
-library(raster)
-library(rasterVis)
-library(stats)
-library(gridExtra)
+###############################################################################################################
+## compare_all_outputs.r
+## Amelia Bertozzi-Villa
+## May 2019
+## 
+## Test new and old results for equivalence
+## 
+##############################################################################################################
+
+
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive new_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor old_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/compare_all_outputs.r --output-recursive compare_out_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/05_predictions --command 'Rscript ${CODE}'
 
 rm(list=ls())
 
-new_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction/"
-old_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
-func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
+package_load <- function(package_list){
+  # package installation/loading
+  new_packages <- package_list[!(package_list %in% installed.packages()[,"Package"])]
+  if(length(new_packages)) install.packages(new_packages)
+  lapply(package_list, library, character.only=T)
+}
+
+package_load(c( "raster", "data.table", "rasterVis", "stats", "RColorBrewer", "gridExtra"))
+
+if(Sys.getenv("func_dir")=="") {
+  new_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction/"
+  old_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
+  compare_out_dir <- new_dir
+  func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
+} else {
+  new_dir <- Sys.getenv("new_dir")
+  old_dir <- Sys.getenv("old_dir")
+  compare_out_dir <- Sys.getenv("compare_out_dir") 
+  func_dir <- Sys.getenv("func_dir") # code directory for function scripts
+}
+
 
 source(file.path(func_dir, "check_file_similarity.r"))
 
@@ -123,7 +147,7 @@ compare_tifs <- function(old_tif, new_tif, name="", cutoff=0.001){
 }
 
 
-pdf(file.path(new_dir, "compare_tifs.pdf"))
+pdf(file.path(compare_out_dir, "compare_tifs.pdf"), width=11, height=7)
 for (this_year in 2000:2016){
   print(this_year)
   old_mean_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
