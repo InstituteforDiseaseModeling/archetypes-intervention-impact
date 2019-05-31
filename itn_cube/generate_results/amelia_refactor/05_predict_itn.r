@@ -8,7 +8,7 @@
 ## 
 ##############################################################################################################
 
-#dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/ --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/05_predict_itn.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/05_predictions --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/ --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/05_predict_itn.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/05_predictions --command 'Rscript ${CODE}'
 
 rm(list=ls())
 
@@ -23,7 +23,7 @@ package_load(c("zoo", "VGAM", "raster", "doParallel", "data.table", "rgdal", "IN
 
 if(Sys.getenv("input_dir")=="") {
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction/05_predictions/"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
   cov_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
@@ -54,9 +54,10 @@ source(file.path(func_dir, "05_predict_itn_functions.r"))
 prediction_years <- 2000:2016
 
 # temp
-prediction_years <- 2000:2008
+prediction_years <- 2000:2007
 
 ## Load Covariates  ## ---------------------------------------------------------
+
 
 for (this_year in prediction_years){
   print(paste("predicting for year", this_year))
@@ -175,7 +176,9 @@ for (this_year in prediction_years){
                                  by="year", all=T)
   stock_and_flow_access <- stock_and_flow_access[, list(iso3, year=this_year, month, nat_access, emplogit_nat_access)]
   
-  write.csv(stock_and_flow_access, file=file.path(output_dir, "national_access_2007_for_comparison.csv"), row.names = F)
+  if (this_year==2007){
+    write.csv(stock_and_flow_access, file=file.path(output_dir, "national_access_2007_for_comparison.csv"), row.names = F)
+  }
   
   ## Create INLA Prediction objects  ## ---------------------------------------------------------
   
@@ -239,15 +242,16 @@ for (this_year in prediction_years){
   }
   
   # todo: definitely something weird with emplogit and access dev
-  acc_dev_predictions <- acc_dev_predictions[, list(iso3, year, month, cellnumber, 
+  acc_dev_predictions_transformed <- acc_dev_predictions[, list(iso3, year, month, cellnumber, 
                                                     emplogit_access=emplogit_access,
                                                     access=plogis(emplogit_access),
                                                     access_deviation=plogis(access_deviation),
                                                     nat_access=plogis(emplogit_nat_access))]
   
-  summary_access <- acc_dev_predictions[, list(nat_access=mean(nat_access, na.rm=T),
-                                               access_deviation=mean(access_deviation, na.rm=T),
-                                               access=mean(access, na.rm=T)),
+  # TODO: should na.rm be T or F?
+  summary_access <- acc_dev_predictions_transformed[, list(nat_access=mean(nat_access, na.rm=F),
+                                               access_deviation=mean(access_deviation, na.rm=F),
+                                               access=mean(access, na.rm=F)),
                                         by=list(iso3, year, cellnumber)]
   summary_access <- summary_access[order(cellnumber)]
   
@@ -270,6 +274,23 @@ for (this_year in prediction_years){
   writeRaster(deviation_map, file.path(output_dir, paste0('ITN_',this_year,'.DEV.tif')),NAflag=-9999,overwrite=TRUE)
   writeRaster(nat_mean_map, file.path(output_dir, paste0('ITN_', this_year,'.MEAN.tif')),NAflag=-9999,overwrite=TRUE)
   
+  # DELETE AFTER MODEL COMPARE: write files with buggy transformations to mimic Sam's code for deviation and national mean
+  sam_odd <- acc_dev_predictions[, list(nat_access=mean(emplogit_nat_access),
+                                        access_deviation=mean(access_deviation)), by=list(iso3, year, cellnumber)]
+  sam_odd <- sam_odd[, list(iso3, year, cellnumber, nat_access=plogis(nat_access),
+                                access_deviation, 
+                                access=summary_access$access)]
+  
+  odd_deviation_map <- copy(national_raster)
+  odd_deviation_map[sam_odd$cellnumber] <- sam_odd$access_deviation
+  odd_deviation_map[!is.na(national_raster) & is.na(odd_deviation_map)] <- 0
+  
+  odd_nat_mean_map <- copy(national_raster)
+  odd_nat_mean_map[sam_odd$cellnumber] <- sam_odd$nat_access
+  odd_nat_mean_map[!is.na(national_raster) & is.na(odd_nat_mean_map)] <- 0
+  
+  writeRaster(odd_deviation_map, file.path(output_dir, paste0('ITN_',this_year,'.ODD_DEV.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(odd_nat_mean_map, file.path(output_dir, paste0('ITN_', this_year,'.ODD_MEAN.tif')),NAflag=-9999,overwrite=TRUE)
   
   ## Predict use  ## ---------------------------------------------------------
   
@@ -289,12 +310,12 @@ for (this_year in prediction_years){
   }
   
   
-  use_gap_predictions <- use_gap_predictions[, list(iso3, year, month, cellnumber, 
+  use_gap_predictions_transformed <- use_gap_predictions[, list(iso3, year, month, cellnumber, 
                                                     use=plogis(emplogit_use),
                                                     use_gap=plogis(use_gap))]
   
-  summary_use <- use_gap_predictions[, list(use=mean(use, na.rm=T),
-                                            use_gap=mean(use_gap, na.rm=T)),
+  summary_use <- use_gap_predictions_transformed[, list(use=mean(use, na.rm=F),
+                                            use_gap=mean(use_gap, na.rm=F)),
                                      by=list(iso3, year, cellnumber)]
   summary_use <- summary_use[order(cellnumber)]
   
@@ -311,6 +332,16 @@ for (this_year in prediction_years){
   print("writing use tifs")
   writeRaster(use_map, file.path(output_dir, paste0('ITN_',this_year,'.USE.tif')),NAflag=-9999,overwrite=TRUE)
   writeRaster(use_gap_map, file.path(output_dir, paste0('ITN_',this_year,'.GAP.tif')),NAflag=-9999,overwrite=TRUE)
+  
+  
+  # DELETE AFTER MODEL COMPARE: write files with buggy transformations to mimic Sam's code for deviation and national mean
+  sam_odd_use <- use_gap_predictions[, list(use_gap=mean(use_gap)), by=list(iso3, year, cellnumber)]
+  
+  odd_gap_map <- copy(national_raster)
+  odd_gap_map[sam_odd_use$cellnumber] <- sam_odd_use$use_gap
+  odd_gap_map[!is.na(national_raster) & is.na(odd_gap_map)] <- 0
+  
+  writeRaster(odd_nat_mean_map, file.path(output_dir, paste0('ITN_', this_year,'.ODD_GAP.tif')),NAflag=-9999,overwrite=TRUE)
   
 }
 

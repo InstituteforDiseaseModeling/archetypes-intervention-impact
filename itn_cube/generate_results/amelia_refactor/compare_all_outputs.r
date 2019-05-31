@@ -118,8 +118,8 @@ compare_tifs <- function(old_tif, new_tif, name="", cutoff=0.001){
   
   print(name)
   
-  new_tif[old_tif==0] <- 0
-  old_tif[new_tif==0] <- 0
+  # new_tif[old_tif==0] <- 0
+  # old_tif[new_tif==0] <- 0
   diff <- old_tif-new_tif
   old_diff <- old_tif[abs(diff)>cutoff]
   
@@ -151,12 +151,12 @@ pdf(file.path(compare_out_dir, "compare_tifs.pdf"), width=11, height=7)
 for (this_year in 2000:2016){
   print(this_year)
   old_mean_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
-  new_mean_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".MEAN.tif")))
+  new_mean_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".ODD_MEAN.tif")))
   mean_stack <- compare_tifs(old_mean_tif, new_mean_tif, name="National Access") # this looks real, possibly related to how islands are treated
   
   old_dev_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
   old_dev_tif <- calc(old_dev_tif, plogis)
-  new_dev_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
+  new_dev_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".ODD_DEV.tif")))
   dev_stack <- compare_tifs(old_dev_tif, new_dev_tif, name="Access Dev") # emplogit is weird so I can live with this
   
   old_access_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".ACC.tif")))
@@ -165,7 +165,7 @@ for (this_year in 2000:2016){
   
   old_gap_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
   old_gap_tif <- calc(old_gap_tif, plogis)
-  new_gap_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
+  new_gap_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".ODD_GAP.tif")))
   use_gap_stack <- compare_tifs(old_gap_tif, new_gap_tif, name="Use Gap")
   
   old_use_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
