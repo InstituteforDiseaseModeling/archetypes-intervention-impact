@@ -54,7 +54,7 @@ source(file.path(func_dir, "05_predict_itn_functions.r"))
 prediction_years <- 2000:2016
 
 # temp
-prediction_years <- 2000:2007
+prediction_years <- 2009:2016
 
 ## Load Covariates  ## ---------------------------------------------------------
 
@@ -64,9 +64,19 @@ for (this_year in prediction_years){
   
   print("loading covariates")
   static_covs <- fread(file.path(input_dir, "02_static_covariates.csv"))
+  
+  
+  # TEMP TO COINCIDE WITH SAM: restrict the covariate year to 2001-2013
+  cov_year <- min(2013, max(this_year, 2001))
+  
   annual_covs <- fread(file.path(input_dir, "02_annual_covariates.csv"))
-  annual_covs <- annual_covs[year==this_year]
-  dynamic_covs <- fread(file.path(input_dir, paste0("02_dynamic_covariates/dynamic_", this_year, ".csv")))
+  annual_covs <- annual_covs[year==cov_year]
+  dynamic_covs <- fread(file.path(input_dir, paste0("02_dynamic_covariates/dynamic_", cov_year, ".csv")))
+  
+  # more temp ---
+  annual_covs[, year:= this_year]
+  dynamic_covs[, year:=this_year]
+  # ----
   
   annual_covs <- merge(static_covs, annual_covs, by="cellnumber", all=T)
   
@@ -341,7 +351,7 @@ for (this_year in prediction_years){
   odd_gap_map[sam_odd_use$cellnumber] <- sam_odd_use$use_gap
   odd_gap_map[!is.na(national_raster) & is.na(odd_gap_map)] <- 0
   
-  writeRaster(odd_nat_mean_map, file.path(output_dir, paste0('ITN_', this_year,'.ODD_GAP.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(odd_gap_map, file.path(output_dir, paste0('ITN_', this_year,'.ODD_GAP.tif')),NAflag=-9999,overwrite=TRUE)
   
 }
 
