@@ -125,7 +125,7 @@ compare_tifs <- function(old_tif, new_tif, name="", cutoff=0.001){
   
   if (length(old_diff)>0){
     print(paste(length(old_diff), "values above cutoff"))
-    if (max(old_diff==0)){
+    if (max(old_diff)==0){
       print("Discrepancy comes from zeros in old tiff, no issue")
     }else{
       print("Problem: see discrepancies below")
@@ -155,7 +155,7 @@ for (this_year in 2000:2016){
   mean_stack <- compare_tifs(old_mean_tif, new_mean_tif, name="National Access") # this looks real, possibly related to how islands are treated
   
   old_dev_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".DEV.tif")))
-  old_dev_tif <- calc(old_dev_tif, plogis)
+  # old_dev_tif <- calc(old_dev_tif, plogis)
   new_dev_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".ODD_DEV.tif")))
   dev_stack <- compare_tifs(old_dev_tif, new_dev_tif, name="Access Dev") # emplogit is weird so I can live with this
   
@@ -164,7 +164,7 @@ for (this_year in 2000:2016){
   access_stack <- compare_tifs(old_access_tif, new_access_tif, name="Access")
   
   old_gap_tif <- raster(file.path(old_raster_dir, paste0("ITN_", this_year, ".GAP.tif")))
-  old_gap_tif <- calc(old_gap_tif, plogis)
+  # old_gap_tif <- calc(old_gap_tif, plogis)
   new_gap_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".ODD_GAP.tif")))
   use_gap_stack <- compare_tifs(old_gap_tif, new_gap_tif, name="Use Gap")
   
