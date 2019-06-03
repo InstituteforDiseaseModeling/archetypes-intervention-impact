@@ -51,7 +51,7 @@ source(file.path(func_dir, "03_access_dev_functions.r")) # for 1-val emplogit
 source(file.path(func_dir, "05_predict_itn_functions.r"))
 
 # why does *this* go to 2016 when our inla only goes to 2014/15?
-prediction_years <- 2000:2016
+all_prediction_years <- 2000:2016
 
 # temp
 prediction_years <- 2009:2016
@@ -101,23 +101,17 @@ for (this_year in prediction_years){
   # TODO: move all of this to prep_database, it doesn't need to be here
   orig_stock_and_flow <- fread(file.path(input_dir, "01_stock_and_flow_prepped.csv"))
   stock_and_flow <- orig_stock_and_flow[year>=this_year & year<(this_year+1)] # keep only the years we want to predict
-  iso_gaul_map <- fread(file.path(joint_dir, "National_Config_Data.csv"))
-  iso_gaul_map <- iso_gaul_map[, list(iso3=ISO3, gaul=GAUL_Code, Name=IHME_Location_ASCII_Name)]
   
-  # add missing values 
-  iso_gaul_map <- rbind(iso_gaul_map, 
-                        data.table(iso3="SHN",
-                                   gaul=207,
-                                   Name="Ascension and Tristan da Cunha")
-  )
-  
-  # update cell file with iso3s (also fix odd gaul value for s africa)
-  prediction_cells[gaul==1013965, gaul:=227]
+  iso_gaul_map<-fread(file.path(joint_dir, '../country_table_populations.csv')) # load table to match gaul codes to country names
+  setnames(iso_gaul_map, c("GAUL_CODE", "COUNTRY_ID", "NAME"), c("gaul", "iso3", "country"))
+
   prediction_cells <- merge(prediction_cells, iso_gaul_map, by="gaul", all.x=T)
   
-  iso_gaul_map <- iso_gaul_map[iso3 %in% stock_and_flow$iso3]
+  # iso_gaul_map <- iso_gaul_map[iso3 %in% unique(stock_and_flow$iso3)]
+  # iso_gaul_map <- iso_gaul_map[!gaul %in% c(102, 40760, 40762, 61013)] # remove separately named territories in Sudan and Kenya
   
   # load household size distributions for each survey
+  # TODO: rename this to "stock and flow", move national use vals to this folder
   hh_sizes<-fread(file.path(joint_dir, 'Bucket_Model/HHsize.csv'))
   survey_key=fread(file.path(joint_dir, 'Bucket_Model/KEY.csv'))
   
@@ -132,17 +126,14 @@ for (this_year in prediction_years){
   
   # update country names to fit with iso_gaul_map (for use when you actually DO calculate props by country name)
   survey_key[, Status:=NULL]
-  setnames(survey_key, "Svy Name", "HHSurvey")
-  survey_key[Name=="Coted'Ivoire", Name:="Cote d'Ivoire"]
-  survey_key[Name=="Dem. Rep. of Congo", Name:="Democratic Republic of the Congo"]
-  survey_key[Name=="SaoTome & Principe", Name:="Sao Tome And Principe"]
+  setnames(survey_key, c("Svy Name", "Name"), c("HHSurvey", "country"))
   
   # add two surveys not present in key
   survey_key <- rbind(survey_key, data.table(HHSurvey=c("Kenya 2007", "Rwanda 2013"),
-                                             Name=c("Kenya", "Rwanda")))
+                                             country=c("Kenya", "Rwanda")))
   
   # merge with name map and survey distribution
-  survey_key <- merge(survey_key, iso_gaul_map, by="Name", all.x=T)
+  survey_key <- merge(survey_key, iso_gaul_map, by="country", all.x=T)
   hh_sizes <- merge(hh_sizes, survey_key, by="HHSurvey", all.x=T)
   
   # find size distribution across full dataset (make country-specific later);
@@ -168,7 +159,7 @@ for (this_year in prediction_years){
   
   stock_and_flow_access <- lapply(unique(stock_and_flow$iso3), function(this_iso){
     country_access <- lapply(unique(stock_and_flow$year), function(this_time){
-      print(paste(this_iso, ":", this_time))
+      # print(paste(this_iso, ":", this_time))
       subset <- stock_and_flow[iso3==this_iso & year==this_time]
       access <- calc_access(subset, return_mean = T)
       return(data.table(iso3=this_iso, 
@@ -356,12 +347,53 @@ for (this_year in prediction_years){
 }
 
 
+## 'squash' certain years to zero  ## ---------------------------------------------------------
 
-
-
-
-
-
-
+if (2016 %in% prediction_years){
+  print("Squashing early years") # check: I think these are use estimates from the bucket model
+  stock_and_flow_use <- fread(file.path(joint_dir, 'indicators_access_qtr_new.csv'))
+  stock_and_flow_use <- stock_and_flow_use[2:nrow(stock_and_flow_use)]
+  names(stock_and_flow_use) <- c("country", seq(2000, 2018, 0.25))
+  stock_and_flow_use <- melt(stock_and_flow_use, id.vars = "country", variable.name="year", value.name="use")
+  stock_and_flow_use[, year:=floor(as.numeric(as.character(year)))]
+  
+  annual_use <- stock_and_flow_use[year<=max(all_prediction_years), list(use=mean(use)), by=list(country, year)]
+  annual_use[, to_squash:=as.integer(use<0.02)]
+  squash_map <- dcast.data.table(annual_use, country~year, value.var="to_squash")
+  
+  restrict_indicator <- function(prior_val, current_val){
+    return(ifelse(prior_val==0, 0, current_val))
+  }
+  
+  for (year in all_prediction_years[2:length(all_prediction_years)]){
+    squash_map[[as.character(year)]] <- restrict_indicator(squash_map[[as.character(year-1)]], squash_map[[as.character(year)]])
+  }
+  
+  squash_map <- melt(squash_map, id.vars = "country", value.name="to_squash", variable.name="year")
+  squash_map[, year:=as.integer(as.character(year))]
+  squash_map <- merge(squash_map, iso_gaul_map, by="country", all.x=T)
+  
+  
+  # for all the country-years where "indicator" equals 1, set use to 0
+  squash_map[, country_count:= sum(to_squash), by=list(year)] 
+  
+  years_to_squash <- unique(squash_map[country_count>0]$year)
+  for (this_year in years_to_squash){
+    
+    # temp until you can figure out how to run everything in one batch
+    if (file.exists(file.path(output_dir, paste0("ITN_", this_year, ".USE.tif")))){
+      orig_use <- raster(file.path(output_dir, paste0("ITN_", this_year, ".USE.tif")))
+    }else{
+      orig_use <- raster(file.path(input_dir, "05_predictions", paste0("ITN_", this_year, ".USE.tif")))
+    }
+    
+    new_use <- copy(orig_use)
+    gauls_to_squash <- squash_map[year==this_year & to_squash==1]$gaul
+    new_use[national_raster %in% gauls_to_squash] <- 0
+    
+    writeRaster(new_use, file.path(output_dir, paste0('ITN_',this_year,'.RAKED_USE.tif')),NAflag=-9999,overwrite=TRUE)
+  }
+  
+}
 
 

@@ -172,7 +172,16 @@ for (this_year in 2000:2016){
   new_use_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".USE.tif")))
   use_stack <- compare_tifs(old_use_tif, new_use_tif, name="Use") # added instead of subtracting; fixing now
   
-  full_stack <- list(mean_stack, dev_stack, access_stack, use_gap_stack, use_stack)
+  if (file.exists(file.path(new_raster_dir, paste0("ITN_", this_year, ".RAKED_USE.tif")))){
+    old_raked_use_tif <- raster(file.path(old_raster_dir, paste0("for_z_", this_year,'.ITN.use.yearavg.new.adj.tif')))
+    new_raked_use_tif <- raster(file.path(new_raster_dir, paste0("ITN_", this_year, ".RAKED_USE.tif")))
+    raked_use_stack <- compare_tifs(old_raked_use_tif, new_raked_use_tif, name="Raked Use")
+  }else{
+    raked_use_stack <- use_stack
+  }
+  
+  
+  full_stack <- list(mean_stack, dev_stack, access_stack, use_gap_stack, use_stack, raked_use_stack)
   full_plot <- grid.arrange(grobs=full_stack, ncol=3, top=paste(this_year))
   
 }
