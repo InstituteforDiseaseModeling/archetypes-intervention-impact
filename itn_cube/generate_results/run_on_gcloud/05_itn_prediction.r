@@ -19,7 +19,7 @@ if(Sys.getenv("in_dir")=="") {
   in_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/"
   joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   cov_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
-  out_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190508_replicate_inla/05_predictions"
+  out_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/05_predictions"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
   in_dir <- Sys.getenv("in_dir") 
