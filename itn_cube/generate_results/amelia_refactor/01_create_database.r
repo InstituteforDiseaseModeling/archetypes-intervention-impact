@@ -189,26 +189,26 @@ final_data<-copy(output)
 #print(paste('**OUTPUT MESSAGE** remove points with no cooridnates: there are - ',nrow(data[!complete.cases(data),])))
 final_data<-final_data[complete.cases(final_data),] # TODO: do you want to be getting rid of cases where the only NA's are in the "gap" values?
 
-print(paste('**OUTPUT MESSAGE** remove points with 0 lat 0 lon: there are - ', nrow(final_data[lat==0 & lon==0])))
+print(paste("**OUTPUT MESSAGE** remove points with 0 lat 0 lon: there are - ", nrow(final_data[lat==0 & lon==0])))
 final_data<-final_data[lat!=0 & lon!=0]
 
 # Check for invalid points, and attempt to reposition them
-cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) # master country layer
+cn<-raster(file.path(joint_dir, "african_cn5km_2013_no_disputes.tif")) # master country layer
 NAvalue(cn)=-9999
 final_data$yearqtr<-as.numeric(as.yearqtr(final_data$year))
 
-print(paste('**OUTPUT MESSAGE** Attempting to reposition points'))
-final_data<-reposition.points(cn, final_data, 4)
+print(paste("**OUTPUT MESSAGE** Attempting to reposition points"))
+final_data<-reposition_points(cn, final_data, 4)
 
-print(paste('--> Total number of household points', nrow(HH)))
-print(paste('--> Total number of cluster points', nrow(final_data)))
-print(paste('--> Total number countries', length(unique(HH$Country))))
-print(paste('--> Total number of surveys', length(unique(HH$Survey.hh))))
+print(paste("--> Total number of household points", nrow(HH)))
+print(paste("--> Total number of cluster points", nrow(final_data)))
+print(paste("--> Total number countries", length(unique(HH$Country))))
+print(paste("--> Total number of surveys", length(unique(HH$Survey.hh))))
 
-print(paste('**OUTPUT MESSAGE** Aggregating data at same pixel-quarter'))
-final_data<-aggregate.data(cn, final_data)
+print(paste("**OUTPUT MESSAGE** Aggregating data at same pixel-quarter"))
+final_data<-aggregate_data(cn, final_data)
 
-print(paste('**OUTPUT MESSAGE** get floored year '))
+print(paste("**OUTPUT MESSAGE** get floored year "))
 final_data$flooryear<-floor(final_data$year)
 
 print(paste("--> Writing to", out_fname))
