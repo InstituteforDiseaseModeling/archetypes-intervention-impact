@@ -1,5 +1,5 @@
 ###############################################################################################################
-## 03_access_dev_functions.r
+## 03_05_general_functions.r
 ## Amelia Bertozzi-Villa
 ## May 2019
 ## 
@@ -30,7 +30,6 @@ other_emplogit <- function(Y, tol){
   return(log(top/bottom))
 }
 
-
 emplogit2<-function(Y,N){
   # approximation of a log odds
   # Y: # of occurrences of interest
@@ -41,13 +40,18 @@ emplogit2<-function(Y,N){
 }
 
 
-# Inverse hyperbolic sin transform
-IHS <- function(x, theta){  # function to IHS transform
+# Inverse Hyperbolic sin transform
+ihs <- function(x, theta){  # function to IHS transform
   return(asinh(theta * x)/theta) 
 }
 
+# Inverse of the inverse hyperbolic sin transform
+inv_ihs <- function(x, theta){
+  (1/theta)*sinh(theta * x)
+}
+
 # Inverse hyperbolic sin transform-- log-likelihood
-IHS.loglik <- function(theta,x){
+ihs_loglik <- function(theta,x){
   
   n <- length(x)
   xt <- IHS(x, theta)
@@ -56,7 +60,7 @@ IHS.loglik <- function(theta,x){
   return(log.lik)
 }
 
-ll.to.xyz<-function(ll){
+ll_to_xyz<-function(ll){
   
   ## ll: data.table with columns "row_id", "longitude", "latitude"
   ll <- ll[, list(row_id, longitude, latitude,

@@ -50,7 +50,7 @@ cov_dt[, used_sam:= as.logical(used_sam)]
 cov_dt <- cov_dt[used_sam==T]
 
 # find the "valid" cell values for which we want to predict in step 5
-raster_indices <- which_non_null(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif'))
+raster_indices <- which_non_null(file.path(joint_dir, "african_cn5km_2013_no_disputes.tif"))
 
 
 ### Static covariates  ----------------------------------------------------------------------------#######################  

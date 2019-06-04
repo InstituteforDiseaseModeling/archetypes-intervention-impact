@@ -47,8 +47,7 @@ load(file.path(input_dir, "04_use_gap.Rdata"))
 
 # load function script
 source(file.path(func_dir, "01_create_database_functions.r")) # for calc_access
-source(file.path(func_dir, "03_access_dev_functions.r")) # for 1-val emplogit
-source(file.path(func_dir, "05_predict_itn_functions.r"))
+source(file.path(func_dir, "03_05_general_functions.r"))
 
 # why does *this* go to 2016 when our inla only goes to 2014/15?
 all_prediction_years <- 2000:2016
@@ -91,7 +90,7 @@ for (this_year in prediction_years){
   
   prediction_cells <- cbind(prediction_cells, data.table(xyFromCell(national_raster, prediction_indices)))
   setnames(prediction_cells, c("x", "y"), c("longitude", "latitude"))
-  prediction_xyz <- ll.to.xyz(prediction_cells)
+  prediction_xyz <- ll_to_xyz(prediction_cells)
   
   
   
@@ -102,18 +101,15 @@ for (this_year in prediction_years){
   orig_stock_and_flow <- fread(file.path(input_dir, "01_stock_and_flow_prepped.csv"))
   stock_and_flow <- orig_stock_and_flow[year>=this_year & year<(this_year+1)] # keep only the years we want to predict
   
-  iso_gaul_map<-fread(file.path(joint_dir, '../country_table_populations.csv')) # load table to match gaul codes to country names
+  iso_gaul_map<-fread(file.path(joint_dir, "../country_table_populations.csv")) # load table to match gaul codes to country names
   setnames(iso_gaul_map, c("GAUL_CODE", "COUNTRY_ID", "NAME"), c("gaul", "iso3", "country"))
 
   prediction_cells <- merge(prediction_cells, iso_gaul_map, by="gaul", all.x=T)
   
-  # iso_gaul_map <- iso_gaul_map[iso3 %in% unique(stock_and_flow$iso3)]
-  # iso_gaul_map <- iso_gaul_map[!gaul %in% c(102, 40760, 40762, 61013)] # remove separately named territories in Sudan and Kenya
-  
   # load household size distributions for each survey
   # TODO: rename this to "stock and flow", move national use vals to this folder
-  hh_sizes<-fread(file.path(joint_dir, 'Bucket_Model/HHsize.csv'))
-  survey_key=fread(file.path(joint_dir, 'Bucket_Model/KEY.csv'))
+  hh_sizes<-fread(file.path(joint_dir, "Bucket_Model/HHsize.csv"))
+  survey_key=fread(file.path(joint_dir, "Bucket_Model/KEY.csv"))
   
   # format hh_sizes
   hh_sizes[, V1:=NULL]
@@ -122,7 +118,6 @@ for (this_year in prediction_years){
   
   # BUG: The original script seems like it subsets on country-specific survey, 
   # but I think it always uses the entire dataset to calculate home distributions because it filters on ISO instead of full country name
-  # (and also )
   
   # update country names to fit with iso_gaul_map (for use when you actually DO calculate props by country name)
   survey_key[, Status:=NULL]
@@ -177,10 +172,6 @@ for (this_year in prediction_years){
                                  by="year", all=T)
   stock_and_flow_access <- stock_and_flow_access[, list(iso3, year=this_year, month, nat_access, emplogit_nat_access)]
   
-  if (this_year==2007){
-    write.csv(stock_and_flow_access, file=file.path(output_dir, "national_access_2007_for_comparison.csv"), row.names = F)
-  }
-  
   ## Create INLA Prediction objects  ## ---------------------------------------------------------
   
   print("creating INLA prediction objects")
@@ -216,7 +207,7 @@ for (this_year in prediction_years){
       predictions[, fixed:= as.matrix(these_covs[, rownames(fixed_effects), with=F]) %*% fixed_effects$mean]
       predictions[, random:= predicted_random]
       predictions[, full:= fixed + random]
-      predictions[, final_prediction := Inv.IHS(full, theta=theta)] # TODO: confirm the inverse ihs function is correct
+      predictions[, final_prediction := inv_ihs(full, theta=theta)] # TODO: confirm the inverse ihs function is correct
       
       predictions <- merge(predictions, prediction_cells[, list(cellnumber=row_id, iso3)], by="cellnumber", all=T)
       
@@ -237,10 +228,6 @@ for (this_year in prediction_years){
   setnames(acc_dev_predictions, "final_prediction", "access_deviation")
   acc_dev_predictions <- merge(acc_dev_predictions, stock_and_flow_access, by=c("iso3", "year", "month"), all.x=T)
   acc_dev_predictions[, emplogit_access:= emplogit_nat_access + access_deviation]
-  
-  if (this_year==2007){
-    write.csv(acc_dev_predictions, file=file.path(output_dir, "acc_dev_2007_for_comparison.csv"), row.names = F)
-  }
   
   # todo: definitely something weird with emplogit and access dev
   acc_dev_predictions_transformed <- acc_dev_predictions[, list(iso3, year, month, cellnumber, 
@@ -271,9 +258,9 @@ for (this_year in prediction_years){
   
   # write files
   print("writing access tifs")
-  writeRaster(access_map, file.path(output_dir, paste0('ITN_',this_year,'.ACC.tif')),NAflag=-9999,overwrite=TRUE)
-  writeRaster(deviation_map, file.path(output_dir, paste0('ITN_',this_year,'.DEV.tif')),NAflag=-9999,overwrite=TRUE)
-  writeRaster(nat_mean_map, file.path(output_dir, paste0('ITN_', this_year,'.MEAN.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(access_map, file.path(output_dir, paste0("ITN_",this_year,".ACC.tif")),NAflag=-9999,overwrite=TRUE)
+  writeRaster(deviation_map, file.path(output_dir, paste0("ITN_",this_year,".DEV.tif")),NAflag=-9999,overwrite=TRUE)
+  writeRaster(nat_mean_map, file.path(output_dir, paste0("ITN_", this_year,".MEAN.tif")),NAflag=-9999,overwrite=TRUE)
   
   # DELETE AFTER MODEL COMPARE: write files with buggy transformations to mimic Sam's code for deviation and national mean
   sam_odd <- acc_dev_predictions[, list(nat_access=mean(emplogit_nat_access),
@@ -290,8 +277,8 @@ for (this_year in prediction_years){
   odd_nat_mean_map[sam_odd$cellnumber] <- sam_odd$nat_access
   odd_nat_mean_map[!is.na(national_raster) & is.na(odd_nat_mean_map)] <- 0
   
-  writeRaster(odd_deviation_map, file.path(output_dir, paste0('ITN_',this_year,'.ODD_DEV.tif')),NAflag=-9999,overwrite=TRUE)
-  writeRaster(odd_nat_mean_map, file.path(output_dir, paste0('ITN_', this_year,'.ODD_MEAN.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(odd_deviation_map, file.path(output_dir, paste0("ITN_",this_year,".ODD_DEV.tif")),NAflag=-9999,overwrite=TRUE)
+  writeRaster(odd_nat_mean_map, file.path(output_dir, paste0("ITN_", this_year,".ODD_MEAN.tif")),NAflag=-9999,overwrite=TRUE)
   
   ## Predict use  ## ---------------------------------------------------------
   
@@ -305,11 +292,6 @@ for (this_year in prediction_years){
   
   use_gap_predictions <- merge(use_gap_predictions, acc_dev_predictions, by=c("iso3", "year", "month", "cellnumber"), all=T)
   use_gap_predictions[, emplogit_use:= emplogit_access - use_gap]
-  
-  if (this_year==2007){
-    write.csv(use_gap_predictions, file=file.path(output_dir, "use_gap_2007_for_comparison.csv"), row.names = F)
-  }
-  
   
   use_gap_predictions_transformed <- use_gap_predictions[, list(iso3, year, month, cellnumber, 
                                                     use=plogis(emplogit_use),
@@ -331,8 +313,8 @@ for (this_year in prediction_years){
   
   # write files
   print("writing use tifs")
-  writeRaster(use_map, file.path(output_dir, paste0('ITN_',this_year,'.USE.tif')),NAflag=-9999,overwrite=TRUE)
-  writeRaster(use_gap_map, file.path(output_dir, paste0('ITN_',this_year,'.GAP.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(use_map, file.path(output_dir, paste0("ITN_",this_year,".USE.tif")),NAflag=-9999,overwrite=TRUE)
+  writeRaster(use_gap_map, file.path(output_dir, paste0("ITN_",this_year,".GAP.tif")),NAflag=-9999,overwrite=TRUE)
   
   
   # DELETE AFTER MODEL COMPARE: write files with buggy transformations to mimic Sam's code for deviation and national mean
@@ -342,16 +324,16 @@ for (this_year in prediction_years){
   odd_gap_map[sam_odd_use$cellnumber] <- sam_odd_use$use_gap
   odd_gap_map[!is.na(national_raster) & is.na(odd_gap_map)] <- 0
   
-  writeRaster(odd_gap_map, file.path(output_dir, paste0('ITN_', this_year,'.ODD_GAP.tif')),NAflag=-9999,overwrite=TRUE)
+  writeRaster(odd_gap_map, file.path(output_dir, paste0("ITN_", this_year,".ODD_GAP.tif")),NAflag=-9999,overwrite=TRUE)
   
 }
 
 
-## 'squash' certain years to zero  ## ---------------------------------------------------------
+## "squash" certain years to zero  ## ---------------------------------------------------------
 
 if (2016 %in% prediction_years){
   print("Squashing early years") # check: I think these are use estimates from the bucket model
-  stock_and_flow_use <- fread(file.path(joint_dir, 'indicators_access_qtr_new.csv'))
+  stock_and_flow_use <- fread(file.path(joint_dir, "indicators_access_qtr_new.csv"))
   stock_and_flow_use <- stock_and_flow_use[2:nrow(stock_and_flow_use)]
   names(stock_and_flow_use) <- c("country", seq(2000, 2018, 0.25))
   stock_and_flow_use <- melt(stock_and_flow_use, id.vars = "country", variable.name="year", value.name="use")
@@ -391,7 +373,7 @@ if (2016 %in% prediction_years){
     gauls_to_squash <- squash_map[year==this_year & to_squash==1]$gaul
     new_use[national_raster %in% gauls_to_squash] <- 0
     
-    writeRaster(new_use, file.path(output_dir, paste0('ITN_',this_year,'.RAKED_USE.tif')),NAflag=-9999,overwrite=TRUE)
+    writeRaster(new_use, file.path(output_dir, paste0("ITN_",this_year,".RAKED_USE.tif")),NAflag=-9999,overwrite=TRUE)
   }
   
 }

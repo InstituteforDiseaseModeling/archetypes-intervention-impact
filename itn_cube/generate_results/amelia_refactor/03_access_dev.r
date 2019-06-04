@@ -35,7 +35,7 @@ if(Sys.getenv("input_dir")=="") {
 }
 
 # load relevant functions
-source(file.path(func_dir, "03_access_dev_functions.r"))
+source(file.path(func_dir, "03_05_general_functions.r"))
 
 set.seed(212)
 
@@ -73,15 +73,15 @@ data[, yearqtr:=pmin(yearqtr, 2014.75)]
 
 # calculate access deviation for data points, 
 # transform via empirical logit and inverse hyperbolic sine
-data[, emp_access_dev:= emplogit2(P, N) - emplogit(Amean, 1000)]
+data[, emp_access_dev:= emplogit2(P, N) - emplogit(Amean, 1000)] # p: # w/access; n: # in hh; Amean: mean access
 
-theta<-optimise(IHS.loglik, lower=0.001, upper=50, x=data$emp_access_dev, maximum=TRUE) # 2.0407
+theta<-optimise(ihs_loglik, lower=0.001, upper=50, x=data$emp_access_dev, maximum=TRUE) # 2.0407
 theta_acc<-theta$maximum
 
-data[, ihs_emp_access_dev:=IHS(emp_access_dev, theta_acc)] 
+data[, ihs_emp_access_dev:=ihs(emp_access_dev, theta_acc)] 
 
 # transform data from latlong to cartesian coordinates
-xyz<-ll.to.xyz(data[, list(row_id, longitude=lon, latitude=lat)])
+xyz<-ll_to_xyz(data[, list(row_id, longitude=lon, latitude=lat)])
 
 data <- merge(data, xyz, by="row_id", all=T)
 
@@ -137,8 +137,8 @@ stack_est<-inla.stack(stack_est)
 
 model_formula<- as.formula(paste(
                           paste("response ~ -1 + Intercept  + "),
-                          paste("f(field, model=spde_matern, group=field.group, control.group=list(model='ar1')) + ",sep=""),
-                          paste(cov_names,collapse='+'),
+                          paste("f(field, model=spde_matern, group=field.group, control.group=list(model="ar1")) + ",sep=""),
+                          paste(cov_names,collapse="+"),
                           sep=""))
 
 #-- Call INLA and get results --#
@@ -148,8 +148,8 @@ mod_pred_acc =   inla(model_formula,
                   control.predictor=list(A=inla.stack.A(stack_est), compute=TRUE,quantiles=NULL),
                   control.compute=list(cpo=TRUE,waic=TRUE),
                   keep=FALSE, verbose=TRUE,
-                  control.inla= list(strategy = 'gaussian',
-                                     int.strategy='ccd', # close composite design ?
+                  control.inla= list(strategy = "gaussian",
+                                     int.strategy="ccd", # close composite design ?
                                      verbose=TRUE,
                                      step.factor=1,
                                      stupid.search=FALSE)

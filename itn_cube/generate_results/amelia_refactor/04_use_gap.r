@@ -3,12 +3,12 @@
 ## Amelia Bertozzi-Villa
 ## May 2019
 ## 
-## A restructuring of Sam Bhatt's original code to run the INLA model for use gap (difference between access
+## A restructuring of Sam Bhatt"s original code to run the INLA model for use gap (difference between access
 ## and use.)
 ## 
 ##############################################################################################################
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/04_use_gap.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/04_use_gap.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/ --command "Rscript ${CODE}"
 
 
 rm(list=ls())
@@ -35,7 +35,7 @@ if(Sys.getenv("input_dir")=="") {
 }
 
 # load relevant functions
-source(file.path(func_dir, "03_access_dev_functions.r"))
+source(file.path(func_dir, "03_05_general_functions.r"))
 
 set.seed(212)
 
@@ -78,13 +78,13 @@ data[, yearqtr:=pmin(yearqtr, 2013.75)]
 # calculate use gap for data points (USING GAP2 FROM DATABASE CREATION), 
 # transform via empirical logit and inverse hyperbolic sine
 
-theta<-optimise(IHS.loglik, lower=0.001, upper=50, x=data$gap2, maximum=TRUE) 
+theta<-optimise(ihs_loglik, lower=0.001, upper=50, x=data$gap2, maximum=TRUE) 
 theta_use<-theta$maximum
 
-data[, ihs_gap2:=IHS(gap2, theta_use)] 
+data[, ihs_gap2:=ihs(gap2, theta_use)] 
 
 # transform data from latlong to cartesian coordinates
-xyz<-ll.to.xyz(data[, list(row_id, longitude=lon, latitude=lat)])
+xyz<-ll_to_xyz(data[, list(row_id, longitude=lon, latitude=lat)])
 
 data <- merge(data, xyz, by="row_id", all=T)
 
@@ -139,8 +139,8 @@ stack_est<-inla.stack(stack_est)
 
 model_formula<- as.formula(paste(
   paste("response ~ -1 + Intercept  + "),
-  paste("f(field, model=spde_matern, group=field.group, control.group=list(model='ar1')) + ",sep=""),
-  paste(cov_names,collapse='+'),
+  paste("f(field, model=spde_matern, group=field.group, control.group=list(model="ar1")) + ",sep=""),
+  paste(cov_names,collapse="+"),
   sep=""))
 
 #-- Call INLA and get results --#
@@ -150,8 +150,8 @@ mod_pred_use =   inla(model_formula,
                   control.predictor=list(A=inla.stack.A(stack_est), compute=TRUE,quantiles=NULL),
                   control.compute=list(cpo=TRUE,waic=TRUE),
                   keep=FALSE, verbose=TRUE,
-                  control.inla= list(strategy = 'gaussian',
-                                     int.strategy='ccd', # close composite design ?
+                  control.inla= list(strategy = "gaussian",
+                                     int.strategy="ccd", # close composite design ?
                                      verbose=TRUE,
                                      step.factor=1,
                                      stupid.search=FALSE)
