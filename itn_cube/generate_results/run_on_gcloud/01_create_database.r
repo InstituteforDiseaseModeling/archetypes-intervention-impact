@@ -16,17 +16,15 @@ package_load <- function(package_list){
 package_load(c("zoo","raster","VGAM", "doParallel", "data.table"))
 
 # current dsub:
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/For_Database joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/01_create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/01_create_database.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-16 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/input_data_archive --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/01_create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/01_create_database.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_ --command 'Rscript ${CODE}'
 
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
 if(Sys.getenv("input_dir")=="") {
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
   input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/input"
   output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/create_database/output"
   func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/create_database_functions.r"
 } else {
-  joint_dir <- Sys.getenv("joint_dir")
   input_dir <- Sys.getenv("input_dir")
   output_dir <- Sys.getenv("output_dir")
   func_fname <- Sys.getenv("func_fname")
@@ -38,14 +36,14 @@ out_fname <- file.path(output_dir, '01_database.csv')
 
 # p0 & p1-- from stock & flow, nat'l time series of p0=p(hh has >0 nets) and p1=avg # of nets
 # 40 countries (list length), houshold size 1-10 (columns)
-load(file.path(input_dir, "prop0prop1.rData"))
-KEY <- read.csv(file.path(input_dir, "KEY_080817.csv"))
+load(file.path(input_dir, "stock_and_flow/prop0prop1.rData"))
+KEY <- read.csv(file.path(input_dir, "stock_and_flow/props_key.csv"))
 
 # Cout is a vector of ISOs in prop0prop1.rData
 Country.list<-Cout
 
 # load household data, keep only those in country list
-HH<-read.csv(file.path(input_dir, "ALL_HH_Data_20112017.csv"),stringsAsFactors=F)
+HH<-read.csv(file.path(input_dir, "database/ALL_HH_Data_20112017.csv"),stringsAsFactors=F)
 HH<-HH[HH$ISO3%in%Country.list,]
 
 # Remove households with size zero or NA
@@ -174,7 +172,7 @@ print(paste('**OUTPUT MESSAGE** remove points with 0 lat 0 lon: there are - ',nr
 data<-data[data$lat!=0 & data$lon!=0,]
 
 # Check for invalid points, and attempt to reposition them
-cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) # master country layer
+cn<-raster(file.path(input_dir, 'general/african_cn5km_2013_no_disputes.tif')) # master country layer
 NAvalue(cn)=-9999
 data$yearqtr<-as.numeric(as.yearqtr(data$year))
 
