@@ -8,7 +8,7 @@
 ## 
 ##############################################################################################################
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/ --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/05_predict_itn.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/05_predictions --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_replicate_sam func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor joint_dir=gs://map_data_z/users/amelia/itn_cube/input_data_archive/ --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/05_predict_itn.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_replicate_sam/05_predictions --command 'Rscript ${CODE}'
 
 rm(list=ls())
 
@@ -22,11 +22,11 @@ package_load <- function(package_list){
 package_load(c("zoo", "VGAM", "raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction/05_predictions/"
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_replicate_sam//"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_replicate_sam/05_predictions/"
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data_archive"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
-  cov_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
+  cov_dir <- "/Volumes/GoogleDrive/Shared drives/cubes/5km incomplete/"
 } else {
   input_dir <- Sys.getenv("input_dir")
   output_dir <- Sys.getenv("output_dir") 
@@ -36,7 +36,6 @@ if(Sys.getenv("input_dir")=="") {
 }
 
 # directories
-joint_dir <- file.path(joint_dir, "For_Prediction")
 set.seed(212)
 
 # TODO: load shapefiles and templates only when you're actually plotting (objects named World, Africa, Water, img)
@@ -53,7 +52,7 @@ source(file.path(func_dir, "03_05_general_functions.r"))
 all_prediction_years <- 2000:2016
 
 # temp
-prediction_years <- 2009:2016
+prediction_years <- 2000:2016
 
 ## Load Covariates  ## ---------------------------------------------------------
 
@@ -81,7 +80,7 @@ for (this_year in prediction_years){
   
   
   ## Get locations in x-y-z space of each pixel centroid for prediction ## ---------------------------------------------------------
-  national_raster_dir <- file.path(joint_dir, "../african_cn5km_2013_no_disputes.tif")
+  national_raster_dir <- file.path(joint_dir, "general/african_cn5km_2013_no_disputes.tif")
   national_raster <- raster(national_raster_dir)
   NAvalue(national_raster) <- -9999
   
@@ -101,15 +100,15 @@ for (this_year in prediction_years){
   orig_stock_and_flow <- fread(file.path(input_dir, "01_stock_and_flow_prepped.csv"))
   stock_and_flow <- orig_stock_and_flow[year>=this_year & year<(this_year+1)] # keep only the years we want to predict
   
-  iso_gaul_map<-fread(file.path(joint_dir, "../country_table_populations.csv")) # load table to match gaul codes to country names
+  iso_gaul_map<-fread(file.path(joint_dir, "general/country_table_populations.csv")) # load table to match gaul codes to country names
   setnames(iso_gaul_map, c("GAUL_CODE", "COUNTRY_ID", "NAME"), c("gaul", "iso3", "country"))
 
   prediction_cells <- merge(prediction_cells, iso_gaul_map, by="gaul", all.x=T)
   
   # load household size distributions for each survey
   # TODO: rename this to "stock and flow", move national use vals to this folder
-  hh_sizes<-fread(file.path(joint_dir, "Bucket_Model/HHsize.csv"))
-  survey_key=fread(file.path(joint_dir, "Bucket_Model/KEY.csv"))
+  hh_sizes<-fread(file.path(joint_dir, "stock_and_flow/HHsize.csv"))
+  survey_key=fread(file.path(joint_dir, "stock_and_flow/hh_surveys_key.csv"))
   
   # format hh_sizes
   hh_sizes[, V1:=NULL]
@@ -333,7 +332,7 @@ for (this_year in prediction_years){
 
 if (2016 %in% prediction_years){
   print("Squashing early years") # check: I think these are use estimates from the bucket model
-  stock_and_flow_use <- fread(file.path(joint_dir, "indicators_access_qtr_new.csv"))
+  stock_and_flow_use <- fread(file.path(joint_dir, "stock_and_flow/indicators_access_qtr_new.csv"))
   stock_and_flow_use <- stock_and_flow_use[2:nrow(stock_and_flow_use)]
   names(stock_and_flow_use) <- c("country", seq(2000, 2018, 0.25))
   stock_and_flow_use <- melt(stock_and_flow_use, id.vars = "country", variable.name="year", value.name="use")

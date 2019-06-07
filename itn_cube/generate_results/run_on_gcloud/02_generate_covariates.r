@@ -8,7 +8,7 @@
 # '/home/drive/cubes/5km/worldclim/prec57a0.tif'
 
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input database_fname=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/01_database.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/02_generate_covariates.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input database_fname=gs://map_data_z/users/amelia/itn_cube/results/20190606_rerun_sam/01_database.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/02_generate_covariates.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_rerun_sam/ --command 'Rscript ${CODE}'
 
 rm(list=ls())
 

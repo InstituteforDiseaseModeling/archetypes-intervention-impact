@@ -8,7 +8,7 @@
 ## 
 ##############################################################################################################
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/03_access_dev.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_replicate_sam func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor --input CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/03_access_dev.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_replicate_sam/ --command 'Rscript ${CODE}'
 
 
 rm(list=ls())
@@ -23,14 +23,12 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_replicate_sam//"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_replicate_sam//"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
 } else {
   input_dir <- Sys.getenv("input_dir")
   output_dir <- Sys.getenv("output_dir") 
-  joint_dir <- Sys.getenv("joint_dir") # location for shared datasets across itn cube scripts
   func_dir <- Sys.getenv("func_dir") # code directory for function scripts
 }
 
@@ -137,7 +135,7 @@ stack_est<-inla.stack(stack_est)
 
 model_formula<- as.formula(paste(
                           paste("response ~ -1 + Intercept  + "),
-                          paste("f(field, model=spde_matern, group=field.group, control.group=list(model="ar1")) + ",sep=""),
+                          paste("f(field, model=spde_matern, group=field.group, control.group=list(model='ar1')) + ",sep=""),
                           paste(cov_names,collapse="+"),
                           sep=""))
 
