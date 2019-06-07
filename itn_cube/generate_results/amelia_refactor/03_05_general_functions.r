@@ -54,7 +54,7 @@ inv_ihs <- function(x, theta){
 ihs_loglik <- function(theta,x){
   
   n <- length(x)
-  xt <- IHS(x, theta)
+  xt <- ihs(x, theta)
   
   log.lik <- -n*log(sum((xt - mean(xt))^2))- sum(log(1+theta^2*x^2))
   return(log.lik)

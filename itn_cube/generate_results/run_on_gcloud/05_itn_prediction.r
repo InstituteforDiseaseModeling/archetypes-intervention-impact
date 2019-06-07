@@ -1,7 +1,7 @@
 
 # STEP 5: PREDICT
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive in_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/ cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/05_itn_prediction.r --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/05_predictions --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive in_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_rerun_sam joint_dir=gs://map_data_z/users/amelia/itn_cube/input_data_archive/  cov_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/05_itn_prediction.r  --output-recursive out_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_rerun_sam/05_predictions --command 'Rscript ${CODE}'
 
 # from access deviation and use gap, predict coverage and map all surfaces
 
@@ -29,16 +29,14 @@ if(Sys.getenv("in_dir")=="") {
   func_dir <- Sys.getenv("func_dir") # code directory for function scripts
 }
 
-joint_dir <- file.path(joint_dir, "For_Prediction")
-
 # load shapefiles and templates for plotting
-World<-readShapePoly(file.path(joint_dir, 'MAP_templates_Africa', 'afri_word.shp'))
+World<-readShapePoly(file.path(joint_dir, 'for_plots_and_tables/MAP_templates_Africa', 'afri_word.shp'))
 World <- gSimplify(World, tol=0.1, topologyPreserve=TRUE)
-Africa<-readShapePoly(file.path(joint_dir, 'MAP_templates_Africa', 'Africa.shp'))
+Africa<-readShapePoly(file.path(joint_dir, 'for_plots_and_tables/MAP_templates_Africa', 'Africa.shp'))
 Africa <- gSimplify(Africa, tol=0.1, topologyPreserve=TRUE)
-Water<-readShapePoly(file.path(joint_dir, 'MAP_templates_Africa', 'africa_water.shp'))
+Water<-readShapePoly(file.path(joint_dir, 'for_plots_and_tables/MAP_templates_Africa', 'africa_water.shp'))
 Water <- gSimplify(Water, tol=0.1, topologyPreserve=TRUE)
-img <- readPNG(file.path(joint_dir, 'map-logo_bg.png'))
+img <- readPNG(file.path(joint_dir, 'for_plots_and_tables/map-logo_bg.png'))
 print("loaded shapefiles and templates for plotting")
 
 # load access and gap estimates
@@ -55,10 +53,6 @@ mesh.use<-mesh
 
 #overwrite like-named functions in INLAfunctions.r
 source(file.path(func_dir, "05_itn_prediction_functions.r"))
-
-if (!joint_dir %like% "For_Prediction"){
-  joint_dir <- file.path(joint_dir, "For_Prediction")
-}
 
 
 # HUGE Prediction Loop ----------------------------------------------------------------------------####################### 
@@ -151,7 +145,7 @@ for(xxx in 1:length(time_points)){
   ####################################################################################################################
   #### get access mean from stock and flow
   print("loading stock and flow means")
-  cn<-raster(file.path(joint_dir, '../african_cn5km_2013_no_disputes.tif')) #load raster
+  cn<-raster(file.path(joint_dir, 'general/african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   pred_val<-getValues(cn)#get values again
   w<-is.na(pred_val) #find NAs again
@@ -160,8 +154,8 @@ for(xxx in 1:length(time_points)){
   gauls<-cn[index]
   
   
-  load(file.path(joint_dir, '../For_Database', 'prop0prop1.rData'))
-  POPULATIONS<-read.csv(file.path(joint_dir, 'National_Config_Data.csv'))
+  load(file.path(joint_dir, 'stock_and_flow/prop0prop1.rData'))
+  POPULATIONS<-read.csv(file.path(joint_dir, 'general/National_Config_Data.csv'))
   Country.list<-Cout
   Country.gaul<-Cout
   for(i in 1:length(Country.gaul)){
@@ -213,8 +207,8 @@ for(xxx in 1:length(time_points)){
       eval(parse(text=paste0('func1[[',f,']]<-approxfun(times_ind,p1[,',f,'])')))
     }
     # load household size distribution
-    hh<-read.csv(file.path(joint_dir, 'Bucket_Model/HHsize.csv'))
-    KEY=read.csv(file.path(joint_dir, 'Bucket_Model/KEY.csv'))
+    hh<-read.csv(file.path(joint_dir, 'stock_and_flow/HHsize.csv'))
+    KEY=read.csv(file.path(joint_dir, 'stock_and_flow/hh_surveys_key.csv'))
     cn_nm<-as.character(KEY[KEY$Name%in%Country.list[i],'Svy.Name'])
     hh_val<-hh[hh$HHSurvey%in%cn_nm,]
     if(nrow(hh_val)!=0){
@@ -628,7 +622,7 @@ print("summary.pdf plotted")
 print("running final adjustments and plotting")
 # this routine adjust use numbers to zero in bad years and label files the same as before for backward compatibility
 print("loading indicators")
-indicators<-read.csv(file.path(joint_dir, 'indicators_access_qtr_new.csv'))
+indicators<-read.csv(file.path(joint_dir, 'stock_and_flow/indicators_access_qtr_new.csv'))
 
 ind<-matrix(nrow=nrow(indicators),ncol=17)
 for(i in 1:nrow(indicators)){
@@ -640,7 +634,7 @@ indicators<-ind
 
 # todo: does this POPULATIONS pull a different file than the one earlier in the script?
 print("loading populations")
-POPULATIONS<-read.csv(file.path(joint_dir, '../country_table_populations.csv')) # load table to match gaul codes to country names
+POPULATIONS<-read.csv(file.path(joint_dir, 'general/country_table_populations.csv')) # load table to match gaul codes to country names
 names<-as.character(rownames(ind))
 #for(i in 1:nrow(indicators)){
 #	names[i]=as.character(POPULATIONS[as.character(POPULATIONS$NAME)==names[i],'COUNTRY_ID']) # get 3 letter country codes
@@ -687,7 +681,7 @@ print(p)
 
 
 stv<-getValues(st)
-cn<-raster(file.path(joint_dir, '../african_cn5km_2013_no_disputes.tif'))
+cn<-raster(file.path(joint_dir, 'general/african_cn5km_2013_no_disputes.tif'))
 cnv<-getValues(cn)
 for(i in 1:nrow(indmat)){
   gaul<-POPULATIONS[as.character(POPULATIONS$NAME)==rownames(ind)[i],'GAUL_CODE']

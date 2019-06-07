@@ -21,30 +21,29 @@ package_load <- function(package_list){
 package_load(c("zoo","raster","VGAM", "doParallel", "data.table", "lubridate"))
 
 # current dsub:
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-4 --logging gs://map_data_z/users/amelia/logs --input-recursive joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/01_create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/01_create_database.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-4 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/input_data_archive --input func_fname=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/01_create_database_functions.r CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/01_create_database.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_replicate_sam/ --command 'Rscript ${CODE}'
 
 # Data loading, household-level access/use stats  ------------------------------------------------------------
 
-if(Sys.getenv("joint_dir")=="") {
+if(Sys.getenv("input_dir")=="") {
   # gcsfuse drives are just too laggy
-  # joint_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/joint_data"
+  # input_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/joint_data"
   # output_dir <- "/Users/bertozzivill/Desktop/zdrive_mount/users/amelia/itn_cube/create_database/output"
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction/"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_replicate_sam/"
   func_fname <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/01_create_database_functions.r"
 } else {
-  joint_dir <- Sys.getenv("joint_dir")
+  input_dir <- Sys.getenv("input_dir")
   output_dir <- Sys.getenv("output_dir")
   func_fname <- Sys.getenv("func_fname")
 }
 
 source(func_fname)
 out_fname <- file.path(output_dir, "01_database.csv")
-input_dir <- file.path(joint_dir, "For_Database")
 
 # p0 & p1-- from stock & flow, nat'l time series of p0=p(hh has 0 nets) and p1=avg # of nets
 # 40 countries (list length), houshold size 1-10 (columns)
-load(file.path(input_dir, "prop0prop1.rData")) # contains "out" (list of stock and flow time series) and "Cout" (country names)
+load(file.path(input_dir, "stock_and_flow/prop0prop1.rData")) # contains "out" (list of stock and flow time series) and "Cout" (country names)
 stock_and_flow_isos<-Cout # Cout is a vector of ISOs in prop0prop1.rData
 names(out) <- stock_and_flow_isos
 
@@ -81,8 +80,8 @@ stock_and_flow_outputs <- rbindlist(stock_and_flow_outputs)
 stock_and_flow_outputs[, hh_size:=as.integer(hh_size)]
 
 # load household data and survey-to-country key, keep only those in country list
-survey_to_country_key <- read.csv(file.path(input_dir, "KEY_080817.csv"))  #TODO: is this used?
-HH<-fread(file.path(input_dir, "ALL_HH_Data_20112017.csv")) # todo: come back and delete cols we don't need. also rename this
+survey_to_country_key <- read.csv(file.path(input_dir, "stock_and_flow/props_key.csv"))  #TODO: is this used?
+HH<-fread(file.path(input_dir, "database/ALL_HH_Data_20112017.csv")) # todo: come back and delete cols we don't need. also rename this
 HH<-HH[ISO3 %in% stock_and_flow_isos]
 # TODO: remove missing values up here instead of at the end
 
@@ -193,7 +192,7 @@ print(paste("**OUTPUT MESSAGE** remove points with 0 lat 0 lon: there are - ", n
 final_data<-final_data[lat!=0 & lon!=0]
 
 # Check for invalid points, and attempt to reposition them
-cn<-raster(file.path(joint_dir, "african_cn5km_2013_no_disputes.tif")) # master country layer
+cn<-raster(file.path(input_dir, "general/african_cn5km_2013_no_disputes.tif")) # master country layer
 NAvalue(cn)=-9999
 final_data$yearqtr<-as.numeric(as.yearqtr(final_data$year))
 

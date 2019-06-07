@@ -1,7 +1,7 @@
 
 # STEP 3: ACCESS DEVIATION
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/03_acc_deviation.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190507_sam_withseeds/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_rerun_sam joint_dir=gs://map_data_z/users/amelia/itn_cube/input_data_archive func_dir=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud --input CODE=gs://map_data_z/users/amelia/itn_cube/code/run_on_gcloud/03_acc_deviation.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_rerun_sam/ --command 'Rscript ${CODE}'
 
 
 rm(list=ls())
@@ -16,9 +16,9 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190507_sam_withseeds/"
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
+  input_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_rerun_sam/"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_rerun_sam/"
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data_archive"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/run_on_gcloud/"
 } else {
   input_dir <- Sys.getenv("input_dir")
@@ -100,9 +100,9 @@ if(STANDARD){
 
 drow<-nrow(data) ## Number of data points
 # load country rasters
-cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif'))
+cn<-raster(file.path(joint_dir, 'general/african_cn5km_2013_no_disputes.tif'))
 NAvalue(cn)<--9999
-POPULATIONS<-read.csv(file.path(joint_dir, 'country_table_populations.csv')) # load table to match gaul codes to country names
+POPULATIONS<-read.csv(file.path(joint_dir, 'general/country_table_populations.csv')) # load table to match gaul codes to country names
 
 # adjust timing of data? this feels important****
 data$yearqtr[data$yearqtr>=2015]=2014.75

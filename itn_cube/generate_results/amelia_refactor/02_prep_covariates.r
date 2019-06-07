@@ -7,7 +7,7 @@
 ## 
 ##############################################################################################################
 
-# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor joint_dir=gs://map_data_z/users/amelia/itn_cube/joint_data/ --input database_fname=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/01_database.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/02_prep_covariates.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190521_replicate_prediction/ --command 'Rscript ${CODE}'
+# dsub --provider google-v2 --project my-test-project-210811 --image gcr.io/my-test-project-210811/map_geospatial --regions europe-west1 --label "type=itn_cube" --machine-type n1-standard-64 --logging gs://map_data_z/users/amelia/logs --input-recursive input_dir=gs://map_data_z/cubes_5km func_dir=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor joint_dir=gs://map_data_z/users/amelia/itn_cube/input_data_archive/ --input database_fname=gs://map_data_z/users/amelia/itn_cube/results/20190606_replicate_sam/01_database.csv CODE=gs://map_data_z/users/amelia/itn_cube/code/amelia_refactor/02_prep_covariates.r --output-recursive output_dir=gs://map_data_z/users/amelia/itn_cube/results/20190606_replicate_sam/ --command 'Rscript ${CODE}'
 
 rm(list=ls())
 
@@ -21,12 +21,11 @@ package_load <- function(package_list){
 package_load(c("zoo","raster", "doParallel", "data.table", "rgdal", "INLA", "RColorBrewer", "cvTools", "boot", "stringr", "dismo", "gbm"))
 
 if(Sys.getenv("input_dir")=="") {
-  # todo: make database output go to joint_data
-  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//01_database.csv"
-  input_dir <- "/Volumes/GoogleDrive/Team Drives/cubes/5km incomplete/"
-  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/joint_data"
+  database_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_replicate_sam//01_database.csv"
+  input_dir <- "/Volumes/GoogleDrive/Shared drives/cubes/5km incomplete/"
+  joint_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data_archive"
   func_dir <- "/Users/bertozzivill/repos/malaria-atlas-project/itn_cube/generate_results/amelia_refactor/"
-  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190521_replicate_prediction//"
+  output_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20190606_replicate_sam//"
 } else {
   database_fname <- Sys.getenv("database_fname") # location of output file from generate_database_refactored.r
   input_dir <- Sys.getenv("input_dir") # here, location of covariate data 
@@ -50,7 +49,7 @@ cov_dt[, used_sam:= as.logical(used_sam)]
 cov_dt <- cov_dt[used_sam==T]
 
 # find the "valid" cell values for which we want to predict in step 5
-raster_indices <- which_non_null(file.path(joint_dir, "african_cn5km_2013_no_disputes.tif"))
+raster_indices <- which_non_null(file.path(joint_dir, "general/african_cn5km_2013_no_disputes.tif"))
 
 
 ### Static covariates  ----------------------------------------------------------------------------#######################  
@@ -185,6 +184,7 @@ setnames(all_dynamic, "sub_cellnumber", "cellnumber")
 setnames(all_dynamic, "flooryear", "year")
 
 # save dynamic covariates(by year)
+print("saving dynamic covariates by year")
 for (this_year in prediction_years){
   write.csv(all_dynamic[year==this_year], file.path(dynamic_outdir, paste0("dynamic_", this_year,".csv")), row.names=F)
 }

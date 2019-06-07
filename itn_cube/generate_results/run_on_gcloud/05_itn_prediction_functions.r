@@ -86,7 +86,7 @@ get.indicators.model<-function(mat,nc,nr){
 }
 
 
-get.pred.locs<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
+get.pred.locs<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/input_data_archive/general"){
   cn<-raster(file.path(in_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   pred_val<-getValues(cn)#get values again
@@ -106,7 +106,7 @@ get.pred.locs<-function(in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_c
 
 
 get.pred.covariates.dynamic<-function(year,month, cov_dir="/mnt/data/input/gs/map_data_z/cubes_5km", 
-                                      joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
+                                      joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/input_data_archive/general"){
   
   dynamic_covnames <- c("LST_day/mean", "LST_night/mean", "EVI/mean", "TCW/mean", "TSI/mean")
   #' foldersd<-c('/home/drive/cubes/5km/LST_day/mean/',
@@ -145,7 +145,7 @@ get.pred.covariates.dynamic<-function(year,month, cov_dir="/mnt/data/input/gs/ma
 }
 
 get.pred.covariates.yearonly<-function(year,cov_dir="/mnt/data/input/gs/map_data_z/cubes_5km", 
-                                       joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
+                                       joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/input_data_archive/general/"){
   # foldery<-c('/home/drive/cubes/5km/IGBP_Landcover/Fraction/','/home/drive/cubes/5km/AfriPop/')
   cn<-raster(file.path(joint_dir, 'african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
@@ -184,7 +184,7 @@ get.pred.covariates.yearonly<-function(year,cov_dir="/mnt/data/input/gs/map_data
 }
 
 get.pred.covariates.static<-function(cov_dir="/mnt/data/input/gs/map_data_z/cubes_5km", 
-                                     joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data"){
+                                     joint_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/input_data_archive/general"){
   
   #### static covariates
   #### folders
@@ -398,12 +398,12 @@ gap_range<-function(in_dir){ # previously: in_dir="/mnt/data/input/gs/map_data_z
 
 
 ## what is cn? country? 
-get.cn.estimates<-function(r,pop, in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/joint_data/For_Prediction"){
-  database<-read.csv(file.path(in_dir, 'country_table.csv'))
-  cn<-raster(file.path(in_dir, '../african_cn5km_2013_no_disputes.tif')) #load raster
+get.cn.estimates<-function(r,pop, in_dir="/mnt/data/input/gs/map_data_z/users/amelia/itn_cube/input_data_archive"){
+  database<-read.csv(file.path(in_dir, 'for_plots_and_tables/country_table.csv'))
+  cn<-raster(file.path(in_dir, 'general/african_cn5km_2013_no_disputes.tif')) #load raster
   NAvalue(cn)=-9999
   try(if(extent(cn)!=extent(r)) stop("extents do not match"))
-  limits<-raster(file.path(in_dir, 'Pf_Limits/Pf_limits.tif'))
+  limits<-raster(file.path(in_dir, 'for_plots_and_tables/Pf_Limits/Pf_limits.tif'))
   NAvalue(limits)=-9999
   # stable only limits
   limits[limits==2]=2
