@@ -15,11 +15,14 @@ main_dir <- file.path(root_dir,
 lookup_dir <- file.path(main_dir, 
                       "lookup_tables/interactions")
 orig_pr_dir <- file.path(main_dir, 
-                         "megatrends/pete_analysis/actual_ssp2_base2000_2050.tif")
+                         "megatrends/pete_analysis/actual_ssp2_base2016_2050.tif")
 
-out_dir <- file.path(main_dir, "megatrends")
-base_label <- "Megatrends Base 2000"
-interventions <- c( "ITN 0.8; ACT 0.8;", "ITN 0.8; IRS 0.8; ACT 0.8;") 
+out_dir <- file.path(main_dir, "megatrends_gates_2019")
+base_label <- "Megatrends Base 2016"
+interventions <- c("Baseline:0%, ATSB Initial Kill:1%",
+                   "Baseline:20%, ATSB Initial Kill:1%",
+                   "Baseline:40%, ATSB Initial Kill:1%",
+                   "Baseline:60%, ATSB Initial Kill:1%") 
 
 # set 'repro' to true if you want a reproductive number rather than a pfpr estimate
 repro <- F
@@ -66,9 +69,23 @@ apply_spline_to_raster<-function(splObj,inRaster, return_r0=F){
 }
 ##################################################################################################
 
-lut <- fread(file.path(lookup_dir, "lookup_full_interactions_v4.csv"))
-lut <- lut[Intervention %in% interventions]
+# include atsb runs 
+atsb_runs <- c("MAP_For_Symposium_ATSB_Higher_Existing_Intervention.csv", 
+               "MAP_For_Symposium_ATSB_Lower_Intervention.csv",
+               "MAP_For_Symposium_ATSB_Lower_Existing_Intervention.csv",
+               "MAP_For_Symposium_ATSB_No_Existing_Intervention.csv")
 
+initial <- fread(file.path(lookup_dir, "../initial/MAP_II_New_Sites_Burnin.csv"))
+prelim_data <- rbindlist(lapply(atsb_runs, function(fname){fread(file.path(lookup_dir, fname))}))
+
+lut <- merge(prelim_data, initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
+lut[, Run_Number:=factor(Run_Number)]
+lut[, Intervention:= paste0("Baseline:", ITN_Coverage*100, "%, ", "ATSB Initial Kill:", ATSB_Initial_Effect*100, "%")]
+
+lut[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
+lut[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]
+
+lut <- lut[Intervention %in% interventions]
 
 # read in rasters: PR, cluster assignments, and continent masks
 pr_orig <- raster(orig_pr_dir)
@@ -131,6 +148,7 @@ for (intervention in interventions){
 
 # save and plot
 stacked_layers <- stack(raster_list)
+
 if (repro==T){
   names(stacked_layers) <- c("R0 2015", interventions)
   breaks <- c(seq(-0.001, 5, length.out=50), seq(5, 10, length.out = 46)[2:46], seq(10, 75, length.out=6)[2:6])
@@ -140,8 +158,11 @@ if (repro==T){
   writeRaster(stacked_layers, options="INTERLEAVE=BAND", file.path(out_dir, paste0("repro_",continent, ".tif")), overwrite=T)
 }else{
   names(stacked_layers) <- c(base_label, interventions)
+  pal <- c("#e0e0e0", rev(brewer.pal(11, "Spectral")))
+  breaks <- c(0, seq(0.01, 1, length.out=11))
   pdf(file.path(out_dir, paste0("abv_pfpr_", continent, ".pdf")), width=12, height=6)
-  print(levelplot(stacked_layers, par.settings=rasterTheme(brewer.pal(7, "BuPu")), xlab=NULL, ylab=NULL, scales=list(draw=F)))
+  print(levelplot(stacked_layers[[1]], par.settings=rasterTheme(pal), at=breaks, xlab=NULL, ylab=NULL, scales=list(draw=F)))
+  print(levelplot(stacked_layers[[2:5]], par.settings=rasterTheme(pal), at=breaks, xlab=NULL, ylab=NULL, scales=list(draw=F)))
   graphics.off()
   writeRaster(stacked_layers, options="INTERLEAVE=BAND", file.path(out_dir, paste0("abv_pfpr_",continent, ".tif")), overwrite=T, bylayer=T, suffix="names")
 }
