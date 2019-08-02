@@ -144,10 +144,47 @@ for (intervention in interventions){
   raster_list[[idx]] <- this_pr_final
   idx <- idx + 1 
 }
+stacked_layers <- stack(raster_list)
+
+# plot population at risk and case counts
+pal <- wpal("seaside")
+pop <- raster("ssp5_total_2050_MG_5K.tif")
+pop <- crop(pop, stacked_layers)
+
+# pop_perkm2 <- pop/25
+# pop_perkm2 <- min(pop_perkm2, 1000)
+# levelplot(pop_perkm2, par.settings=rasterTheme(wpal("bright_fire")), # at=breaks,
+#           xlab=NULL, ylab=NULL, scales=list(draw=F))
+
+cases <- stacked_layers * pop
+names(cases) <-  c(base_label, interventions)
+
+cases_millions <- cellStats(cases, sum)/1000000
+levelplot(cases[[1]]+1, par.settings=rasterTheme(pal), zscaleLog=T, # at=breaks,
+          xlab=NULL, ylab=NULL, scales=list(draw=F))
+
+levelplot(cases[[2:5]]+1, par.settings=rasterTheme(pal), zscaleLog=T, # at=breaks,
+          xlab=NULL, ylab=NULL, scales=list(draw=F))
+
+has_transmission <- copy(stacked_layers)
+has_transmission[has_transmission<0.01] <- 0
+has_transmission[has_transmission>0] <- 1
+
+levelplot(has_transmission, par.settings=rasterTheme(pal), # at=breaks,
+          xlab=NULL, ylab=NULL, scales=list(draw=F))
+
+par <- has_transmission * pop
+names(par) <-  c(base_label, interventions)
+par_millions <- cellStats(par, sum)/1000000
+
+levelplot(par[[1]] + 1, par.settings=rasterTheme(pal), zscaleLog=T, # at=breaks,
+          xlab=NULL, ylab=NULL, scales=list(draw=F))
+
+levelplot(par[[2:5]] + 1, par.settings=rasterTheme(pal), zscaleLog=T, # at=breaks,
+          xlab=NULL, ylab=NULL, scales=list(draw=F))
 
 
 # save and plot
-stacked_layers <- stack(raster_list)
 
 if (repro==T){
   names(stacked_layers) <- c("R0 2015", interventions)
