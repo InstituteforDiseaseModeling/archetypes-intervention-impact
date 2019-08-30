@@ -11,20 +11,26 @@ func_dir <- file.path("~/repos/malaria-atlas-project/intervention_impact/visuali
 setwd(func_dir)
 source("pr_to_r0.r")
 source("apply_lookup_functions.r")
-out_dir <- "gates_output"
+out_dir <- file.path(Sys.getenv("HOME"),"Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/megatrends/gates_2019")
+africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/shapefiles/Africa.shp"
 
 ### Input variables  -----------------------------------------------------
 
-calculate_par <- F
+calculate_par <- T
 pop_fname <- "other/ssp5_total_2050_MG_5K.tif"
 
-calculate_repro_number <- T 
+calculate_repro_number <- F
 
 region <- "africa" # geography for which you want to predict. currently responds only to "africa" or "global"
 
-# what interventions from the lookup table do you want to run?
-interventions <- c("ITN 0.8; ACT 0.8;",
-                   "ITN 0.8; IRS 0.8; ACT 0.8;") 
+# where is your lut? 
+# lut_fname <- "lookup_full_interactions_v4.csv"
+lut_fname <- file.path(out_dir, "full_lookup.csv")
+
+# what interventions from the lookup table do you want to run? Select "all" if you want every intervention in your LUT to run
+# interventions <- c("ITN 0.8; ACT 0.8;",
+#                    "ITN 0.8; IRS 0.8; ACT 0.8;") 
+interventions <- "all"
 
 # other intvervention values I need:
 # Maximized current tools + ATSB 0.15%, 3%: lookup_outdoor_interventions_sweep_timing
@@ -44,8 +50,9 @@ bounding_fname <- "actual_ssp2_base2016_2050.tif"
 # Are there additional rasters you want to visualize, but not apply a lookup table to?
 comparison_fnames <- c()
 
-### Calculate reproductive number, or just PR?  -----------------------------------------------------
-
+### Shapefile  -----------------------------------------------------
+africa_shp <- readOGR(africa_shp_dir)
+africa_shp <- gSimplify(africa_shp, tol=0.1, topologyPreserve=TRUE)
 
 ### Desired Geography  -----------------------------------------------------
 
@@ -71,10 +78,14 @@ cluster_key <- data.table(Site_Name=names(cluster_list),
 ### Lookup table -----------------------------------------------------
 
 # read in lookup table
-lut <- fread("lookup_full_interactions_v4.csv")
+lut <- fread(lut_fname)
 
 # keep only the desired interventions; simplify
-lut <- lut[Intervention %in% interventions]
+if (!interventions=="all"){
+  lut <- lut[Intervention %in% interventions]
+}else{
+  interventions <- unique(lut$Intervention)
+}
 lut <- unique(lut[, list(Site_Name, Intervention, mean_initial, mean_final)])
 lut <- merge(lut, cluster_key, by="Site_Name", all.x=T)
 
@@ -123,16 +134,27 @@ for (baseline_label in names(baseline_raster_fnames)){
 
 stacked_pr <- stack(pr_list)
 
+if (region=="africa"){
+  stacked_pr <- extend(stacked_pr, africa_shp)
+}
+
 # Plot and save
 color_vals <- generate_full_pal()
-row_count <- length(interventions)
+int_count <- length(interventions)
 
-# pdf(file.path(out_dir, paste0("pfpr_", region, ".pdf")), width=12, height=6)
-print(levelplot(stacked_pr, par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
-                xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F), layout=c(row_count+1, row_count))
-)
-# graphics.off()
-# writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=T, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, ".tif")), overwrite=T)
+pdf(file.path(out_dir, paste0("pfpr_", region, ".pdf")), width=12, height=10)
+
+for(base_val in 1:length(baseline_raster_fnames)){
+  end_idx <- (int_count+1) * base_val
+  start_idx <- end_idx - int_count
+  print(levelplot(stacked_pr[[start_idx:end_idx]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
+                  xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)) +
+                    latticeExtra::layer(sp.polygons(africa_shp))
+  )
+}
+
+graphics.off()
+writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, ".tif")), overwrite=T)
 
 
 ### Convert to populations-at-risk  #####----------------------------------------------------------------------------------------------------------------------------------
@@ -157,12 +179,19 @@ if (calculate_par==T){
   
   # Plot and save
   pal <- wpal("seaside")
-  # pdf(file.path(out_dir, paste0("atsb_par_", continent, ".pdf")), width=12, height=6)
-  print(levelplot(par + 1, par.settings=rasterTheme(pal), zscaleLog=T, margin=F, 
-                  xlab=NULL, ylab=NULL, scales=list(draw=F), layout=c(row_count+1, row_count))) # +
-          # latticeExtra::layer(sp.polygons(africa_shp)))
-
-  # graphics.off()
+  pdf(file.path(out_dir, paste0("par_", region, ".pdf")), width=12, height=10)
+  
+  for(base_val in 1:length(baseline_raster_fnames)){
+    end_idx <- (int_count+1) * base_val
+    start_idx <- end_idx - int_count
+    print(levelplot(par[[start_idx:end_idx]] + 1, par.settings=rasterTheme(pal), zscaleLog=T, margin=F, 
+                    xlab=NULL, ylab=NULL, scales=list(draw=F))  +
+            latticeExtra::layer(sp.polygons(africa_shp))
+    )
+  }
+  
+  graphics.off()
+  writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, ".tif")), overwrite=T)
   
 }
 
@@ -185,12 +214,19 @@ if (calculate_repro_number){
   # todo: ask Jen for the actual map color bounds
   breaks <- c(0,1,seq(1.5, 5, length.out=25), seq(5.1, 80, length.out=4))
   pal = c("#e0e0e0", terrain.colors(31)[1:30])
-  # pdf(file.path(out_dir, paste0("RC_", region, ".pdf")), width=12, height=6)
-  print(levelplot(repro_numbers, par.settings=rasterTheme(pal), at=breaks,
-                  xlab=NULL, ylab=NULL, scales=list(draw=F), layout=c(row_count+1, row_count))
-        )
-  # graphics.off()
-  # writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=T, suffix="names", filename=file.path(out_dir, paste0("RC_",region, ".tif")), overwrite=T)
+  
+  pdf(file.path(out_dir, paste0("repro_number_", region, ".pdf")), width=12, height=10)
+  
+  for(base_val in 1:length(baseline_raster_fnames)){
+    end_idx <- (int_count+1) * base_val
+    start_idx <- end_idx - int_count
+    print(levelplot(repro_numbers[[start_idx:end_idx]], par.settings=rasterTheme(pal), at=breaks,
+                    xlab=NULL, ylab=NULL, scales=list(draw=F)) +
+            latticeExtra::layer(sp.polygons(africa_shp))
+    )
+  }
+  graphics.off()
+  writeRaster(repro_numbers, options="INTERLEAVE=BAND", bylayer=T, suffix="names", filename=file.path(out_dir, paste0("repro_number_",region, ".tif")), overwrite=T)
 }
 
 

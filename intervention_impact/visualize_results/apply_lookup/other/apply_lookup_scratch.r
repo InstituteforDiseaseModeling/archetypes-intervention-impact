@@ -22,7 +22,7 @@ orig_pr_dir <- file.path(main_dir,
 africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/shapefiles/Africa.shp"
 # mask_dir <- "/Volumes/GoogleDrive/Shared drives/MAP Master Outputs/master_geometries/Cartographic/Land_Sea_Masks/admin2018_sea_mask.shp"
 
-out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/megatrends_gates_2019")
+# out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/megatrends_gates_2019")
 base_label <- "Megatrends Base 2016"
 interventions <- c("Baseline:0%, ATSB Initial Kill:1%",
                    "Baseline:20%, ATSB Initial Kill:1%",
@@ -99,12 +99,16 @@ lut <- lut[Intervention %in% interventions]
 # read in rasters: PR, cluster assignments, and continent masks
 pr_orig <- raster(orig_pr_dir)
 
-masks <- raster("MAP_Regions_Pf_5k.tif")
 cluster_map <- raster("africa_clusters_v4.tif")
 # africa counterfactual is smaller than cluster map; align extents and mask oceans etc.
 cluster_map <- crop(cluster_map, pr_orig)
 pr_orig <- crop(pr_orig, cluster_map)
 pr_orig <- raster::mask(pr_orig, cluster_map)
+
+
+bounding_pr <- raster("actual_ssp2_base2016_2050.tif")
+bounding_pr <- crop(bounding_pr, cluster_map)
+bounding_pr <- raster::mask(bounding_pr, cluster_map)
 
 continent <- "africa"
 cluster_list <-  list("aba"=1,
@@ -148,15 +152,15 @@ for (intervention in interventions){
   
   # merge back into a single raster
   this_pr_final <- do.call(merge, final_prs)
+  this_pr_final <- min(stack(this_pr_final, bounding_pr)) 
   # this_pr_final <- mask(this_pr_final, cluster_map, maskvalue=FALSE)
   raster_list[[idx]] <- this_pr_final
   idx <- idx + 1 
 }
 
 stacked_layers <- stack(raster_list)
+
 stacked_layers <- extend(stacked_layers, africa_shp)
-
-
 # save and plot
 
 map_pal <-c("#E6E6E6", "#A3A3A3", "#5A17FD", "#51C8FE", "#AEFEAB", "#FBD817",  "#FE3919") 
@@ -211,7 +215,7 @@ if (repro==T){
 
 # plot population at risk and case counts
 pal <- wpal("seaside")
-pop <- raster("ssp5_total_2050_MG_5K.tif")
+pop <- raster("other/ssp5_total_2050_MG_5K.tif")
 pop <- crop(pop, stacked_layers)
 
 # has_transmission <- copy(stacked_layers)
