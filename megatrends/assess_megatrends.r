@@ -45,7 +45,7 @@ cluster_layer <- raster(cluster_fname)
 megatrends_noints <- raster(file.path(main_dir, "pete_analysis", "actual_ssp2_base2000_2050.tif"))
 megatrends_ints <- raster(file.path(main_dir, "pete_analysis", "actual_ssp2_base2016_2050.tif"))
 
-int_type <- "itn_irs_act"
+int_type <- "itn_act"
 
 if (int_type=="itn_act"){
   interventions <- raster(file.path(main_dir, "abv_pfpr_africa_ITN.0.8..ACT.0.8..tif"))
@@ -89,6 +89,11 @@ names(cluster_layer) <- "cluster"
 bounded_interventions <-min(stack(interventions,megatrends_ints))
 names(bounded_interventions) <- "bounded_interventions"
 megatrends_diff <- interventions - bounded_interventions
+
+pal <- c("#e0e0e0", rev(brewer.pal(11, "Spectral")))
+breaks <- c(0, seq(0.01, 1, length.out=11))
+levelplot(stack(bounded_interventions, interventions_pete), par.settings=rasterTheme(pal), at=breaks, xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F))
+
 
 # compare my bounded intervention to Pete's
 abv_pg_diff <- bounded_interventions - interventions_pete

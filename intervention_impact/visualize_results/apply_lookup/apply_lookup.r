@@ -5,176 +5,230 @@ library(rasterVis)
 
 rm(list=ls())
 
+# todo: more explicit file paths, take things out of this repo folder where they don't belong
+
 func_dir <- file.path("~/repos/malaria-atlas-project/intervention_impact/visualize_results/apply_lookup")
 setwd(func_dir)
 source("pr_to_r0.r")
-out_dir <- "output"
+source("apply_lookup_functions.r")
+out_dir <- file.path(Sys.getenv("HOME"),"Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/megatrends/gates_2019")
+africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/shapefiles/Africa.shp"
 
-### Lookup table -----------------------------------------------------
+### Input variables  -----------------------------------------------------
 
-# read in lookup table
-lut <- fread("lookup_full_interactions_v4.csv")
+calculate_par <- T
+pop_fname <- "other/ssp5_total_2050_MG_5K.tif"
 
-# what interventions from the lookup table do you want to run?
-interventions <- c("ITN 0.8; IRS 0.2;",
-                   "ITN 0.8; IRS 0.8; ACT 0.8;") 
+calculate_repro_number <- F
 
-# keep only the desired interventions
-lut <- lut[Intervention %in% interventions]
+region <- "africa" # geography for which you want to predict. currently responds only to "africa" or "global"
 
+# where is your lut? 
+# lut_fname <- "lookup_full_interactions_v4.csv"
+lut_fname <- file.path(out_dir, "full_lookup.csv")
 
-### Baseline rasters -----------------------------------------------------
+# what interventions from the lookup table do you want to run? Select "all" if you want every intervention in your LUT to run
+# interventions <- c("ITN 0.8; ACT 0.8;",
+#                    "ITN 0.8; IRS 0.8; ACT 0.8;") 
+interventions <- "all"
 
-# Make a list of any rasters for which you don't want to apply the lookup table
-# This MUST include the label of the "baseline_for_lookup" raster, but can also include others
-baseline_for_lookup <- "Megatrends Base 2016"
-base_labels <- list("True PfPR 2017"="PfPR_rmean_Global_admin0_2017.tif",
-                    "Megatrends Base 2016"="actual_ssp2_base2016_2050.tif")
+# other intvervention values I need:
+# Maximized current tools + ATSB 0.15%, 3%: lookup_outdoor_interventions_sweep_timing
+# Maximized current tools + ATSB 15%, 25%:  atsb_to_eliminate.csv
+# Drugs & vaccines: lookup_full_interactions_experimental.csv
+# ATSB 1% at different baselines: see other/apply_lookup_scratch.r
 
-baseline_pr <- raster(base_labels[[baseline_for_lookup]])
+# what rasters do you want to use as baselines? You'll get a new set of results for each
+baseline_raster_fnames <- list( # "True PfPR 2017"="PfPR_rmean_Global_admin0_2017.tif",
+  "Megatrends Base 2000"="actual_ssp2_base2000_2050.tif",
+  "Megatrends Base 2016"="actual_ssp2_base2016_2050.tif"
+)
 
-### Calculate reproductive number, or just PR?  -----------------------------------------------------
+# What raster do you want to use as a maximum value on all results?
+bounding_fname <- "actual_ssp2_base2016_2050.tif"
 
-# set 'repro' to true if you want a reproductive number rather than a pfpr estimate
-repro <- F
-if (repro){
-  print("getting repro spline")
-  repro_spline <- R2spline()
-}
+# Are there additional rasters you want to visualize, but not apply a lookup table to?
+comparison_fnames <- c()
+
+### Shapefile  -----------------------------------------------------
+africa_shp <- readOGR(africa_shp_dir)
+africa_shp <- gSimplify(africa_shp, tol=0.1, topologyPreserve=TRUE)
 
 ### Desired Geography  -----------------------------------------------------
-
-# area for which you want to predict. currently responds only to "africa" or "global"
-region <- "global"
 
 # read in cluster rasters, assign values from LUT
 cluster_map <- raster(paste0(region, "_clusters_v4.tif"))
 
 # map of cluster numbers to site names in the lut
-cluster_list <-  list("aba"=1,
+cluster_list <-  c("aba"=1,
                       "kasama"=3,
                       "djibo"=4,
                       "kananga"=2,
                       "moine"=6,
                       "gode"=5)
+
+
 if (region=="global"){
-  cluster_list <- c(cluster_list, list("bajonapo"=7, "karen"=8))
+  cluster_list <- c(cluster_list, c("bajonapo"=7, "karen"=8))
 }
 
+cluster_key <- data.table(Site_Name=names(cluster_list),
+                          cluster_id=cluster_list)
 
-### Functions  #####----------------------------------------------------------------------------------------------------------------------------------
-get_splinefunction<-function(X,Y){
-  
-  plot(X,Y,type="b")
-  
-  splObj<-smooth.spline(X, Y)
-  
-  Xpred<-seq(0,1,length=100)
-  Ypred<-as.vector(as.matrix(predict(splObj,data.frame("X"=Xpred))$y))
-  # lines(Xpred,Ypred,col=2)
-  return(splObj)
+### Lookup table -----------------------------------------------------
+
+# read in lookup table
+lut <- fread(lut_fname)
+
+# keep only the desired interventions; simplify
+if (!interventions=="all"){
+  lut <- lut[Intervention %in% interventions]
+}else{
+  interventions <- unique(lut$Intervention)
 }
+lut <- unique(lut[, list(Site_Name, Intervention, mean_initial, mean_final)])
+lut <- merge(lut, cluster_key, by="Site_Name", all.x=T)
 
-apply_spline_to_raster<-function(splObj,inRaster, return_r0=F){
-  
-  inMat<-as.matrix(inRaster)
-  inVec<-as.vector(inMat)
-  NAid<-is.na(inVec)
-  inVecNoNA<-inVec[!NAid]
-  
-  outVecNoNA<-predict(splObj,inVecNoNA)$y
-  if (return_r0==F){
-    outVecNoNA <- pmin(outVecNoNA, inVecNoNA)
-    outVecNoNA[outVecNoNA<0] <- 0
-  }
-  
-  outVec<-rep(NA,length(inVec))
-  outVec[!NAid]<-outVecNoNA
-  outMat<-matrix(outVec,nrow=nrow(inMat))
-  outRaster<-inRaster
-  outRaster[]<-outMat
-  
-  return(outRaster)
-}
+### Bounding raster -----------------------------------------------------
+bounding_pr <- raster(bounding_fname)
+cluster_map <- crop(cluster_map, bounding_pr)
+bounding_pr <- crop(bounding_pr, cluster_map)
+bounding_pr <- raster::mask(bounding_pr, cluster_map)
 
-
-
-### Prep: Format rasters, apply R0 to baselines  #####----------------------------------------------------------------------------------------------------------------------------------
-
-# make sure cluster map and baseline rasters are aligned
-cluster_map <- crop(cluster_map, baseline_pr)
-baseline_pr <- crop(baseline_pr, cluster_map)
-baseline_pr <- raster::mask(baseline_pr, cluster_map)
+### Format any preliminary rasters  #####----------------------------------------------------------------------------------------------------------------------------------
 
 # initialize list
-raster_list <- list()
-raster_idx <- 1
+pr_list <- list()
+pr_idx <- 1
 
-
-# loop through baseline rasters, cropping and (if necessary) converting to Rc
-for (label in names(base_labels)){
-  print(label)
-  this_base_raster <- raster(base_labels[[label]])
-  this_base_raster <- extend(crop(this_base_raster, baseline_pr), baseline_pr)
-  
-  if (repro==T){
-    print("finding rc")
-    this_base_rc <-apply_spline_to_raster(repro_spline, this_base_raster, return_r0=T)
-    raster_list[[raster_idx]] <- this_base_rc
-  }else{
-    raster_list[[raster_idx]] <- this_base_raster
+if (length(comparison_fnames)>0){
+  print("Appending additional rasters")
+  for (label in names(comparison_fnames)){
+    print(label)
+    this_raster <- raster(comparison_fnames[[label]])
+    this_raster <- extend(crop(this_raster, bounding_pr), bounding_pr)
+    
+    raster_list[[raster_idx]] <- this_raster
+    raster_idx <- raster_idx + 1
   }
-  raster_idx <- raster_idx + 1
 }
 
 ### Main loop: apply lookup table  #####----------------------------------------------------------------------------------------------------------------------------------
 
-for (intervention in interventions){
-  print(intervention)
+for (baseline_label in names(baseline_raster_fnames)){
+  print(baseline_label)
+  baseline_pr <- raster(baseline_raster_fnames[[baseline_label]])
+  baseline_pr <- crop(baseline_pr, cluster_map)
+  baseline_pr <- raster::mask(baseline_pr, cluster_map)
+  names(baseline_pr) <- baseline_label
   
-  # loop through each cluster, apply the appropriate spline, convert to reproductive number if desired
-  final_prs <- lapply(names(cluster_list), function(site_name){
-    this_mask <- cluster_map==cluster_list[[site_name]]
-    pr_masked <- raster::mask(baseline_pr, this_mask, maskvalue=0)
-    this_lut <- unique(lut[Site_Name==site_name & Intervention==intervention, list(mean_initial, mean_final)])
-    this_spline <- get_splinefunction(this_lut$mean_initial,this_lut$mean_final)
-    this_pr <- apply_spline_to_raster(this_spline, pr_masked, return_r0 = F)
-    
-    if (repro==T){
-      this_repro <- apply_spline_to_raster(repro_spline, this_pr, return_r0 = T)
-      return(this_repro)
-    }else{
-      return(this_pr)
-    }
-    
-  })
+  pr_list[[pr_idx]] <- baseline_pr
+  pr_idx <- pr_idx + 1 
   
-  # merge back into a single raster
-  this_pr_final <- do.call(merge, final_prs)
-  # this_pr_final <- mask(this_pr_final, cluster_map, maskvalue=FALSE)
-  raster_list[[raster_idx]] <- this_pr_final
-  raster_idx <- raster_idx + 1 
+  for (intervention in interventions){
+    print(intervention)
+    pr_list[[pr_idx]] <- apply_lookup(intervention, baseline_pr, lut, cluster_map, bounding_pr)
+    pr_idx <- pr_idx + 1 
+  }
 }
 
-stacked_layers <- stack(raster_list)
-names(stacked_layers) <- c(names(base_labels), interventions)
+stacked_pr <- stack(pr_list)
 
-### Plotting and saving  #####----------------------------------------------------------------------------------------------------------------------------------
+if (region=="africa"){
+  stacked_pr <- extend(stacked_pr, africa_shp)
+}
 
-if (repro==T){
+# Plot and save
+color_vals <- generate_full_pal()
+int_count <- length(interventions)
+
+pdf(file.path(out_dir, paste0("pfpr_", region, ".pdf")), width=12, height=10)
+
+for(base_val in 1:length(baseline_raster_fnames)){
+  end_idx <- (int_count+1) * base_val
+  start_idx <- end_idx - int_count
+  print(levelplot(stacked_pr[[start_idx:end_idx]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
+                  xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)) +
+                    latticeExtra::layer(sp.polygons(africa_shp))
+  )
+}
+
+graphics.off()
+writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, ".tif")), overwrite=T)
+
+
+### Convert to populations-at-risk  #####----------------------------------------------------------------------------------------------------------------------------------
+if (calculate_par==T){
+  
+  print("Converting to Population-at-risk")
+  
+  pop <- raster(pop_fname)
+  pop <- crop(pop, stacked_pr)
+  
+  has_transmission <- lapply(1:nlayers(stacked_pr), function(idx){
+    this_layer <- copy(stacked_pr[[idx]])
+    this_layer[this_layer<0.01] <- 0
+    this_layer[this_layer>0] <- 1
+    return(this_layer)
+  })
+  has_transmission <- stack(has_transmission)
+  
+  par <- has_transmission * pop
+  names(par) <-  names(stacked_pr)
+  par_millions <- cellStats(par, sum)/1000000
+  
+  # Plot and save
+  pal <- wpal("seaside")
+  pdf(file.path(out_dir, paste0("par_", region, ".pdf")), width=12, height=10)
+  
+  for(base_val in 1:length(baseline_raster_fnames)){
+    end_idx <- (int_count+1) * base_val
+    start_idx <- end_idx - int_count
+    print(levelplot(par[[start_idx:end_idx]] + 1, par.settings=rasterTheme(pal), zscaleLog=T, margin=F, 
+                    xlab=NULL, ylab=NULL, scales=list(draw=F))  +
+            latticeExtra::layer(sp.polygons(africa_shp))
+    )
+  }
+  
+  graphics.off()
+  writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, ".tif")), overwrite=T)
+  
+}
+
+### Convert to reproductive number  #####----------------------------------------------------------------------------------------------------------------------------------
+
+if (calculate_repro_number){
+  print("Converting to reproductive number")
+  repro_spline <- R2spline()
+  
+  repro_numbers <- lapply(1:nlayers(stacked_pr), function(idx){
+    this_layer <- copy(stacked_pr[[idx]])
+    this_repro <- apply_spline_to_raster(repro_spline, this_layer, return_r0 = T)
+    return(this_repro)
+  })
+  repro_numbers <- stack(repro_numbers)
+  names(repro_numbers) <-  names(stacked_pr)
+  
+  # Plot and save
+  
+  # todo: ask Jen for the actual map color bounds
   breaks <- c(0,1,seq(1.5, 5, length.out=25), seq(5.1, 80, length.out=4))
   pal = c("#e0e0e0", terrain.colors(31)[1:30])
-  pdf(file.path(out_dir, paste0("RC_", region, ".pdf")), width=12, height=6)
-  print(levelplot(stacked_layers, par.settings=rasterTheme(pal), at=breaks, xlab=NULL, ylab=NULL, scales=list(draw=F)))
+  
+  pdf(file.path(out_dir, paste0("repro_number_", region, ".pdf")), width=12, height=10)
+  
+  for(base_val in 1:length(baseline_raster_fnames)){
+    end_idx <- (int_count+1) * base_val
+    start_idx <- end_idx - int_count
+    print(levelplot(repro_numbers[[start_idx:end_idx]], par.settings=rasterTheme(pal), at=breaks,
+                    xlab=NULL, ylab=NULL, scales=list(draw=F)) +
+            latticeExtra::layer(sp.polygons(africa_shp))
+    )
+  }
   graphics.off()
-  writeRaster(stacked_layers, options="INTERLEAVE=BAND", bylayer=T, suffix="names", filename=file.path(out_dir, paste0("RC_",region, ".tif")), overwrite=T)
-}else{
-  pal <- c("#e0e0e0", rev(brewer.pal(11, "Spectral")))
-  breaks <- c(0, seq(0.01, 1, length.out=11))
-  pdf(file.path(out_dir, paste0("pfpr_", region, ".pdf")), width=12, height=6)
-  print(levelplot(stacked_layers, par.settings=rasterTheme(pal), at=breaks, xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)))
-  graphics.off()
-  writeRaster(stacked_layers, options="INTERLEAVE=BAND", bylayer=T, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, ".tif")), overwrite=T)
+  writeRaster(repro_numbers, options="INTERLEAVE=BAND", bylayer=T, suffix="names", filename=file.path(out_dir, paste0("repro_number_",region, ".tif")), overwrite=T)
 }
+
+
 
 
