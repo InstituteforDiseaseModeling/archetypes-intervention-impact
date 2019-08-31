@@ -3,10 +3,6 @@ library(dichromat)
 library(MapSuite)
 library(raster)
 
-
-
-
-
 ### Spline application Functions   #####----------------------------------------------------------------------------------------------------------------------------------
 get_splinefunction<-function(X,Y){
   
@@ -16,7 +12,7 @@ get_splinefunction<-function(X,Y){
   
   Xpred<-seq(0,1,length=100)
   Ypred<-as.vector(as.matrix(predict(splObj,data.frame("X"=Xpred))$y))
-  lines(Xpred,Ypred,col=2)
+  # lines(Xpred,Ypred,col=2)
   return(splObj)
 }
 
