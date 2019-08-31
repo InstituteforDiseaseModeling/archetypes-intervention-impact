@@ -24,10 +24,11 @@ africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/shapefiles/
 
 # out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/megatrends_gates_2019")
 base_label <- "Megatrends Base 2016"
-interventions <- c("Baseline:0%, ATSB Initial Kill:1%",
-                   "Baseline:20%, ATSB Initial Kill:1%",
-                   "Baseline:40%, ATSB Initial Kill:1%",
-                   "Baseline:60%, ATSB Initial Kill:1%") 
+interventions <- c("Baseline:0%, ATSB Initial Kill:1%" # ,
+                   # "Baseline:20%, ATSB Initial Kill:1%",
+                   # "Baseline:40%, ATSB Initial Kill:1%",
+                   # "Baseline:60%, ATSB Initial Kill:1%"
+                   ) 
 
 # set 'repro' to true if you want a reproductive number rather than a pfpr estimate
 repro <- F
@@ -136,6 +137,7 @@ for (intervention in interventions){
   # loop through each cluster, apply the appropriate spline, convert to reproductive number if desired
   final_prs <- lapply(names(cluster_list), function(site_name){
     this_mask <- cluster_map==cluster_list[[site_name]]
+    print(paste(site_name, ":", cluster_list[[site_name]]))
     pr_masked <- raster::mask(pr_orig, this_mask, maskvalue=0)
     this_lut <- unique(lut[Site_Name==site_name & Intervention==intervention, list(mean_initial, mean_final)])
     this_spline <- get_splinefunction(this_lut$mean_initial,this_lut$mean_final)

@@ -83,4 +83,5 @@ other_atsbs <- unique(other_atsbs[, list(Site_Name, Intervention, mean_initial, 
 ### Combine all  -----------------------------------------------------
 
 full_lut <- rbind(main_lut, final_drug_lut, realistic_atsbs, elimination_atsbs, other_atsbs)
+full_lut <- full_lut[!Site_Name %in% c("bajonapo", "karen")]
 write.csv(full_lut, file=file.path(out_dir, "full_lookup.csv"), row.names=F)
