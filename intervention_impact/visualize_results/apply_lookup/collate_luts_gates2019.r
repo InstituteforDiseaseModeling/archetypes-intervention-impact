@@ -73,7 +73,7 @@ atsb_runs <- c("MAP_For_Symposium_ATSB_Higher_Existing_Intervention.csv",
 initial <- fread(file.path(main_dir, "../initial/MAP_II_New_Sites_Burnin.csv"))
 prelim_atsb <- rbindlist(lapply(atsb_runs, function(fname){fread(file.path(main_dir, fname))}))
 
-other_atsbs <- merge(prelim_atsb[ATSB_Initial_Effect==0.01], initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
+other_atsbs <- merge(prelim_atsb[ATSB_Initial_Effect==0.03], initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
 other_atsbs[, Run_Number:=factor(Run_Number)]
 other_atsbs[, Intervention:= paste0("Baseline:", ITN_Coverage*100, "%, ", "ATSB Initial Kill:", ATSB_Initial_Effect*100, "%")]
 other_atsbs[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, Intervention)]

@@ -32,7 +32,6 @@ lut_fname <- file.path(out_dir, "full_lookup.csv")
 #                    "ITN 0.8; IRS 0.8; ACT 0.8;") 
 interventions <- "all"
 
-
 # other intvervention values I need:
 # Maximized current tools + ATSB 0.15%, 3%: lookup_outdoor_interventions_sweep_timing
 # Maximized current tools + ATSB 15%, 25%:  atsb_to_eliminate.csv
