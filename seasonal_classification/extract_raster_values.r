@@ -22,15 +22,10 @@ library(rasterVis)
 rm(list=ls())
 
 source("classify_functions.r")
-if (Sys.getenv("USERPROFILE")==""){
-  print("working on osx")
-  root_dir <- Sys.getenv("HOME")
-  map_root_dir <- "/Volumes/map_data/mastergrids"
-}else{
-  print("working on windows")
-  root_dir <- Sys.getenv("USERPROFILE")
-  map_root_dir <- "Z:/mastergrids"
-}
+
+root_dir <- Sys.getenv("HOME")
+map_root_dir <- "/Volumes/map_data/mastergrids"
+
 if (!dir.exists(map_root_dir)){
   stop("Root map directory does not exist-- have you remembered to map the appropriate drives to your machine?")
 }
@@ -42,6 +37,7 @@ temp_mask_dir <- file.path(base_dir, "temp_mask.tif")
 final_mask_dir <- file.path(base_dir, "final_mask.tif")
 transmission_limit_dir <- file.path(map_root_dir, "../GBD2017/Processing/Spatial_Data/Static_Limits", "Pf_Limits_EnvironmentalOnly_Endemic2017Only_5k.tif")
 
+# TODO: just pick a template raster instead of this business. 
 extra_crop_rasters <- list(asia=file.path(map_root_dir, "Other_Global_Covariates/Rainfall/CHIRPS/5km/Synoptic/chirps-v2-0.Synoptic.01.mean.5km.Data.tif"),
                            africa=file.path(base_dir, "vectors", "gambiae.tif"),
                            americas=""
@@ -51,6 +47,7 @@ overwrite <- T
 cov_details <- fread("clustering_covariates.csv")
 
 # do a dance to make the transmission limit layers compatible
+# todo: revisit this, make sure you need it.
 if (!file.exists(final_mask_dir) | overwrite_mask==T){
   print("clipping full mask to transmission limits")
   mask_layer <- raster(mask_in_dir)
