@@ -1,6 +1,6 @@
 ## -----------------------------------------------------------------------------------------------------------------
 # Seasonality Classification
-# classify_functions.r
+# 00_extraction_functions.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # May 2018
@@ -93,20 +93,4 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster, overwrite
   
   return(vals)
   
-}
-
-
-rotate_matrix <- function(nvecs, main_dir, cov="tsi"){
-  load(file.path(main_dir, paste0(cov, "_svd.rdata")))
-  sing_vecs <- svd_out$u[, 1:nvecs]
-  
-  ## multiply by original matrix to get rotations
-  for_svd <- fread(file.path(main_dir, paste0(cov, "_vals.csv")))
-  print("reshaping")
-  for_svd <- dcast(for_svd, cov + variable_name + variable_val ~ id)
-  print("rotating")
-  rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,4:ncol(for_svd)])))
-  rotation$id <- as.integer(rownames(rotation))
-  rotation <- data.table(rotation)
-  return(rotation)
 }

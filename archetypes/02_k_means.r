@@ -1,6 +1,6 @@
 ## -----------------------------------------------------------------------------------------------------------------
 # Seasonality Classification
-# k_means.r
+# 02_k_means.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # May 2018
@@ -32,7 +32,6 @@ overwrite_rotation <- F
 overwrite_kmeans <- F
 plot_vectors <- F
 
-source("classify_functions.r")
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
 
@@ -48,6 +47,22 @@ palettes <- list(
   tsi_rainfall_vector_abundance_standardized=c("#00A08A", "#902E57", "#5392C2", "#F98400", "#F2AD00", "#D71B5A", "#98B548", "#8971B3"),
   tsi_rainfall_vector_abundance_rescaled=c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "#902E57", "#F98400", "#B03A2E", "#2ECC71")
 )
+
+
+rotate_matrix <- function(nvecs, main_dir, cov="tsi"){
+  load(file.path(main_dir, paste0(cov, "_svd.rdata")))
+  sing_vecs <- svd_out$u[, 1:nvecs]
+  
+  ## multiply by original matrix to get rotations
+  for_svd <- fread(file.path(main_dir, paste0(cov, "_vals.csv")))
+  print("reshaping")
+  for_svd <- dcast(for_svd, cov + variable_name + variable_val ~ id)
+  print("rotating")
+  rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,4:ncol(for_svd)])))
+  rotation$id <- as.integer(rownames(rotation))
+  rotation <- data.table(rotation)
+  return(rotation)
+}
 
 
 cluster_counts <- 3:10

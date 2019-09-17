@@ -1,6 +1,6 @@
 ## -----------------------------------------------------------------------------------------------------------------
 # Seasonality Classification
-# extract_raster_values.r
+# 00_extract_covariates.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # May 2018
@@ -20,7 +20,7 @@ library(rasterVis)
 
 rm(list=ls())
 
-source("classify_functions.r")
+source("00_extraction_functions.r")
 
 root_dir <- Sys.getenv("HOME")
 map_root_dir <- "/Volumes/map_data/mastergrids"

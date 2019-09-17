@@ -1,6 +1,6 @@
 ## -----------------------------------------------------------------------------------------------------------------
 # Seasonality Classification
-# svd.r
+# 01_svd.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # June 2018
@@ -20,12 +20,10 @@ library(ggplot2)
 
 rm(list=ls())
 
-source("classify_functions.r")
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
 continents <- c("africa", "asia", "americas")
-continents <- c("africa")
 cov_details <- fread("clustering_covariates.csv")
 cov_details <- cov_details[variable!="year"]
 overwrite <- F
