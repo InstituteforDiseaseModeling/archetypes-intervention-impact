@@ -1,6 +1,6 @@
 ## -----------------------------------------------------------------------------------------------------------------
 # Seasonality Classification
-# classify_functions.r
+# 00_extraction_functions.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
 # May 2018
@@ -15,7 +15,7 @@ library(raster)
 library(data.table)
 library(stringr)
 
-get_mask <- function(continent, in_fname, out_fname, extra_crop_dir=""){
+get_mask <- function(continent, in_fname, out_fname){
   print("generating mask")
   mask_vals <- list('africa'=1,
                     'americas'=2,
@@ -23,31 +23,16 @@ get_mask <- function(continent, in_fname, out_fname, extra_crop_dir=""){
   mask <- raster(in_fname)
   mask[mask!=mask_vals[[continent]]] <- NA
   clipped_mask <- trim(mask)
-  if (extra_crop_dir!=""){
-    extra_crop_raster <- raster(extra_crop_dir)
-    extra_crop_raster <- crop(extra_crop_raster, clipped_mask)
-    clipped_mask <- crop(clipped_mask, extra_crop_raster)
-  }
   writeRaster(clipped_mask, out_fname, overwrite=T)
   return(clipped_mask)
 }
 
 extract_values <- function(raster_in_dir, raster_out_dir, mask, cov_name=""){
   full <- raster(raster_in_dir)
-  vals <- crop(full, mask)
-  if (!compareRaster(vals, mask, stopiffalse = F)){
-    mask <- crop(mask, vals) # ensure that extents are the same. 
-  }
-  
+  vals <- extend(crop(full, mask), mask)
+  compareRaster(vals, mask)
   vals <- raster::mask(vals, mask, maskvalue=NA)
-  # adjust null values in irs layer
-  if (cov_name %in% c("irs_coverage", "act_coverage_older")){
-    vals[vals==-9999] <- -Inf
-  }
-  # adjust values above 1 in act layer
-  if (cov_name == "act_coverage"){
-    vals[vals>1] <- 0
-  }
+
   print("saving raster")
   writeRaster(vals, raster_out_dir, overwrite=T)
   
@@ -99,7 +84,6 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster, overwrite
   print(plot(vals, main=paste(cov$cov, sweep_value)))
   graphics.off()
   
-  plot(vals, main=paste(cov$cov, sweep_value))
   vals <- as.matrix(vals)
   vals <- data.table(cov = cov$cov,
                      variable_name = cov$variable,
@@ -109,20 +93,4 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster, overwrite
   
   return(vals)
   
-}
-
-
-rotate_matrix <- function(nvecs, main_dir, cov="tsi"){
-  load(file.path(main_dir, paste0(cov, "_svd.rdata")))
-  sing_vecs <- svd_out$u[, 1:nvecs]
-  
-  ## multiply by original matrix to get rotations
-  for_svd <- fread(file.path(main_dir, paste0(cov, "_vals.csv")))
-  print("reshaping")
-  for_svd <- dcast(for_svd, cov + variable_name + variable_val ~ id)
-  print("rotating")
-  rotation <- data.frame(t(t(sing_vecs)%*%as.matrix(for_svd[,4:ncol(for_svd)])))
-  rotation$id <- as.integer(rownames(rotation))
-  rotation <- data.table(rotation)
-  return(rotation)
 }
