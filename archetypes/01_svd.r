@@ -20,19 +20,26 @@ library(ggplot2)
 
 rm(list=ls())
 
+theme_set(theme_minimal(base_size = 16))
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, 
-                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
+                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 continents <- c("africa", "asia", "americas")
 cov_details <- fread("clustering_covariates.csv")
-cov_details <- cov_details[variable!="year"]
-overwrite <- F
-rescale <- T
-theme_set(theme_minimal(base_size = 16))
+
+overwrite <- T
+rescale <- F
+replicate_megatrends <- T
+covariate_type <- "no_transmission_limits"
+
+if (replicate_megatrends){
+  cov_details <- cov_details[used_in_megatrends=="T"]
+}
 
 for (continent in continents){
   print(paste("running svd on", continent))
-  main_dir <- file.path(base_dir, continent)
+  cov_dir <- file.path(base_dir, "00_covariate_extraction", covariate_type, continent)
+  main_dir <- file.path(base_dir, "01_svd", continent)
   
   these_covs <- cov_details[continents %like% continent]
   full_label <- paste(these_covs$cov, collapse="_")
@@ -41,14 +48,14 @@ for (continent in continents){
   }
   
   # load datasets, merge
-  all_vals_fname <- file.path(main_dir, paste0(full_label, "_vals.csv"))
+  all_vals_fname <- file.path(cov_dir, paste0(full_label, "_vals.csv"))
   if (file.exists(all_vals_fname) & overwrite==F){
     print("loading extracted values")
     all_vals <- fread(all_vals_fname)
   }else{
     print("appending datasets")
     all_vals <- lapply(these_covs$cov, function(cov_name){
-      vals <- fread(file.path(main_dir, paste0(cov_name, "_vals.csv")))
+      vals <- fread(file.path(cov_dir, paste0(cov_name, "_vals.csv")))
       if (rescale==T & cov_name=="rainfall"){
         
         # cap outliers in rainfall data; rescale to [0,1]

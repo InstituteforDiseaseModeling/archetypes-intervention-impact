@@ -30,28 +30,13 @@ if (!dir.exists(map_root_dir)){
 }
 
 # rewrite if there's already a saved covariate extraction?
-overwrite_extraction <- F
+overwrite_extraction <- T
 
 base_dir <- file.path(root_dir, 
-                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/covariate_extraction")
+                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/00_covariate_extraction/no_transmission_limits")
 mask_in_dir <- file.path(map_root_dir, "Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif")
-transmission_limit_dir <- file.path(map_root_dir, "../GBD2017/Processing/Spatial_Data/Static_Limits", "Pf_Limits_EnvironmentalOnly_Endemic2017Only_5k.tif")
 
 cov_details <- fread("clustering_covariates.csv")
-
-# for now: don't mask based on transmission limits. Come back to this after replicating megatrends. 
-# if (!file.exists(final_mask_dir) | overwrite_mask==T){
-#   print("clipping full mask to transmission limits")
-#   mask_layer <- raster(mask_in_dir)
-#   mask_layer[mask_layer==0] <- -Inf
-#   NAvalue(mask_layer) <- -Inf
-#   writeRaster(mask_layer, temp_mask_dir, overwrite=T)
-#   mask_layer <- raster(temp_mask_dir)
-#   trans_limits <- raster(transmission_limit_dir)
-#   mask_layer <- mask(mask_layer, trans_limits, maskvalue=0)
-#   writeRaster(mask_layer, final_mask_dir, overwrite=T)
-# }
-
 
 for (idx in 1:nrow(cov_details)){
   

@@ -28,33 +28,34 @@ set.seed(206)
 theme_set(theme_minimal(base_size = 16))
 
 rm(list=ls())
-overwrite_rotation <- F
-overwrite_kmeans <- F
-plot_vectors <- F
+overwrite_rotation <- T
+overwrite_kmeans <- T
+plot_vectors <- T
+covariate_type <- "no_transmission_limits"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
-base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/seasonal_classification/")
+base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 
 # number of singular vectors to use, from visual inspection of svd plots
 input_list <- list(# tsi_rainfall = list(asia=3, americas=3) , 
-                   # tsi_rainfall_vector_abundance=list(africa=3),
+                   tsi_rainfall_relative_vector_abundance=list(africa=3)
                    # tsi_rainfall_vector_abundance_standardized=list(africa=2),
-                   tsi_rainfall_vector_abundance_rescaled=list(africa=3)
+                   # tsi_rainfall_vector_abundance_rescaled=list(africa=3)
                    )
 
 palettes <- list(
-  tsi_rainfall_vector_abundance= c("#F98400", "#00A08A", "#5392C2", "#902E57", "#F2AD00", "#D71B5A", "#98B548", "#8971B3"),
-  tsi_rainfall_vector_abundance_standardized=c("#00A08A", "#902E57", "#5392C2", "#F98400", "#F2AD00", "#D71B5A", "#98B548", "#8971B3"),
-  tsi_rainfall_vector_abundance_rescaled=c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "#902E57", "#F98400", "#B03A2E", "#2ECC71")
+  tsi_rainfall_relative_vector_abundance= c("#F98400", "#00A08A", "#5392C2", "#902E57", "#F2AD00", "#D71B5A", "#98B548", "#8971B3", "#B03A2E", "#2ECC71"),
+  tsi_rainfall_relative_vector_abundance_standardized=c("#00A08A", "#902E57", "#5392C2", "#F98400", "#F2AD00", "#D71B5A", "#98B548", "#8971B3"),
+  tsi_rainfall_relative_vector_abundance_rescaled=c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "#902E57", "#F98400", "#B03A2E", "#2ECC71")
 )
 
 
-rotate_matrix <- function(nvecs, main_dir, cov="tsi"){
-  load(file.path(main_dir, paste0(cov, "_svd.rdata")))
+rotate_matrix <- function(nvecs, svd_dir, cov_dir, cov="tsi"){
+  load(file.path(svd_dir, paste0(cov, "_svd.rdata")))
   sing_vecs <- svd_out$u[, 1:nvecs]
   
   ## multiply by original matrix to get rotations
-  for_svd <- fread(file.path(main_dir, paste0(cov, "_vals.csv")))
+  for_svd <- fread(file.path(cov_dir, paste0(cov, "_vals.csv")))
   print("reshaping")
   for_svd <- dcast(for_svd, cov + variable_name + variable_val ~ id)
   print("rotating")
@@ -74,10 +75,13 @@ for (this_cov in names(input_list)){
   for (continent in names(nvec_list)){
     print(paste("clustering", this_cov, "for", continent))
     
-    main_dir <- file.path(base_dir, continent)
+    cov_dir <- file.path(base_dir, "00_covariate_extraction", covariate_type, continent)
+    svd_dir <- file.path(base_dir, "01_svd", continent)
+    main_dir <- file.path(base_dir, "02_kmeans", continent, this_cov)
+    dir.create(main_dir, showWarnings=F, recursive=T)
     
     # rotate matrix, if needed
-    rotation_fname <- file.path(main_dir, paste0("svd_rotations_", this_cov, ".csv"))
+    rotation_fname <- file.path(svd_dir, paste0("svd_rotations_", this_cov, ".csv"))
     nvecs <- nvec_list[[continent]]
     
     if (file.exists(rotation_fname) & overwrite_rotation==F){
@@ -85,11 +89,11 @@ for (this_cov in names(input_list)){
       rotation <- fread(rotation_fname)
     }else{
       print("finding matrix rotations")
-      rotation <- rotate_matrix(nvecs, main_dir, this_cov)
+      rotation <- rotate_matrix(nvecs, svd_dir, cov_dir, this_cov)
       write.csv(rotation, rotation_fname, row.names=F)
     }
     
-    all_vals <- fread(file.path(main_dir, paste0(this_cov, "_vals.csv")))
+    all_vals <- fread(file.path(cov_dir, paste0(this_cov, "_vals.csv")))
     setnames(all_vals, "value", "cov_val")
     
     # k-means and plotting
@@ -100,13 +104,10 @@ for (this_cov in names(input_list)){
       cov_label <- ifelse(nchar(this_cov)==3, toupper(this_cov), capitalize(this_cov))
       
       # if k-means has already been run, just load outputs
-      kmeans_dir <- file.path(main_dir, "kmeans")
-      dir.create(kmeans_dir, showWarnings=F, recursive=T)
-      
-      k_out_fname <- file.path(kmeans_dir, paste0("k_out_", this_cov, "_", nclust, ".rdata"))
-      cluster_raster_fname <- file.path(kmeans_dir, paste0("k_clusters_", this_cov, "_", nclust, ".tif"))
-      random_trace_fname <- file.path(kmeans_dir, paste0("random_trace_", this_cov, "_", nclust, ".csv"))
-      summary_fname <- file.path(kmeans_dir,  paste0("summary_", this_cov, "_", nclust, ".csv"))
+      k_out_fname <- file.path(main_dir, paste0("k_out_", this_cov, "_", nclust, ".rdata"))
+      cluster_raster_fname <- file.path(main_dir, paste0("k_clusters_", this_cov, "_", nclust, ".tif"))
+      random_trace_fname <- file.path(main_dir, paste0("random_trace_", this_cov, "_", nclust, ".csv"))
+      summary_fname <- file.path(main_dir,  paste0("summary_", this_cov, "_", nclust, ".csv"))
       
       if (file.exists(k_out_fname) & overwrite_kmeans==F){
         print("k-means already run, loading outputs")
@@ -123,7 +124,7 @@ for (this_cov in names(input_list)){
         
         print("creating new raster")
         # load mask raster to get dimensions & extent
-        temp_raster <- raster(file.path(main_dir, "rasters", "mask.tif"))
+        temp_raster <- raster(file.path(cov_dir, "rasters", "mask.tif"))
 
         cluster_raster <- rep(NA, ncell(temp_raster))
         cluster_raster[rotation$id] <- rotation$cluster
@@ -157,7 +158,7 @@ for (this_cov in names(input_list)){
       these_colors <- palette[1:nclust]
       
       # find points nearest to centroids (todo: put in main section?)
-      temp_raster <- raster(file.path(main_dir, "rasters", "mask.tif"))
+      temp_raster <- raster(file.path(cov_dir, "rasters", "mask.tif"))
       test_matrix <- rep(NA, ncell(temp_raster))
       test_matrix[rotation$id] <- rotation$id
       test_matrix <- matrix(test_matrix, nrow=nrow(temp_raster))
