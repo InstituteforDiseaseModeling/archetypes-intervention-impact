@@ -2,12 +2,10 @@
 
 Repo for the IDM-MAP collaboration led by Amelia Bertozzi-Villa. Directories:
 
-* accessibility: preliminary scripts for generating custom accessibility surfaces. For more detail and updated examples see https://github.com/bertozzivill/friction-example.
+* archetypes: code to extract, dimensionality-reduce, and classify MAP covariate surfaces. Used to id the sites selected in intervention_impact.
 * intervention_impact: primary folder for running dtk simulations on the basis of archetypes found in the seasonal_classification folder.
-* itn_cube: geospatial modeling code from Sam Bhatt, to be adapted into a paper.
-* seasonality_classification: code to extract, dimensionality-reduce, and classify MAP covariate surfaces. Used to id the sites selected in intervention_impact.
-* stratification_comparison_april_2018: code to answer Jaline's question on model differences between IDM and MAP for the May 2018 Gates Review.
+* megatrends: code specifically related to the WHO/Lancet work with Pete to assess eradication feasibility.
 * spatial.py: Amelia's custom python geospatial package. 
+* vector_bionomics: code to assess Marianne Sinka's vector database for inclusion into species parameters at IDM. 
 
-
---Amelia Bertozzi-Villa, November 2018
+--Amelia Bertozzi-Villa, September 2019
