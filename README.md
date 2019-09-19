@@ -8,4 +8,4 @@ Repo for the IDM-MAP collaboration led by Amelia Bertozzi-Villa. Directories:
 * spatial.py: Amelia's custom python geospatial package. 
 * vector_bionomics: code to assess Marianne Sinka's vector database for inclusion into species parameters at IDM. 
 
---Amelia Bertozzi-Villa, November 2018
+--Amelia Bertozzi-Villa, September 2019
