@@ -25,10 +25,10 @@ library(Hmisc)
 library(FNN)
 
 set.seed(206)
-theme_set(theme_minimal(base_size = 16))
+theme_set(theme_minimal(base_size = 14))
 
 rm(list=ls())
-overwrite_rotation <- T
+overwrite_rotation <- F
 overwrite_kmeans <- T
 plot_vectors <- T
 covariate_type <- "no_transmission_limits"
@@ -108,12 +108,14 @@ for (this_cov in names(input_list)){
       cluster_raster_fname <- file.path(main_dir, paste0("k_clusters_", this_cov, "_", nclust, ".tif"))
       random_trace_fname <- file.path(main_dir, paste0("random_trace_", this_cov, "_", nclust, ".csv"))
       summary_fname <- file.path(main_dir,  paste0("summary_", this_cov, "_", nclust, ".csv"))
+      site_id_fname <- file.path(main_dir,  paste0("site_ids", this_cov, "_", nclust, ".csv"))
       
       if (file.exists(k_out_fname) & overwrite_kmeans==F){
         print("k-means already run, loading outputs")
         cluster_raster <- raster(cluster_raster_fname)
         random_trace <- fread(random_trace_fname)
         summary_vals <- fread(summary_fname)
+        site_ids <- fread(site_id_fname)
         load(k_out_fname)
         
       }else{
@@ -150,6 +152,21 @@ for (this_cov in names(input_list)){
         write.csv(summary_vals, summary_fname, row.names=F)
         all_vals[, cluster:=NULL]
         
+        print("finding centroids for representative sites")
+
+        # bit of matrix transposition to appropriately map a raster ID to a matrix cell
+        for_centroids <- rep(NA, ncell(temp_raster))
+        for_centroids[rotation$id] <- rotation$id
+        for_centroids <- matrix(for_centroids, nrow=nrow(temp_raster))
+        for_centroids <- base::t(for_centroids)
+        cell_id_map <- data.table(new_id = which(!is.na(for_centroids)),
+                              id = for_centroids[!is.na(for_centroids)])
+        
+        # find cell IDs of centroids and map them to the appropriate locations
+        site_ids <- rotation[get.knnx(rotation[,1:nvecs], k_out$centers, k=1)$nn.index]
+        site_ids <- merge(site_ids, cell_id_map, by="id", all.x=T)
+        write.csv(site_ids, site_id_fname, row.names=F)
+        
         save(k_out, file=k_out_fname) # save last to ensure other outputs have been saved if this exists
         
       }
@@ -157,25 +174,16 @@ for (this_cov in names(input_list)){
       plotlist <- NULL
       these_colors <- palette[1:nclust]
       
-      # find points nearest to centroids (todo: put in main section?)
-      temp_raster <- raster(file.path(cov_dir, "rasters", "mask.tif"))
-      test_matrix <- rep(NA, ncell(temp_raster))
-      test_matrix[rotation$id] <- rotation$id
-      test_matrix <- matrix(test_matrix, nrow=nrow(temp_raster))
-      test_matrix <- base::t(test_matrix)
-      test_df <- data.table(new_id = which(!is.na(test_matrix)),
-                            id = test_matrix[!is.na(test_matrix)])
-      
-      site_ids <- rotation[get.knnx(rotation[,1:nvecs], k_out$centers, k=1)$nn.index]
-      site_ids <- merge(site_ids, test_df, by="id", all.x=T)
+      # convert sites to lat-longs spatialpoints
       site_id_spoints <- xyFromCell(cluster_raster, site_ids$new_id, spatial=T)
       
       print("making map")
       cluster_raster <- ratify(cluster_raster)
       map_plot <- levelplot(cluster_raster, att="ID", col.regions=these_colors,
                             xlab=NULL, ylab=NULL, scales=list(draw=F),
-                            main = "", colorkey=F, margin=F)  # +
-        # latticeExtra::layer(sp.points(site_id_spoints))
+                            main = "", colorkey=F, margin=F)   +
+        latticeExtra::layer(sp.points(site_id_spoints), theme = simpleTheme(col = "black",
+                                                                            cex=2))
       plotlist[[1]] <- map_plot
       
       time_series <- summary_vals[variable_name=="month"]

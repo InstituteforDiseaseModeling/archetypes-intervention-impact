@@ -1,9 +1,9 @@
 ## -----------------------------------------------------------------------------------------------------------------
 # Seasonality Classification
-# 00_extract_covariates.r
+# 01_extract_map_covariates.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
-# May 2018
+# September 2019
 # 
 # For a given covariate and continent of interest, this script extracts covariate-specific
 # data from global rasters, transforms it into a panel dataset, and saves it for further clustering analyses.  
@@ -20,7 +20,7 @@ library(rasterVis)
 
 rm(list=ls())
 
-source("00_extraction_functions.r")
+source("extraction_functions.r")
 
 root_dir <- Sys.getenv("HOME")
 map_root_dir <- "/Volumes/map_data/mastergrids"
@@ -30,13 +30,13 @@ if (!dir.exists(map_root_dir)){
 }
 
 # rewrite if there's already a saved covariate extraction?
-overwrite_extraction <- T
+overwrite_extraction <- F
 
 base_dir <- file.path(root_dir, 
-                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/00_covariate_extraction/no_transmission_limits")
+                      "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/covariates/no_transmission_limits")
 mask_in_dir <- file.path(map_root_dir, "Global_Masks/MAP_Regions/MAP_Regions_Pf_5k.tif")
 
-cov_details <- fread("clustering_covariates.csv")
+cov_details <- fread("map_covariates.csv")
 
 for (idx in 1:nrow(cov_details)){
   
@@ -50,9 +50,9 @@ for (idx in 1:nrow(cov_details)){
     
     print(paste("running extraction for", this_cov$cov, "in", continent))
     
-    main_dir <- file.path(base_dir, continent, "rasters")
-    dir.create(main_dir, showWarnings=F, recursive=T)
-    extraction_fname <- file.path(base_dir, continent, paste0(this_cov$cov, "_vals.csv"))
+    this_out_dir <- file.path(base_dir, continent, this_cov$cov)
+    dir.create(this_out_dir, showWarnings=F, recursive=T)
+    extraction_fname <- file.path(this_out_dir, paste0(this_cov$cov, "_vals.csv"))
     
     ## find values
     if (file.exists(extraction_fname) & overwrite_extraction==F){
@@ -60,7 +60,7 @@ for (idx in 1:nrow(cov_details)){
     }else{
       
       # check for mask
-      clipped_mask_fname <- file.path(main_dir, "mask.tif")
+      clipped_mask_fname <- file.path(base_dir, continent, "mask.tif")
       if (file.exists(clipped_mask_fname)){
         print("loading saved mask")
         mask <- raster(clipped_mask_fname)
@@ -71,7 +71,7 @@ for (idx in 1:nrow(cov_details)){
       }
       
       print("extracting from raster")
-      all_vals <- lapply(strsplit(this_cov$values, "/")[[1]], extract_by_pattern, main_dir, this_cov, mask, overwrite_extraction)
+      all_vals <- lapply(strsplit(this_cov$values, "/")[[1]], extract_by_pattern, this_out_dir, this_cov, mask, overwrite_extraction)
       all_vals <- rbindlist(all_vals)
       
       print("saving extracted values")
