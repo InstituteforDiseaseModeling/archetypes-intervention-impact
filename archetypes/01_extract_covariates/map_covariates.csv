@@ -1,7 +1,7 @@
-cov,dir,variable,used_in_megatrends,values,continents,pattern
-tsi,Other_Global_Covariates/TemperatureSuitability/TSI_Pf_Dynamic/5km/Synoptic/,month,T,01/02/03/04/05/06/07/08/09/10/11/12,africa/asia/americas,TSI-Martens2-Pf.Synoptic.VAR.Mean.5km.Data.tif$
-rainfall,Other_Global_Covariates/Rainfall/CHIRPS/5km/Synoptic,month,T,01/02/03/04/05/06/07/08/09/10/11/12,africa/asia/americas,chirps-v2-0.Synoptic.VAR.mean.5km.tif$
-relative_vector_abundance,../master_publication_datasets/SinkaEtAl_AfricanVectorRelativeAbundance_MalJ_2016,species,T,arabiensis/coluzzii_gambiae/funestus_subgroup,africa,Anopheles_VAR.RelativeAbundance.tif$
-itn_coverage,../GBD2019/Processing/Stages/07c_ITN_Coverage_Africa/Checkpoint_Outputs/20190807,year,F,2000/2001/2002/2003/2004/2005/2006/2007/2008/2009/2010/2011/2012/2013/2014/2015/2016/2017/2018,africa,ITN_VAR.USE.tif$
-irs_coverage,../GBD2019/Processing/Stages/07d_IRS_Coverage_Africa/Checkpoint_Outputs,year,F,2000/2001/2002/2003/2004/2005/2006/2007/2008/2009/2010/2011/2012/2013/2014/2015/2016/2017,africa,irs_coverage_VAR.tif$
-act_coverage,../GBD2019/Processing/Stages/07b_Effective_Treatment_Africa_Pixel/Checkpoint_Outputs,year,F,2000/2001/2002/2003/2004/2005/2006/2007/2008/2009/2010/2011/2012/2013/2014/2015/2016/2017/2018/2019/2020,africa,VAR_africa_antimalarial_access.tif$
+cov,dir,variable,values,continents,pattern
+tsi,Other_Global_Covariates/TemperatureSuitability/TSI_Pf_Dynamic/5km/Synoptic/,month,01/02/03/04/05/06/07/08/09/10/11/12,africa/asia/americas,TSI-Martens2-Pf.Synoptic.VAR.Mean.5km.Data.tif$
+rainfall_chirps,Other_Global_Covariates/Rainfall/CHIRPS/5km/Synoptic,month,01/02/03/04/05/06/07/08/09/10/11/12,africa/asia/americas,chirps-v2-0.Synoptic.VAR.mean.5km.tif$
+relative_vector_abundance,../master_publication_datasets/SinkaEtAl_AfricanVectorRelativeAbundance_MalJ_2016,species,arabiensis/coluzzii_gambiae/funestus_subgroup,africa,Anopheles_VAR.RelativeAbundance.tif$
+itn_coverage,../GBD2019/Processing/Stages/07c_ITN_Coverage_Africa/Checkpoint_Outputs/20190807,year,2000/2001/2002/2003/2004/2005/2006/2007/2008/2009/2010/2011/2012/2013/2014/2015/2016/2017/2018,africa,ITN_VAR.USE.tif$
+irs_coverage,../GBD2019/Processing/Stages/07d_IRS_Coverage_Africa/Checkpoint_Outputs,year,2000/2001/2002/2003/2004/2005/2006/2007/2008/2009/2010/2011/2012/2013/2014/2015/2016/2017,africa,irs_coverage_VAR.tif$
+act_coverage,../GBD2019/Processing/Stages/07b_Effective_Treatment_Africa_Pixel/Checkpoint_Outputs,year,2000/2001/2002/2003/2004/2005/2006/2007/2008/2009/2010/2011/2012/2013/2014/2015/2016/2017/2018/2019/2020,africa,VAR_africa_antimalarial_access.tif$

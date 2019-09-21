@@ -27,17 +27,26 @@ get_mask <- function(continent, in_fname, out_fname){
   return(clipped_mask)
 }
 
-extract_values <- function(raster_in_dir, out_fname, mask){
-  full <- raster(raster_in_dir)
-  vals <- extend(crop(full, mask), mask)
+extract_values <- function(full_raster, out_fname, mask){
+  # crop, save, and return values for a Raster* object
+  vals <- extend(crop(full_raster, mask), mask)
   compareRaster(vals, mask)
   vals <- raster::mask(vals, mask, maskvalue=0)
 
   print("saving raster")
-  writeRaster(vals, out_fname, overwrite=T)
+  writeRaster(vals, out_fname, bylayer=T, overwrite=T)
   
   return(vals)
 }
+
+# function to align resolutions between two rasters
+align_res <- function(rast, template.rast){
+  if (!identical(res(rast), res(template.rast))) {
+    rast  <- raster::resample(rast, template.rast, method = 'ngb')
+  }
+  return(rast)
+}
+
 
 extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster, overwrite=F){
   
@@ -75,7 +84,7 @@ extract_by_pattern <- function(sweep_value, out_dir, cov, mask_raster, overwrite
     vals <- raster(out_fname)
   }else{
     print("clipping global raster")
-    vals <- extract_values(raster_in_dir=file.path(cov$dir, in_fname), out_fname=out_fname, mask = mask_raster)
+    vals <- extract_values(full_raster=raster(file.path(cov$dir, in_fname)), out_fname=out_fname, mask = mask_raster)
   }
   
   plot_out_fname <- gsub("tif", "pdf", out_fname)
