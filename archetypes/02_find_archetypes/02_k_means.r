@@ -76,6 +76,19 @@ for (this_continent in guide$continent){
   all_vals[, id:=as.integer(as.character(id))]
   rm(svd_out, svd_wide_datatable); gc()
   
+  # find map from raster cells to rotation ids
+  temp_raster <- raster(file.path(cov_dir, "mask.tif"))
+  
+  # bit of matrix transposition to appropriately map a raster ID to a matrix cell
+  print("finding raster cell: rotation id map")
+  for_centroids <- rep(NA, ncell(temp_raster))
+  for_centroids[rotation$id] <- rotation$id
+  for_centroids <- matrix(for_centroids, nrow=nrow(temp_raster))
+  for_centroids <- base::t(for_centroids)
+  cell_id_map <- data.table(raster_cell = which(!is.na(for_centroids)),
+                            id = for_centroids[!is.na(for_centroids)])
+  write.csv(cell_id_map, file.path(this_out_dir, "cell_id_map.csv"), row.names=F)
+  
   
   # k-means
   for (nclust in cluster_counts){
@@ -95,9 +108,6 @@ for (this_continent in guide$continent){
       rotation[, cluster:= k_out$cluster]
       
       print("creating new raster")
-      # load mask raster to get dimensions & extent
-      temp_raster <- raster(file.path(cov_dir, "mask.tif"))
-
       cluster_raster <- rep(NA, ncell(temp_raster))
       cluster_raster[rotation$id] <- rotation$cluster
       cluster_raster <- matrix(cluster_raster, nrow=nrow(temp_raster))
@@ -125,14 +135,6 @@ for (this_continent in guide$continent){
       all_vals[, cluster:=NULL]
       
       print("finding centroids for representative sites")
-      # bit of matrix transposition to appropriately map a raster ID to a matrix cell
-      for_centroids <- rep(NA, ncell(temp_raster))
-      for_centroids[rotation$id] <- rotation$id
-      for_centroids <- matrix(for_centroids, nrow=nrow(temp_raster))
-      for_centroids <- base::t(for_centroids)
-      cell_id_map <- data.table(transposed_id = which(!is.na(for_centroids)),
-                            id = for_centroids[!is.na(for_centroids)])
-      
       # find cell IDs of centroids and map them to the appropriate locations
       site_ids <- rotation[get.knnx(rotation[,1:nvecs], k_out$centers, k=1)$nn.index]
       site_ids <- merge(site_ids, cell_id_map, by="id", all.x=T)

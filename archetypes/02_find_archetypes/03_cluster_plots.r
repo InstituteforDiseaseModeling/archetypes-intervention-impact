@@ -42,7 +42,7 @@ palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "
 
 for (this_continent in guide$continent){
 
-  print(paste("clustering for", this_continent))
+  print(paste("plotting archetypes for", this_continent))
   
   nvecs <- guide[continent==this_continent]$singular_vectors
   
@@ -105,11 +105,12 @@ for (this_continent in guide$continent){
       centers[, cluster:="centroid"]
       for_svd_plot <- rbind(random_trace_for_plot, centers, fill=T)
       for_svd_plot[, cluster:=as.factor(cluster)]
+      for_svd_plot <- rbind(for_svd_plot, site_ids[, list(id, X1, X2, X3, cluster="NN")])
       
       html_dir <- file.path(this_out_dir, "plotly_html")
       dir.create(html_dir, showWarnings=F, recursive=T)
       
-      svd_cluster_plot <- plot_ly(for_svd_plot, x = ~X1, y = ~X2, color = ~cluster, colors=these_colors, z = ~X3, opacity=0.95) %>%
+      svd_cluster_plot <- plot_ly(for_svd_plot, x = ~X1, y = ~X2, color = ~cluster, colors=c(these_colors, "#000000", "#778899"), z = ~X3, opacity=0.95) %>%
         add_markers()
       htmlwidgets::saveWidget(svd_cluster_plot, file.path(html_dir, paste0("scatter_", nclust, "_cluster", ".html")))
     }else{
@@ -121,7 +122,7 @@ for (this_continent in guide$continent){
     plotlist <- NULL
     
     # convert sites to lat-longs spatialpoints
-    site_id_spoints <- xyFromCell(cluster_raster, site_ids$transposed_id, spatial=T)
+    site_id_spoints <- xyFromCell(cluster_raster, site_ids$raster_cell, spatial=T)
     
     print("making map")
     cluster_raster <- ratify(cluster_raster)
@@ -147,7 +148,7 @@ for (this_continent in guide$continent){
         geom_line(size=1) +
         geom_line(aes(y=perc_05), size=0.75, linetype=2) +
         geom_line(aes(y=perc_95), size=0.75, linetype=2) +
-        geom_line(data=selected_sites, aes(y=cov_val), color="black") +
+        geom_line(data=selected_sites, aes(y=cov_val), color="black", size=1) +
         scale_color_manual(values = these_colors) +
         scale_fill_manual(values = these_colors) + 
         scale_x_continuous(breaks=seq(2,12,2), labels=c("F","A","J","A","O","D"), minor_breaks=seq(1,12,2)) +
