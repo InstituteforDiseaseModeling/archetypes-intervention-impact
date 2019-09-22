@@ -27,14 +27,14 @@ base_dir <- file.path(root_dir,
 
 overwrite <- T
 rescale <- F
-out_subdir <- "map_climate_covariates"
+out_subdir <- "original_megatrends"
 
 out_dir <- file.path(base_dir, "results", out_subdir)
-guide <- fread(file.path(out_dir, "covariate_list.csv"))
+guide <- fread(file.path(out_dir, "instructions.csv"))
 
 for (this_continent in guide$continent){
   print(paste("running svd on", this_continent))
-  cov_dir <- file.path(base_dir, "covariates", guide$cov_directory, this_continent)
+  cov_dir <- file.path(base_dir, "covariates", unique(guide$cov_directory), this_continent)
   this_out_dir <- file.path(out_dir, this_continent, "01_svd")
   dir.create(this_out_dir, showWarnings=F, recursive=T)
   
@@ -45,7 +45,7 @@ for (this_continent in guide$continent){
   }
   
   # load datasets, merge
-  all_vals_fname <- file.path(this_out_dir, paste0(full_label, "_vals.csv"))
+  all_vals_fname <- file.path(this_out_dir, paste0(full_label, ".vals.csv"))
   if (file.exists(all_vals_fname) & overwrite==F){
     print("loading extracted values")
     all_vals <- fread(all_vals_fname)
@@ -68,12 +68,13 @@ for (this_continent in guide$continent){
     shared_ids <- Reduce(intersect, non_null_ids)
     all_vals <- rbindlist(all_vals)
     all_vals <- all_vals[id %in% shared_ids]
-    write.csv(all_vals, file=all_vals_fname, row.names=F)
+    # print("saving appended dataset")
+    # write.csv(all_vals, file=all_vals_fname, row.names=F)
   }
   
   # plot distribution of values
   print("plotting distributions")
-  png(file=file.path(this_out_dir, "covariate_distributions.png"))
+  pdf(file=file.path(this_out_dir, "covariate_distributions.pdf"))
   
   distplot <- ggplot(all_vals, aes(x=value)) + 
               geom_density(aes(color=cov, fill=cov), alpha=0.5) +
@@ -94,10 +95,10 @@ for (this_continent in guide$continent){
     load(svd_out_fname)
   }else{
     print("reshaping and filling nulls")
-    for_svd <- dcast(all_vals, cov + variable_name + variable_val ~ id)
+    svd_wide_datatable <- dcast(all_vals, cov + variable_name + variable_val ~ id)
     print("running svd")
-    svd_out <- svd(for_svd[, 4:ncol(for_svd)])
-    save(svd_out, file=svd_out_fname)
+    svd_out <- svd(svd_wide_datatable[, 4:ncol(svd_wide_datatable)])
+    save(svd_out, svd_wide_datatable, file=svd_out_fname)
   }
   
   print("plotting")

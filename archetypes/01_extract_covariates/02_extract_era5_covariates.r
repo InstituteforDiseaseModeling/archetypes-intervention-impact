@@ -36,9 +36,6 @@ template <- raster(file.path(in_dir, "MAP_Regions_Pf_5k.tif"))
 
 input_files <- list.files(in_dir)[list.files(in_dir) %like% paste0("\\.nc$")]
 
-# TEMP
-input_files <- input_files[[1]]
-
 for (this_input_file in input_files){
   
   cov_name <- gsub("\\.nc", "", this_input_file)
