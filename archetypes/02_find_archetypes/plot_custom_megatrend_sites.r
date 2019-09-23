@@ -44,7 +44,7 @@ these_colors <- palette[1:nclust]
 nvecs <- 3
 
 this_in_dir <- file.path(out_dir, this_continent, "02_kmeans")
-this_out_dir <- file.path(this_in_dir, "plots")
+this_out_dir <- file.path(this_in_dir, "figures")
 svd_dir <- file.path(this_in_dir, "../01_svd")
 
 print("loading matrix rotations")
@@ -65,18 +65,16 @@ cluster_raster <- raster(file.path(this_in_dir, paste0("map_", nclust, "_cluster
 random_trace <- fread(file.path(this_in_dir, paste0("random_trace_", nclust, "_cluster",  ".csv")))
 summary_vals <- fread(file.path(this_in_dir,  paste0("summary_", nclust, "_cluster", ".csv")))
 site_ids <- fread(file.path(this_in_dir,  paste0("site_ids_", nclust, "_cluster", ".csv")))
-cell_id_map <- fread(file.path(this_in_dir, "cell_id_map.csv"))
 load(file.path(this_in_dir, paste0("k_out_", nclust, "_cluster", ".rdata")))
 
 # NEW: load custom site locations from ad-hoc selection
 custom_site_ids <- fread("~/repos/malaria-atlas-project/intervention_impact/run_simulations/input_files/site_details.csv")
 custom_site_ids <- custom_site_ids[continent=="Africa", list(name, lat, lon, country)]
-custom_site_ids$raster_cell <- cellFromXY(cluster_raster, as.matrix(custom_site_ids[, list(lon, lat)]))
-custom_site_ids <- merge(custom_site_ids, cell_id_map, by="raster_cell", all.x=T)
+custom_site_ids$id <- cellFromXY(cluster_raster, as.matrix(custom_site_ids[, list(lon, lat)]))
 
 # manual map to id vals
 cluster_map <- data.table(name=c("djibo", "gode", "aba", "kananga", "kasama", "moine"),
-                          cluster=c(4,1,6,5,3,2))
+                          cluster=c(4,2,1,3,6,5))
 custom_site_ids <- merge(custom_site_ids, cluster_map, by="name", all=T)
 
 print("plotting cluster scatters")
@@ -92,7 +90,7 @@ for_svd_plot[, cluster:=as.factor(cluster)]
 
 html_dir <- file.path(this_out_dir, "plotly_html")
 
-svd_cluster_plot <- plot_ly(for_svd_plot, x = ~X1, y = ~X2, color = ~cluster, colors=c(these_colors, "#000000", "#778899"), z = ~X3, opacity=0.85) %>%
+svd_cluster_plot <- plot_ly(for_svd_plot, x = ~X1, y = ~X2, color = ~cluster, colors=c(these_colors, "#000000", "#2F4F4F"), z = ~X3, opacity=0.85) %>%
   add_markers()
 htmlwidgets::saveWidget(svd_cluster_plot, file.path(html_dir, paste0("CUSTOM_scatter_", nclust, "_cluster", ".html")))
 
@@ -102,7 +100,7 @@ plotlist <- NULL
 
 pdf(file.path(this_out_dir, paste0("CUSTOM_k_means_6cluster.pdf")), width=8, height=4.5)
 # convert sites to lat-longs spatialpoints
-site_id_spoints <- xyFromCell(cluster_raster, custom_site_ids$raster_cell, spatial=T) 
+site_id_spoints <- xyFromCell(cluster_raster, custom_site_ids$id, spatial=T) 
 print("making map")
 cluster_raster <- ratify(cluster_raster)
 map_plot <- levelplot(cluster_raster, att="ID", col.regions=these_colors,

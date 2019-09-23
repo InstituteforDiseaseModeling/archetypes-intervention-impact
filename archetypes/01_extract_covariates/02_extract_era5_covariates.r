@@ -93,7 +93,7 @@ for (this_input_file in input_files){
     }else{
       print("saving rasters")
       mask_layer <- raster(file.path(this_out_dir, "../mask.tif"))
-      cropped_layers <- extract_values(final_layers, out_fname = file.path(this_out_dir, paste0(names(final_layers), ".tif")),
+      cropped_layers <- save_raster(final_layers, out_fname = file.path(this_out_dir, paste0(names(final_layers), ".tif")),
                                        mask = mask_layer)
       
       if(!synoptic){

@@ -21,10 +21,8 @@ library(latticeExtra)
 library(Hmisc)
 library(FNN)
 
-set.seed(206)
-
 rm(list=ls())
-overwrite_rotation <- F
+overwrite_rotation <- T
 overwrite_kmeans <- T
 out_subdir <- "original_megatrends"
 
@@ -34,7 +32,7 @@ base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))
 
-cluster_counts <- 3:20
+cluster_counts <- 3:15
 
 for (this_continent in guide$continent){
   
@@ -79,20 +77,10 @@ for (this_continent in guide$continent){
   # find map from raster cells to rotation ids
   temp_raster <- raster(file.path(cov_dir, "mask.tif"))
   
-  # bit of matrix transposition to appropriately map a raster ID to a matrix cell
-  print("finding raster cell: rotation id map")
-  for_centroids <- rep(NA, ncell(temp_raster))
-  for_centroids[rotation$id] <- rotation$id
-  for_centroids <- matrix(for_centroids, nrow=nrow(temp_raster))
-  for_centroids <- base::t(for_centroids)
-  cell_id_map <- data.table(raster_cell = which(!is.na(for_centroids)),
-                            id = for_centroids[!is.na(for_centroids)])
-  write.csv(cell_id_map, file.path(this_out_dir, "cell_id_map.csv"), row.names=F)
-  
-  
   # k-means
   for (nclust in cluster_counts){
     
+    set.seed(206)
     # if k-means has already been run, just load outputs
     k_out_fname <- file.path(this_out_dir, paste0("k_out_", nclust, "_cluster", ".rdata"))
     cluster_raster_fname <- file.path(this_out_dir, paste0("map_", nclust, "_cluster", ".tif"))
@@ -110,7 +98,7 @@ for (this_continent in guide$continent){
       print("creating new raster")
       cluster_raster <- rep(NA, ncell(temp_raster))
       cluster_raster[rotation$id] <- rotation$cluster
-      cluster_raster <- matrix(cluster_raster, nrow=nrow(temp_raster))
+      cluster_raster <- matrix(cluster_raster, nrow=nrow(temp_raster), byrow=T)
       cluster_raster <- raster(cluster_raster, template=temp_raster)
       writeRaster(cluster_raster, cluster_raster_fname, overwrite=T)
   
@@ -137,7 +125,6 @@ for (this_continent in guide$continent){
       print("finding centroids for representative sites")
       # find cell IDs of centroids and map them to the appropriate locations
       site_ids <- rotation[get.knnx(rotation[,1:nvecs], k_out$centers, k=1)$nn.index]
-      site_ids <- merge(site_ids, cell_id_map, by="id", all.x=T)
       write.csv(site_ids, site_id_fname, row.names=F)
       
       save(k_out, file=k_out_fname) # save last to ensure other outputs have been saved if this exists

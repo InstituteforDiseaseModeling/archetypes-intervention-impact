@@ -47,7 +47,7 @@ for (this_continent in guide$continent){
   nvecs <- guide[continent==this_continent]$singular_vectors
   
   this_in_dir <- file.path(out_dir, this_continent, "02_kmeans")
-  this_out_dir <- file.path(this_in_dir, "plots")
+  this_out_dir <- file.path(this_in_dir, "figures")
   dir.create(this_out_dir, showWarnings=F, recursive=T)
   svd_dir <- file.path(this_in_dir, "../01_svd")
 
@@ -122,7 +122,7 @@ for (this_continent in guide$continent){
     plotlist <- NULL
     
     # convert sites to lat-longs spatialpoints
-    site_id_spoints <- xyFromCell(cluster_raster, site_ids$raster_cell, spatial=T)
+    site_id_spoints <- xyFromCell(cluster_raster, site_ids$id, spatial=T)
     
     print("making map")
     cluster_raster <- ratify(cluster_raster)

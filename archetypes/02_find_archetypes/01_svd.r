@@ -68,6 +68,10 @@ for (this_continent in guide$continent){
     shared_ids <- Reduce(intersect, non_null_ids)
     all_vals <- rbindlist(all_vals)
     all_vals <- all_vals[id %in% shared_ids]
+    
+    # to ensure replication
+    all_vals[variable_name=="month", variable_val:= str_pad(variable_val, 2, side="left", pad="0")]
+    all_vals <- all_vals[order(cov, variable_name, variable_val)]
     # print("saving appended dataset")
     # write.csv(all_vals, file=all_vals_fname, row.names=F)
   }
@@ -78,7 +82,7 @@ for (this_continent in guide$continent){
   
   distplot <- ggplot(all_vals, aes(x=value)) + 
               geom_density(aes(color=cov, fill=cov), alpha=0.5) +
-              facet_grid(cov~.) +
+              facet_grid(cov~., scales="free") +
               theme_minimal() + 
               theme(legend.position = "none") + 
               labs(title="Distribution of SVD variables",
