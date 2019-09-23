@@ -36,9 +36,6 @@ template <- raster(file.path(in_dir, "MAP_Regions_Pf_5k.tif"))
 
 input_files <- list.files(in_dir)[list.files(in_dir) %like% paste0("\\.nc$")]
 
-# TEMP
-input_files <- input_files[[1]]
-
 for (this_input_file in input_files){
   
   cov_name <- gsub("\\.nc", "", this_input_file)
@@ -96,7 +93,7 @@ for (this_input_file in input_files){
     }else{
       print("saving rasters")
       mask_layer <- raster(file.path(this_out_dir, "../mask.tif"))
-      cropped_layers <- extract_values(final_layers, out_fname = file.path(this_out_dir, paste0(names(final_layers), ".tif")),
+      cropped_layers <- save_raster(final_layers, out_fname = file.path(this_out_dir, paste0(names(final_layers), ".tif")),
                                        mask = mask_layer)
       
       if(!synoptic){
