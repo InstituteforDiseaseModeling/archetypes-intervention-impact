@@ -30,7 +30,6 @@ out_dir <- file.path(base_dir, "no_transmission_limits")
 
 # if synoptic==T, take the mean across years. Ohterwise save a raster for every year-month
 synoptic <- T
-overwrite_extraction <- F
 
 template <- raster(file.path(in_dir, "MAP_Regions_Pf_5k.tif"))
 
@@ -54,7 +53,7 @@ for (this_input_file in input_files){
       stack_names <- names(all_layers)[names(all_layers) %like% paste0("month_", month_str)]
       
       this_stack <- all_layers[[stack_names]]
-      synoptic_mean <- calc(this_stack, fun=mean)
+      synoptic_mean <- max(calc(this_stack, fun=mean), 0) # remove negative values
       names(synoptic_mean) <- paste0(cov_name, "_month_", month_str)
       return(synoptic_mean)
     })
@@ -73,8 +72,12 @@ for (this_input_file in input_files){
     # convert from kelvin to celsius
     final_layers <- final_layers - 273.15
   }else if (cov_name %like% "precip"){
-    # convert from m to mm
-    final_layers <- final_layers * 1000
+    
+    # each monthly value should be multiplied by the number of days in the month
+    month_durations <- c(31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31)
+    
+    # convert from m/day to mm/month
+    final_layers <- final_layers * month_durations * 1000
   }
   
   print("resampling")
@@ -88,35 +91,30 @@ for (this_input_file in input_files){
     dir.create(this_out_dir, showWarnings=F, recursive=T)
     extraction_fname <- file.path(this_out_dir, paste0(cov_name, "_vals.csv"))
     
-    if (file.exists(extraction_fname) & overwrite_extraction==F){
-      print("values already extracted")
+    print("saving rasters")
+    mask_layer <- raster(file.path(this_out_dir, "../mask.tif"))
+    cropped_layers <- save_raster(final_layers, out_fname = file.path(this_out_dir, paste0(names(final_layers), ".tif")),
+                                     mask = mask_layer)
+    
+    if(!synoptic){
+      stop("TODO: THINK ABOUT HOW TO STRUCTURE A MULTIVARIABLE FILE")
     }else{
-      print("saving rasters")
-      mask_layer <- raster(file.path(this_out_dir, "../mask.tif"))
-      cropped_layers <- save_raster(final_layers, out_fname = file.path(this_out_dir, paste0(names(final_layers), ".tif")),
-                                       mask = mask_layer)
+      vals <- as.matrix(cropped_layers)
+      vals <- data.table(vals,
+                         id=1:nrow(vals))
+      names(vals) <- gsub(paste0(cov_name, "_month_"), "", names(vals)) 
+      vals <- vals[!is.na(vals[["01"]])]
+      vals <- melt(vals, id.vars = "id", variable.name="variable_val")
+      vals <- vals[, list(cov=cov_name,
+                          variable_name="month",
+                          variable_val,
+                          id,
+                          value
+      )]
       
-      if(!synoptic){
-        stop("TODO: THINK ABOUT HOW TO STRUCTURE A MULTIVARIABLE FILE")
-      }else{
-        vals <- as.matrix(cropped_layers)
-        vals <- data.table(vals,
-                           id=1:nrow(vals))
-        names(vals) <- gsub(paste0(cov_name, "_month_"), "", names(vals)) 
-        vals <- vals[!is.na(vals[["01"]])]
-        vals <- melt(vals, id.vars = "id", variable.name="variable_val")
-        vals <- vals[, list(cov=cov_name,
-                            variable_name="month",
-                            variable_val,
-                            id,
-                            value
-        )]
-        
-        print("saving extracted values")
-        write.csv(vals, file=extraction_fname, row.names=F)
+      print("saving extracted values")
+      write.csv(vals, file=extraction_fname, row.names=F)
       }
-      
-    }
     
   }
   

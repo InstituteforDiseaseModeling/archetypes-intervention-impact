@@ -25,7 +25,7 @@ library(FNN)
 library(plotly)
 
 set.seed(206)
-theme_set(theme_minimal(base_size = 14))
+theme_set(theme_minimal(base_size = 12))
 
 rm(list=ls())
 
@@ -71,7 +71,7 @@ custom_site_ids <- fread("~/repos/malaria-atlas-project/intervention_impact/run_
 custom_site_ids <- custom_site_ids[continent=="Africa", list(name, lat, lon, country)]
 custom_site_ids$id <- cellFromXY(cluster_raster, as.matrix(custom_site_ids[, list(lon, lat)]))
 
-# MANUAL map to id vals
+# MANUAL map to id vals-- have to redo each time you rerun =
 cluster_map <- data.table(name=c("djibo", "gode", "aba", "kananga", "kasama", "moine"),
                           cluster=c(4,2,1,3,6,5))
 custom_site_ids <- merge(custom_site_ids, cluster_map, by="name", all=T)
@@ -120,7 +120,7 @@ lines <- lapply(unique(time_series$cov), function(cov_value){
   selected_sites[, cluster:=as.factor(cluster)]
   
   ggplot(data, aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
-    facet_grid(cluster~.) +
+    facet_grid(cluster~., scales="free_y") +
     geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5, color=NA) +
     geom_line(size=1) +
     geom_line(aes(y=perc_05), size=0.75, linetype=2) +

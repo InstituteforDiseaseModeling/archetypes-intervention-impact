@@ -30,7 +30,7 @@ theme_set(theme_minimal(base_size = 14))
 rm(list=ls())
 
 plot_vectors <- T
-out_subdir <- "v1_original_megatrends"
+out_subdir <- "v3_era5_climate_rescaled"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
@@ -146,7 +146,7 @@ for (this_continent in unique(guide$continent)){
       selected_sites[, cluster:=as.factor(cluster)]
       
       ggplot(data, aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
-        facet_grid(cluster~.) +
+        facet_grid(cluster~., scales="free_y") +
         geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5, color=NA) +
         geom_line(size=1) +
         geom_line(aes(y=perc_05), size=0.75, linetype=2) +

@@ -24,7 +24,7 @@ library(FNN)
 rm(list=ls())
 overwrite_rotation <- T
 overwrite_kmeans <- T
-out_subdir <- "v1_original_megatrends"
+out_subdir <- "v3_era5_climate_rescaled"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
