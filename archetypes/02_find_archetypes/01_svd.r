@@ -26,7 +26,7 @@ base_dir <- file.path(root_dir,
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 
 overwrite <- T
-out_subdir <- "v1_original_megatrends"
+out_subdir <- "v3_era5_climate_rescaled"
 
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))
@@ -54,8 +54,10 @@ for (this_continent in unique(guide$continent)){
       rescale <- as.logical(this_guide[covariate==cov_name]$rescale)
       if (rescale==T){
         print("rescaling variables")
-        rescale_cap <- this_guide[covariate==cov_name]$rescale_cap
-        if (!is.na(rescale_cap)){
+        rescale_quantile <- this_guide[covariate==cov_name]$rescale_quantile
+        if (!is.na(rescale_quantile)){
+          print(paste("rescaling", cov_name, "to quantile", rescale_quantile))
+          rescale_cap <- quantile(vals$value, rescale_quantile/100)[[1]]
           vals[, value:=pmin(value, rescale_cap)]
         }
         # rescale to range [0,1]
