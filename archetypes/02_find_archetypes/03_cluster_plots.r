@@ -30,7 +30,7 @@ theme_set(theme_minimal(base_size = 14))
 rm(list=ls())
 
 plot_vectors <- T
-out_subdir <- "original_megatrends"
+out_subdir <- "v1_original_megatrends"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
@@ -40,11 +40,11 @@ guide <- fread(file.path(out_dir, "instructions.csv"))
 
 palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "#902E57", "#F98400", "#B03A2E")
 
-for (this_continent in guide$continent){
+for (this_continent in unique(guide$continent)){
 
   print(paste("plotting archetypes for", this_continent))
   
-  nvecs <- guide[continent==this_continent]$singular_vectors
+  nvecs <- unique(guide[continent==this_continent]$singular_vectors)
   
   this_in_dir <- file.path(out_dir, this_continent, "02_kmeans")
   this_out_dir <- file.path(this_in_dir, "figures")
@@ -92,10 +92,12 @@ for (this_continent in guide$continent){
     
     print("plotting cluster scatters")
     centers <- data.table(k_out$centers)
+    setnames(centers, paste0("X", 1:nvecs), paste0("singular_vector_", 1:nvecs))
     random_trace_for_plot <- merge(unique(random_trace[, list(id, cluster)]), rotation, by="id", all.x=T)
+    setnames(random_trace_for_plot, paste0("X", 1:nvecs), paste0("singular_vector_", 1:nvecs))
     
     if (nvecs==2){
-      svd_cluster_plot <- ggplot(random_trace_for_plot, aes(x=X1, y=X2, color=as.factor(cluster))) +
+      svd_cluster_plot <- ggplot(random_trace_for_plot, aes(x=singular_vector_1, y=singular_vector_2, color=as.factor(cluster))) +
         geom_point(size=3, alpha=0.8) +
         geom_point(data=centers, size=3, color="black") + 
         scale_color_manual(values=these_colors) +
@@ -105,18 +107,19 @@ for (this_continent in guide$continent){
       centers[, cluster:="centroid"]
       for_svd_plot <- rbind(random_trace_for_plot, centers, fill=T)
       for_svd_plot[, cluster:=as.factor(cluster)]
-      for_svd_plot <- rbind(for_svd_plot, site_ids[, list(id, X1, X2, X3, cluster="NN")])
+      for_svd_plot <- rbind(for_svd_plot, site_ids[, list(id, singular_vector_1, singular_vector_2, singular_vector_3, cluster="NN")])
       
       html_dir <- file.path(this_out_dir, "plotly_html")
       dir.create(html_dir, showWarnings=F, recursive=T)
       
-      svd_cluster_plot <- plot_ly(for_svd_plot, x = ~X1, y = ~X2, color = ~cluster, colors=c(these_colors, "#000000", "#778899"), z = ~X3, opacity=0.95) %>%
+      svd_cluster_plot <- plot_ly(for_svd_plot, x = ~singular_vector_1, y = ~singular_vector_2,
+                                  color = ~cluster, colors=c(these_colors, "#000000", "#778899"),
+                                  z = ~singular_vector_3, opacity=0.95) %>%
         add_markers()
       htmlwidgets::saveWidget(svd_cluster_plot, file.path(html_dir, paste0("scatter_", nclust, "_cluster", ".html")))
     }else{
       warning("Don't know what to do with this many singular vectors")
     }
-    
     
     # plot big plot
     plotlist <- NULL

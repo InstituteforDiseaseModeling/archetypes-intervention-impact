@@ -30,7 +30,7 @@ theme_set(theme_minimal(base_size = 14))
 rm(list=ls())
 
 plot_vectors <- T
-out_subdir <- "original_megatrends"
+out_subdir <- "v1_original_megatrends"
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 out_dir <- file.path(base_dir, "results", out_subdir)
@@ -64,7 +64,6 @@ print("loading outputs")
 cluster_raster <- raster(file.path(this_in_dir, paste0("map_", nclust, "_cluster", ".tif")))
 random_trace <- fread(file.path(this_in_dir, paste0("random_trace_", nclust, "_cluster",  ".csv")))
 summary_vals <- fread(file.path(this_in_dir,  paste0("summary_", nclust, "_cluster", ".csv")))
-site_ids <- fread(file.path(this_in_dir,  paste0("site_ids_", nclust, "_cluster", ".csv")))
 load(file.path(this_in_dir, paste0("k_out_", nclust, "_cluster", ".rdata")))
 
 # NEW: load custom site locations from ad-hoc selection
@@ -72,7 +71,7 @@ custom_site_ids <- fread("~/repos/malaria-atlas-project/intervention_impact/run_
 custom_site_ids <- custom_site_ids[continent=="Africa", list(name, lat, lon, country)]
 custom_site_ids$id <- cellFromXY(cluster_raster, as.matrix(custom_site_ids[, list(lon, lat)]))
 
-# manual map to id vals
+# MANUAL map to id vals
 cluster_map <- data.table(name=c("djibo", "gode", "aba", "kananga", "kasama", "moine"),
                           cluster=c(4,2,1,3,6,5))
 custom_site_ids <- merge(custom_site_ids, cluster_map, by="name", all=T)
@@ -87,6 +86,7 @@ custom_site_rotation[, cluster:="custom ID"]
 for_svd_plot <- rbind(random_trace_for_plot, centers, fill=T)
 for_svd_plot <- rbind(for_svd_plot, custom_site_rotation)
 for_svd_plot[, cluster:=as.factor(cluster)]
+
 
 html_dir <- file.path(this_out_dir, "plotly_html")
 
