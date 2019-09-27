@@ -26,23 +26,21 @@ base_dir <- file.path(root_dir,
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 
 overwrite <- T
-rescale <- F
-out_subdir <- "original_megatrends"
+out_subdir <- "v1_original_megatrends"
 
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))
 
-for (this_continent in guide$continent){
+for (this_continent in unique(guide$continent)){
+  
+  this_guide <- guide[continent==this_continent]
+  
   print(paste("running svd on", this_continent))
-  cov_dir <- file.path(base_dir, "covariates", unique(guide$cov_directory), this_continent)
+  cov_dir <- file.path(base_dir, "covariates", unique(this_guide$cov_directory), this_continent)
   this_out_dir <- file.path(out_dir, this_continent, "01_svd")
   dir.create(this_out_dir, showWarnings=F, recursive=T)
   
-  these_covs <- unlist(strsplit(guide[continent==this_continent]$covariates, "/"))
-  full_label <- paste(these_covs, collapse=".")
-  if (rescale==T & "rainfall" %in% these_covs){
-    full_label <- paste0(full_label, ".rescaled")
-  }
+  full_label <- paste(this_guide$covariate, collapse=".")
   
   # load datasets, merge
   all_vals_fname <- file.path(this_out_dir, paste0(full_label, ".vals.csv"))
@@ -51,11 +49,16 @@ for (this_continent in guide$continent){
     all_vals <- fread(all_vals_fname)
   }else{
     print("appending datasets")
-    all_vals <- lapply(these_covs, function(cov_name){
+    all_vals <- lapply(this_guide$covariate, function(cov_name){
       vals <- fread(file.path(cov_dir, cov_name, paste0(cov_name, "_vals.csv")))
-      if (rescale==T & cov_name=="rainfall"){
-        # cap outliers in rainfall data; rescale to [0,1]
-        vals[value>400, value:=400]
+      rescale <- as.logical(this_guide[covariate==cov_name]$rescale)
+      if (rescale==T){
+        print("rescaling variables")
+        rescale_cap <- this_guide[covariate==cov_name]$rescale_cap
+        if (!is.na(rescale_cap)){
+          vals[, value:=pmin(value, rescale_cap)]
+        }
+        # rescale to range [0,1]
         vals[, value:=value/max(value)]
       }
       return(vals)

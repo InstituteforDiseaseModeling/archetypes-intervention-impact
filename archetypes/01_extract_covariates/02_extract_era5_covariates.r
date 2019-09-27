@@ -30,7 +30,7 @@ out_dir <- file.path(base_dir, "no_transmission_limits")
 
 # if synoptic==T, take the mean across years. Ohterwise save a raster for every year-month
 synoptic <- T
-overwrite_extraction <- T
+overwrite_extraction <- F
 
 template <- raster(file.path(in_dir, "MAP_Regions_Pf_5k.tif"))
 

@@ -24,7 +24,7 @@ library(FNN)
 rm(list=ls())
 overwrite_rotation <- T
 overwrite_kmeans <- T
-out_subdir <- "original_megatrends"
+out_subdir <- "v1_original_megatrends"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
@@ -34,17 +34,18 @@ guide <- fread(file.path(out_dir, "instructions.csv"))
 
 cluster_counts <- 3:15
 
-for (this_continent in guide$continent){
+for (this_continent in unique(guide$continent)){
   
-  this_cov <- gsub("/", ".", guide[continent==this_continent]$covariates)
+  this_guide <- guide[continent==this_continent]
+  this_cov <- paste(this_guide$covariate, collapse=".")
   print(paste("clustering", this_cov, "for", this_continent))
   
-  nvecs <- guide[continent==this_continent]$singular_vectors
+  nvecs <- unique(this_guide$singular_vectors)
   
   this_out_dir <- file.path(out_dir, this_continent, "02_kmeans")
   dir.create(this_out_dir, showWarnings=F, recursive=T)
   svd_dir <- file.path(this_out_dir, "../01_svd")
-  cov_dir <- file.path(base_dir, "covariates", unique(guide$cov_directory), this_continent)
+  cov_dir <- file.path(base_dir, "covariates", unique(this_guide$cov_directory), this_continent)
   
   # rotate matrix, if needed
   rotation_fname <- file.path(this_out_dir, "svd_rotations.csv")
@@ -105,7 +106,7 @@ for (this_continent in guide$continent){
       all_vals <- merge(all_vals, rotation[, list(id, cluster)], by="id", all=T)
       
       print("finding random traces")
-      random_grids <- sample(unique(all_vals$id), 500)
+      random_grids <- sample(unique(all_vals$id), 1000)
       random_trace <- all_vals[id %in% random_grids]
       write.csv(random_trace, random_trace_fname, row.names=F)
     
@@ -125,6 +126,10 @@ for (this_continent in guide$continent){
       print("finding centroids for representative sites")
       # find cell IDs of centroids and map them to the appropriate locations
       site_ids <- rotation[get.knnx(rotation[,1:nvecs], k_out$centers, k=1)$nn.index]
+      setnames(site_ids, paste0("X", 1:nvecs), paste0("singular_vector_", 1:nvecs))
+      site_id_lat_longs <- data.table(xyFromCell(cluster_raster, site_ids$id))
+      setnames(site_id_lat_longs, c("x", "y"), c("longitude", "latitude"))
+      site_ids <- cbind(site_ids, site_id_lat_longs)
       write.csv(site_ids, site_id_fname, row.names=F)
       
       save(k_out, file=k_out_fname) # save last to ensure other outputs have been saved if this exists
