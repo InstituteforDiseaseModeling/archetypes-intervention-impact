@@ -25,7 +25,7 @@ library(FNN)
 library(plotly)
 
 set.seed(206)
-theme_set(theme_minimal(base_size = 14))
+theme_set(theme_minimal(base_size = 12))
 
 rm(list=ls())
 

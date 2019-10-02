@@ -109,7 +109,7 @@ for (idx in 1:nrow(cov_details)){
           val_raster <- raster(out_fname)
         }else{
           print("clipping global raster")
-          val_raster <- save_raster(full_raster=raster(file.path(this_cov_details$dir, in_fname)), out_fname=out_fname, mask = mask_raster)
+          val_raster <- save_raster(full_raster=raster(file.path(this_cov_details$dir, in_fname)), mask = mask_raster, out_fname=out_fname)
         }
       
         vals <- getValues(val_raster)

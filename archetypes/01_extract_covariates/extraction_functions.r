@@ -27,14 +27,16 @@ get_mask <- function(continent, in_fname, out_fname){
   return(clipped_mask)
 }
 
-save_raster <- function(full_raster, out_fname, mask){
+crop_raster <- function(full_raster, mask, out_fname=NULL){
   # crop, save, and return values for a Raster* object
   vals <- extend(crop(full_raster, mask), mask)
   compareRaster(vals, mask)
   vals <- raster::mask(vals, mask, maskvalue=0)
 
-  print("saving raster")
-  writeRaster(vals, out_fname, bylayer=T, overwrite=T)
+  if (length(out_fname)>0){
+    print("saving raster")
+    writeRaster(vals, out_fname, bylayer=T, overwrite=T)
+  }
   
   return(vals)
 }
