@@ -17,6 +17,8 @@ from generate_input_files import generate_input_files
 from malaria.interventions.malaria_vaccine import add_vaccine
 from sweep_functions import *
 
+### -- Setting up input values-- should be able to move to input csv's/jsons
+
 # variables
 run_type = "intervention"  # set to "burnin" or "intervention"
 
@@ -55,7 +57,7 @@ else:
 location = "HPC"
 SetupParser.default_block = location
 
-
+### -- todo: move this to some input prep script?
 cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Simulation_Duration=int(365*years),
                                     Config_Name=sweep_name,
@@ -114,6 +116,7 @@ if __name__ == "__main__":
         cb.set_dll_collection(template_asset["dll_collection_id"])
         cb.set_input_collection(template_asset["input_collection_id"])
 
+    # todo: move this to prep script
     if new_inputs:
         print("generating input files")
         generate_input_files(site_input_dir, pop=2000, res=900 if "era5" in site_input_dir else 30,
@@ -149,6 +152,7 @@ if __name__ == "__main__":
             print("Running in Testing mode, only using 3 burnin sims")
             df = df.iloc[0:3]
 
+        # todo: transfer this to an input-spreadsheet system
         # wrap each modfn in a tuple so it can be combined with the int lists using itertools
         from_burnin_list = [
             [ModFn(DTKConfigBuilder.update_params, {

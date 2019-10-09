@@ -15,7 +15,7 @@ def main():
     wi_name = 'ERA5 weather generation'
 
     # A .csv or a demographics file containing input coordinates
-    points_file = "/Users/bertozzivill/Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/results/v3_era5_climate_rescaled/africa/02_kmeans/site_ids_9_cluster.csv"
+    root_dir = "/Users/bertozzivill/Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/results/v3_era5_climate_rescaled/africa/02_kmeans"
     points_file = "site_ids_9_cluster.csv"
 
     # Start/end dates in one of the formats: year (2015) or year and day-of-year (2015032) or year-month-day (20150201)
@@ -32,14 +32,14 @@ def main():
     # CSV output format: use "--outtype csvfile" to generate weather files in .csv format.
     # Consider the size of the output CSV file. For example, for 1 node and 1 year the size will be ~20KB.
 
-    optional_args = '--ds ERA5 --id-ref "Custom user" --node-col cluster'
+    optional_args = '--ds ERA5 --id-ref "Custom user" --node-col cluster --outtype csvfile'
 
     # To run a specific version add a tag (for example, "weather-files:1.1").
     # See available versions here: https://github.com/InstituteforDiseaseModeling/dst-era5-weather-data-tools/releases.
     docker_image = "weather-files"
     command_pattern = "python /app/generate_weather_asset_collection.py {} {} {} {}"
     command = command_pattern.format(points_file, start_date, end_date, optional_args)
-    user_files = FileList(root='.', files_in_root=[points_file])
+    user_files = FileList(root=root_dir, files_in_root=[points_file])
 
     wi = WorkItemManager(item_name=wi_name, docker_image=docker_image, command=command, user_files=user_files,
         tags={'Demo': 'dtk-tools Docker WorkItem', 'WorkItem type': 'Docker', 'Command': command })
