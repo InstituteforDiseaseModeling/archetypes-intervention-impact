@@ -57,7 +57,7 @@ else:
 location = "HPC"
 SetupParser.default_block = location
 
-### -- todo: move this to some input prep script?
+### -- todo: move this to some input prep script? Also: check ento with prashanth, are these the defaults yet?
 cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                     Simulation_Duration=int(365*years),
                                     Config_Name=sweep_name,
