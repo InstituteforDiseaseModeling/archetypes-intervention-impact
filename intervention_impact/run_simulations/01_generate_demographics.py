@@ -1,11 +1,10 @@
 ###############################################################################################################
-## generate_era5_climate.py
+## 01_generate_demographics.py
 ## Amelia Bertozzi-Villa
 ## October 2019
 ##
 ## EMOD needs climate files and demographics files. Based on the instructions specified in the input_params.json,
-## this script creates the requested climate files from ERA5 and generates a new demographics file
-## with the appropriate vector and population parameters.
+## this script creates a new demographics file with the appropriate vector and population parameters.
 ##############################################################################################################
 
 ## Importing and setup ---------------------------------------------------------------------------------------
@@ -126,7 +125,7 @@ with open(os.path.join(main_dir, "input_params.json")) as f:
 
 main_input_dir = instructions["root_dir"]
 
-sites = pd.read_csv(os.path.join(main_input_dir, instructions["site_fname"]))
+sites = pd.read_csv(os.path.join(main_dir, instructions["site_fname"]))
 
 ## Demographics ---------------------------------------------------------------------------------------
 ## Generate main file with site-specific species and equilibrium population dynamics. also add net overlays.
