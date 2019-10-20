@@ -10,7 +10,7 @@ library(data.table)
 
 rm(list=ls())
 
-main_dir <- "/Users/bertozzivill/Dropbox (IDM)/Malaria Team Folder/project/map_intervention_impact/intervention_impact/20191008_replicate_megatrends"
+main_dir <- "/Users/bertozzivill/Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact/20191008_replicate_megatrends"
 
 ##  combinatoric interventions: run every combination of intervention-coverage level
 comb_int_levels <- seq(0, 80, 20)
@@ -26,7 +26,7 @@ all_ints <- melt(combined, id.var="int_id", value.name="cov", variable.name="int
 baseline <- data.table(int=c("itn", "irs", "al_cm"),
                        cov=rep(80,3))
 
-sole_ints <- data.table(expand.grid(int=c("mAB", "tbv", "pev"),
+sole_ints <- data.table(expand.grid(int=c("mAb", "tbv", "pev"),
                         cov=c(40, 80)
                         )
                         )
@@ -61,6 +61,9 @@ atsbs[, int_id:=int_id + max(all_ints$int_id)]
 all_ints <- rbind(all_ints, atsbs)
 
 all_ints <- all_ints[order(int_id, cov)]
+
+all_ints <- all_ints[, list(int_id, int, start_day=0, cov)]
+
 
 ### save
 write.csv(all_ints, file=file.path(main_dir, "interventions.csv"), row.names = F)

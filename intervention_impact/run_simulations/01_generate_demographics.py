@@ -36,7 +36,7 @@ def find_vector_props_africa(africa_sites, vector_raster_dir):
                             to_crs={"init": "epsg:4326"}, lat_name="lat", lon_name="lon")
     shapes = [shapely.geometry.mapping(g) for g in shp_df["geometry"]]
 
-    africa_props = africa_sites[["cluster"]]
+    africa_props = africa_sites[["cluster"]].copy()
     for species in ["arabiensis", "funestus", "gambiae"]:
         pattern = re.compile(".*_{species}.*\.tif$".format(species=species))
         species_rasters = [x for x in os.listdir(vector_raster_dir) if pattern.match(x)]
@@ -72,27 +72,14 @@ def update_demog(demographics, vectors, tot_vector_count=20000):
     demographics["Defaults"]["IndividualAttributes"]["RiskDistributionFlag"] = 3
     demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
 
-    if "nodeid_old_climate" in vectors.columns:
-        # make idref line up with custom climate
-        demographics["Metadata"]["IdReference"] = "default"
-
     # add node-specific vectors
-    vector_id_vars = ["nodeid_old_climate", "cluster", "continent", "lat", "lon"] if\
-        "nodeid_old_climate" in vectors.columns  else ["cluster", "continent", "lat", "lon"]
-
-    vectors = pd.melt(vectors, id_vars=vector_id_vars,
+    vectors = pd.melt(vectors, id_vars=["cluster", "continent", "lat", "lon"],
                       var_name="species", value_name="proportion")
     vectors["count"] = vectors["proportion"] * tot_vector_count
 
     for node in demographics["Nodes"]:
-        node_id = node["NodeID"]
-
-        if "nodeid_old_climate" in vectors.columns:
-            node["NodeAttributes"]["InitialVectorsPerSpecies"] = {row["species"]:round(row["count"])
-                                                                  for idx, row in
-                                                                  vectors.query("nodeid_old_climate==@node_id").iterrows()}
-        else:
-            node["NodeAttributes"]["InitialVectorsPerSpecies"] = {row["species"]: round(row["count"])
+        node_id = node["NodeID"] # used in the pd.query command below
+        node["NodeAttributes"]["InitialVectorsPerSpecies"] = {row["species"]: round(row["count"])
                                                                   for idx, row in
                                                                   vectors.query(
                                                                       "cluster==@node_id").iterrows()}
@@ -117,8 +104,8 @@ def net_usage_overlay(base_demog_path, overlay_path):
 ## Main code setup ---------------------------------------------------------------------------------------
 
 main_dir = os.path.join(os.path.expanduser("~"),
-                        "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact",
-                        "intervention_impact/20191008_replicate_megatrends")
+                        "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
+                        "20191009_megatrends_era5_new_archetypes")
 
 with open(os.path.join(main_dir, "input_params.json")) as f:
     instructions = json.loads(f.read())
@@ -132,6 +119,9 @@ sites = pd.read_csv(os.path.join(main_dir, instructions["site_fname"]))
 
 demog_out_dir = os.path.join(main_dir, "demog")
 demog_out_path = os.path.join(demog_out_dir, "demographics.json")
+
+if not os.path.isdir(demog_out_dir):
+    os.mkdir(demog_out_dir)
 
 if os.path.exists(demog_out_path) and instructions["overwrite_input_files"] == "False":
     print("Demographics files already generated")
@@ -148,27 +138,23 @@ else:
         non_africa_vectors = find_vector_props_non_africa(non_africa)
         vector_props = vector_props.append(non_africa_vectors, sort=False).fillna(0)
 
-    merge_cols = ["cluster", "nodeid_old_climate", "continent", "lat", "lon"] if "nodeid_old_climate" in sites.columns\
-    else["cluster", "continent", "lat", "lon"]
-    vector_props = pd.merge(sites[merge_cols], vector_props)
-    vector_props.to_csv(os.path.join(demog_out_dir, "vector_proportions.csv"), index=False)
+    vector_props = pd.merge(sites[["cluster", "continent", "lat", "lon"]], vector_props)
+    vector_out_dir = os.path.join(main_dir, "vector")
+    if not os.path.isdir(vector_out_dir):
+        os.mkdir(vector_out_dir)
+    vector_props.to_csv(os.path.join(vector_out_dir, "vector_proportions.csv"), index=False)
 
     # Step 2: convert to node class
     print("Generating demographics file and overlays")
-    # for new ERA5 climate, node id can map directly to cluster id.
-    # for the old climate files, we need to map sites to the original node id.
-    node_id_varname = "cluster" if "nodeid_old_climate" not in sites.columns else "nodeid_old_climate"
 
     nodes = [Node(this_site["lat"], this_site["lon"],
           instructions["node_pop"],
-          this_site["name"],
-          forced_id=this_site[node_id_varname],
+          name= this_site["name"] if "name" in this_site.index else "",
+          forced_id=this_site["cluster"],
           extra_attributes={"Country": this_site["birth_rate_country"]})
      for ix, this_site in sites.iterrows()]
 
-    res_val = instructions["climate_res_in_arcsec"] if instructions["climate_res_in_arcsec"] in [30, 250] else "custom"
-
-    site_demog = DemographicsGenerator(nodes, res_in_arcsec=res_val,
+    site_demog = DemographicsGenerator(nodes, res_in_arcsec="custom",
                                update_demographics=update_demog,
                                vectors= vector_props)
 

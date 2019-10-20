@@ -24,7 +24,7 @@ pd.set_option('display.max_columns', 10)
 ## Function ---------------------------------------------------------------------------------------------
 
 def check_files(fname_dict, base_dir):
-    files_exist = [os.path.exists(os.path.join(base_dir, "{this_fname}.bin.json".format(this_fname=this_fname)))
+    files_exist = [os.path.exists(os.path.join(base_dir, this_fname))
                     for this_fname in fname_dict.values()]
     return(all(files_exist))
 
@@ -86,6 +86,7 @@ else:
         wi = WorkItemManager(item_name=wi_name, docker_image=docker_image, command=command, user_files=user_files,
             tags={"Demo": "dtk-tools Docker WorkItem", "WorkItem type": "Docker", "Command": command })
 
-        wi.execute()
+        wi.create()
+        wi.run()
 
     print("Climate file generation submitted. Go to COMPS to monitor and retrieve them.")
