@@ -3,11 +3,7 @@
 # 03_cluster_plots.r
 # 
 # Amelia Bertozzi-Villa, Institute for Disease Modeling, University of Oxford
-# May 2018
-# 
-# For a given covariate and continent of interest, this script rotates the covariate values into n-dimensional space
-# as defined by the SVD analysis run in "svd.r" (n is user-defined), then runs k-means in this
-# lower-dimensional space and plots the results. 
+# September 2018 
 # 
 # For a detailed project write-up see
 # https://paper.dropbox.com/doc/Cluster-MAP-pixels-by-seasonality-zga4UM1DnBx8pc11rStOS
@@ -30,7 +26,7 @@ theme_set(theme_minimal(base_size = 12))
 rm(list=ls())
 
 plot_vectors <- T
-out_subdir <- "v3_era5_climate_rescaled"
+out_subdir <- "v4_era5_bounded_transmission"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
