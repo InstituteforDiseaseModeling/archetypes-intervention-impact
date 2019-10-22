@@ -30,132 +30,141 @@ desired_width = 320
 pd.set_option('display.width', desired_width)
 pd.set_option('display.max_columns', 10)
 
+## VARIABLES-- user should set these ---------------------------------------------------------------------------------------
+
+node_group = "emod_abcd"
+priority = "Lowest"
+
+version_name = "20191009_megatrends_era5_new_archetypes"
+run_type = "burnin" # run_type: set to "burnin" or "intervention"
+test_run = False
+
 ## Main code setup ---------------------------------------------------------------------------------------
 
 # setup
 location = "HPC"
 SetupParser.default_block = location
 
-# TODO: once you get working, move all of the below into if __name__=="__main__"
+if __name__=="__main__":
+    SetupParser.init()
+    SetupParser.set("HPC", "priority", priority)
+    SetupParser.set("HPC", "node_group", node_group)
 
-SetupParser.init()
-COMPS_login("https://comps.idmod.org")
+    COMPS_login("https://comps.idmod.org")
 
-main_dir = os.path.join(os.path.expanduser("~"),
-                        "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
-                        "20191008_replicate_megatrends")
+    main_dir = os.path.join(os.path.expanduser("~"),
+                            "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
+                            version_name)
 
-with open(os.path.join(main_dir, "input_params.json")) as f:
-    instructions = json.loads(f.read())
+    with open(os.path.join(main_dir, "input_params.json")) as f:
+        instructions = json.loads(f.read())
 
-sites = pd.read_csv(os.path.join(main_dir, instructions["site_fname"]))
+    sites = pd.read_csv(os.path.join(main_dir, instructions["site_fname"]))
 
-# run_type: set to "burnin" or "intervention"
-run_type = "burnin"
-test_run = True
-instructions["this_run_type"] = run_type
 
-# Serialization and naming
-if run_type == "burnin":
-    years = instructions["burnin_years"]
-    sim_name = "MAP_" + instructions["version_name"] + "_Burnin"
-elif run_type == "intervention":
-    years = instructions["intervention_years"]
-    sim_name = "MAP_" + instructions["version_name"] + "_Intervention"
-else:
-    raise ValueError("Unknown run type " + run_type)
+    instructions["this_run_type"] = run_type
 
-sim_name = "{sim_name}_TEST".format(sim_name=sim_name) if test_run else sim_name
-
-# initialize cb
-cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
-                                    Simulation_Duration=int(365 * years),
-                                    Config_Name=sim_name
-                                    )
-# run main setup function
-set_up_simulation(cb, instructions)
-
-## Set up burnin ---------------------------------------------------------------------------------------
-
-if run_type=="burnin":
-
-    print("Building burnin")
-    if test_run:
-        print("Running three test sims")
-        run_count = 1
-        hab_exps = [0, 1, 2]
+    # Serialization and naming
+    if run_type == "burnin":
+        years = instructions["burnin_years"]
+        sim_name = "MAP_" + instructions["version_name"] + "_Burnin"
+    elif run_type == "intervention":
+        years = instructions["intervention_years"]
+        sim_name = "MAP_" + instructions["version_name"] + "_Intervention"
     else:
-        run_count = 10
-        hab_exps = np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
+        raise ValueError("Unknown run type " + run_type)
 
-    builder = ModBuilder.from_list([[
-        ModFn(DTKConfigBuilder.update_params, {
-            "Run_Number": run_num,
-            "x_Temporary_Larval_Habitat": 10 ** hab_exp,
-            "Serialization_Time_Steps": [365 * years]
-        }),
-    ]
-        for run_num in range(run_count)
-        for hab_exp in hab_exps
-    ])
+    sim_name = "{sim_name}_TEST".format(sim_name=sim_name) if test_run else sim_name
 
-## Set up intervention scenarios ---------------------------------------------------------------------------------------
-else:
+    # initialize cb
+    cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
+                                        Simulation_Duration=int(365 * years),
+                                        Config_Name=sim_name
+                                        )
+    # run main setup function
+    set_up_simulation(cb, instructions)
 
-    print("Building intervention scenarios")
+    ## Set up burnin ---------------------------------------------------------------------------------------
 
-    # serialization
-    print("retrieving burnin")
-    expt = retrieve_experiment(instructions["burnin_id"])
+    if run_type=="burnin":
 
-    df = pd.DataFrame([x.tags for x in expt.simulations])
-    df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
+        print("Building burnin")
+        if test_run:
+            print("Running three test sims")
+            run_count = 1
+            hab_exps = [0, 1, 2]
+        else:
+            run_count = 10
+            hab_exps = np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
 
-    if test_run:
-        print("Running three test sims")
-        df = df.iloc[0:3]
+        builder = ModBuilder.from_list([[
+            ModFn(DTKConfigBuilder.update_params, {
+                "Run_Number": run_num,
+                "x_Temporary_Larval_Habitat": 10 ** hab_exp,
+                "Serialization_Time_Steps": [365 * years]
+            }),
+        ]
+            for run_num in range(run_count)
+            for hab_exp in hab_exps
+        ])
 
-    from_burnin_list = [
-        [ModFn(DTKConfigBuilder.update_params, {
-            "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
-            "Serialized_Population_Filenames":
-                ["state-05475.dtk"],  # TODO: PULL FROM BURNIN METADATA
-            "Run_Number": df["Run_Number"][x],
-            "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})]
-        for x in df.index]
+    ## Set up intervention scenarios ---------------------------------------------------------------------------------------
+    else:
 
-    # generate interventions
-    def get_combos_and_flatten(old_list):
-        combos = list(itertools.product(*old_list))
-        return [list(itertools.chain.from_iterable(sublist)) for sublist in combos]
+        print("Building intervention scenarios")
 
-    # load intervention dataset
-    interventions = pd.read_csv(os.path.join(main_dir, "interventions.csv"))
-    intervention_dict = generate_intervention_tuples(coverages=interventions["cov"].unique().tolist(),
-                                                     start_days=interventions["start_day"].unique().tolist(),
-                                                     years=years)
+        # serialization
+        print("retrieving burnin")
+        expt = retrieve_experiment(instructions["burnin_id"])
 
-    # generate a list of intervention packages from dataset
-    # (each sublist is its own intervention package)
-    full_int_list = []
-    for this_int_idx in interventions["int_id"].unique().tolist():
-        this_int_package = interventions.query("int_id==@this_int_idx")
-        this_int_list = [intervention_dict[row["start_day"]][row["cov"]][row["int"]]
-        for idx, row in this_int_package.iterrows()]
-        # flatten
-        this_int_list = list(itertools.chain.from_iterable(this_int_list))
-        full_int_list.append(this_int_list)
+        df = pd.DataFrame([x.tags for x in expt.simulations])
+        df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
-    # run this intervention package on each burnin simulation
-    full_sim_list = get_combos_and_flatten([from_burnin_list, full_int_list])
-    builder = ModBuilder.from_list(full_sim_list)
+        if test_run:
+            print("Running three test sims")
+            df = df.iloc[0:3]
 
-## Submit simulations ---------------------------------------------------------------------------------------
-print("Submitting")
+        from_burnin_list = [
+            [ModFn(DTKConfigBuilder.update_params, {
+                "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
+                "Serialized_Population_Filenames":
+                    ["state-05475.dtk"],  # TODO: PULL FROM BURNIN METADATA
+                "Run_Number": df["Run_Number"][x],
+                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})]
+            for x in df.index]
 
-run_sim_args = {"config_builder": cb,
-                    "exp_name": sim_name,
-                    "exp_builder": builder}
+        # generate interventions
+        def get_combos_and_flatten(old_list):
+            combos = list(itertools.product(*old_list))
+            return [list(itertools.chain.from_iterable(sublist)) for sublist in combos]
 
-em = ExperimentManagerFactory.from_cb(cb)
-em.run_simulations(**run_sim_args)
+        # load intervention dataset
+        interventions = pd.read_csv(os.path.join(main_dir, "interventions.csv"))
+        intervention_dict = generate_intervention_tuples(coverages=interventions["cov"].unique().tolist(),
+                                                         start_days=interventions["start_day"].unique().tolist(),
+                                                         years=years)
+
+        # generate a list of intervention packages from dataset
+        # (each sublist is its own intervention package)
+        full_int_list = []
+        for this_int_idx in interventions["int_id"].unique().tolist():
+            this_int_package = interventions.query("int_id==@this_int_idx")
+            this_int_list = [intervention_dict[row["start_day"]][row["cov"]][row["int"]]
+            for idx, row in this_int_package.iterrows()]
+            # flatten
+            this_int_list = list(itertools.chain.from_iterable(this_int_list))
+            full_int_list.append(this_int_list)
+
+        # run this intervention package on each burnin simulation
+        full_sim_list = get_combos_and_flatten([from_burnin_list, full_int_list])
+        builder = ModBuilder.from_list(full_sim_list)
+
+    ## Submit simulations ---------------------------------------------------------------------------------------
+    print("Submitting")
+
+    run_sim_args = {"config_builder": cb,
+                        "exp_name": sim_name,
+                        "exp_builder": builder}
+
+    em = ExperimentManagerFactory.from_cb(cb)
+    em.run_simulations(**run_sim_args)

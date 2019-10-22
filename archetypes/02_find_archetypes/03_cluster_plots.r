@@ -34,7 +34,7 @@ base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))
 
-palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "#902E57", "#F98400", "#B03A2E")
+palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "#902E57", "#F98400", "#B33539", "#367A40")
 
 for (this_continent in unique(guide$continent)){
 

@@ -40,6 +40,13 @@ def assign_net_ip(cb, hates_net_prop):
 
 def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
 
+    # configure root directories for asset management
+    dir_path = os.path.dirname(os.path.realpath(__file__))
+    cb.set_experiment_executable(os.path.join(dir_path, "bin", "Eradication.exe"))
+    cb.set_dll_root(os.path.join(dir_path, "bin"))
+    # cb.set_python_path()
+    cb.set_input_files_root(instructions["root_dir"])
+
     # general settings
     print("customizing config")
     cb.update_params({"Birth_Rate_Depencence": "FIXED_BIRTH_RATE",
@@ -72,11 +79,12 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                      )
 
     # climate and demographic files
-    demog_path = os.path.join(instructions["root_dir"], instructions["version_name"],  "demog")
-    vector_path = os.path.join(instructions["root_dir"], instructions["version_name"], "vector")
-    climate_path = os.path.join(instructions["root_dir"], instructions["version_name"],
+    demog_path = os.path.join(instructions["version_name"],  "demog")
+    vector_path = os.path.join(instructions["version_name"], "vector")
+    climate_path = os.path.join(instructions["version_name"],
                                 "climate", instructions["this_run_type"])
-    climate_path = climate_path if os.path.exists(climate_path) else os.path.join(climate_path, "..")
+    climate_path = climate_path if os.path.exists(os.path.join(instructions["root_dir"], climate_path)) else \
+        os.path.join(climate_path, "..")
     climate_fnames = instructions["climate_fnames"]
 
     cb.update_params({
@@ -100,11 +108,11 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
     # Find vector counts for each vector based on relative abundances
     print("adding vectors and scaling larval habitats")
 
-    with open(os.path.join(vector_path, "species_details.json")) as f:
+    with open(os.path.join(instructions["root_dir"], vector_path, "species_details.json")) as f:
         species_details = json.loads(f.read())
     set_params_by_species(cb.params, [name for name in species_details.keys()])
 
-    site_vector_props = pd.read_csv(os.path.join(vector_path, "vector_proportions.csv"))
+    site_vector_props = pd.read_csv(os.path.join(instructions["root_dir"], vector_path, "vector_proportions.csv"))
     larval_habs_per_site = {"NodeID": site_vector_props["cluster"]}
 
     for species_name, species_modifications in species_details.items():
@@ -133,7 +141,7 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                                "class": "NodeSetNodeList",
                                "Node_List": [int(row["cluster"])]
                            },
-                           description=row["cluster"])
+                           description=str(row["cluster"]))
 
     # if applicable, set assets
     if instructions["asset_exp_id"]!="":

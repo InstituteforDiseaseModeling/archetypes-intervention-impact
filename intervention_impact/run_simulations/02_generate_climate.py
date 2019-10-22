@@ -29,6 +29,7 @@ def check_files(fname_dict, base_dir):
     return(all(files_exist))
 
 
+
 def confirm_climate_files(instructions, climate_dir):
     if "era5_climate_params" in instructions.keys():
         all_files_exist = [check_files(instructions["climate_fnames"],
@@ -71,7 +72,7 @@ else:
                                                                                       end_year=years["end_year"]))
         this_out_dir = os.path.join(climate_out_dir, run_type)
         if not os.path.isdir(this_out_dir):
-            os.mkdir(this_out_dir)
+            os.makedirs(this_out_dir)
 
         wi_name = "ERA5 weather: {run_type}".format(run_type=run_type)
         optional_args = "--ds ERA5 --id-ref 'Custom user' --node-col cluster"
