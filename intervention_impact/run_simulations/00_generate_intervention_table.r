@@ -40,7 +40,7 @@ sole_ints <- rbind(sole_ints, for_sole)
 all_ints <- rbind(all_ints, sole_ints)
 
 # also add cm with dp
-all_itns <- rbind(all_ints, data.table(int_id=max(all_ints$int_id)+1,
+all_ints <- rbind(all_ints, data.table(int_id=max(all_ints$int_id)+1,
                                         int=c("itn", "irs", "dp_cm"),
                                         cov=rep(80, 3)))
 

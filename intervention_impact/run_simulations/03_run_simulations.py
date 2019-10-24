@@ -35,9 +35,10 @@ pd.set_option('display.max_columns', 10)
 node_group = "emod_abcd"
 priority = "Lowest"
 
-version_name = "20191009_megatrends_era5_new_archetypes"
-run_type = "burnin" # run_type: set to "burnin" or "intervention"
+version_name = "20191008_replicate_megatrends"
+run_type = "intervention" # run_type: set to "burnin" or "intervention"
 test_run = False
+node_group = "emod_32cores" if test_run else "emod_abcd"
 
 ## Main code setup ---------------------------------------------------------------------------------------
 
@@ -124,11 +125,14 @@ if __name__=="__main__":
             print("Running three test sims")
             df = df.iloc[0:3]
 
+        # find burnin length for filename (should be the same for all sims in df)
+        burnin_length_in_days = df["Serialization_Time_Steps"][0][-1]
+
         from_burnin_list = [
             [ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames":
-                    ["state-05475.dtk"],  # TODO: PULL FROM BURNIN METADATA
+                    ["state-{burnin_str}.dtk".format(burnin_str=str(burnin_length_in_days).zfill(5))],
                 "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})]
             for x in df.index]
