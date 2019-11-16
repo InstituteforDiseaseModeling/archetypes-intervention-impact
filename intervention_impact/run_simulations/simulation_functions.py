@@ -55,7 +55,7 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                       # interventions
                       "Listed_Events" : ["Bednet_Discarded", "Bednet_Got_New_One",
                                        "Bednet_Using", "Received_Vaccine"],
-                      "Enable_Default_Reporting" : 1,
+                      "Enable_Default_Reporting" : 0,
                       "Enable_Demographics_Risk" : 1,
                       "Enable_Vector_Species_Report": 0,
 

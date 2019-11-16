@@ -26,6 +26,9 @@ from simtools.Utilities.COMPSUtilities import COMPS_login
 from simulation_functions import *
 from intervention_functions import *
 
+vars = sorted(os.environ.keys())
+print([os.environ[var] for var in vars])
+
 desired_width = 320
 pd.set_option('display.width', desired_width)
 pd.set_option('display.max_columns', 10)
@@ -35,9 +38,9 @@ pd.set_option('display.max_columns', 10)
 node_group = "emod_abcd"
 priority = "Lowest"
 
-version_name = "20191008_replicate_megatrends"
+version_name = "20191009_megatrends_era5_new_archetypes"
 run_type = "intervention" # run_type: set to "burnin" or "intervention"
-test_run = False
+test_run = True
 node_group = "emod_32cores" if test_run else "emod_abcd"
 
 ## Main code setup ---------------------------------------------------------------------------------------
@@ -123,10 +126,10 @@ if __name__=="__main__":
 
         if test_run:
             print("Running three test sims")
-            df = df.iloc[0:3]
+            df = df.iloc[0:1]
 
         # find burnin length for filename (should be the same for all sims in df)
-        burnin_length_in_days = df["Serialization_Time_Steps"][0][-1]
+        burnin_length_in_days = df["Serialization_Time_Steps"][0].strip('[]')
 
         from_burnin_list = [
             [ModFn(DTKConfigBuilder.update_params, {
@@ -163,6 +166,7 @@ if __name__=="__main__":
         full_sim_list = get_combos_and_flatten([from_burnin_list, full_int_list])
         builder = ModBuilder.from_list(full_sim_list)
 
+
     ## Submit simulations ---------------------------------------------------------------------------------------
     print("Submitting")
 
@@ -172,3 +176,4 @@ if __name__=="__main__":
 
     em = ExperimentManagerFactory.from_cb(cb)
     em.run_simulations(**run_sim_args)
+
