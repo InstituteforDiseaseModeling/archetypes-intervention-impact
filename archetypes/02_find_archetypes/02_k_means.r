@@ -24,7 +24,7 @@ library(FNN)
 rm(list=ls())
 overwrite_rotation <- T
 overwrite_kmeans <- T
-out_subdir <- "v3_era5_climate_rescaled"
+out_subdir <- "v4_era5_bounded_transmission"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
@@ -76,7 +76,12 @@ for (this_continent in unique(guide$continent)){
   rm(svd_out, svd_wide_datatable); gc()
   
   # find map from raster cells to rotation ids
-  temp_raster <- raster(file.path(cov_dir, "mask.tif"))
+  if (file.exists(file.path(cov_dir, "mask.tif"))){
+    temp_raster <- raster(file.path(cov_dir, "mask.tif"))
+  }else{
+    temp_raster <- raster(file.path(cov_dir, "bounded_mask.tif"))
+  }
+  
   
   # k-means
   for (nclust in cluster_counts){

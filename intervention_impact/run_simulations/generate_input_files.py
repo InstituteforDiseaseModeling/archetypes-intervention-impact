@@ -16,7 +16,7 @@ from input_file_generation.ClimateGenerator import ClimateGenerator
 from simtools.Utilities.COMPSUtilities import COMPS_login
 from input_file_generation.add_properties_to_demographics import generate_demographics_properties, check_df_valid
 
-sys.path.insert(0, '../..')
+sys.path.insert(0, '../..') # add the path to spatial.py
 from spatial import make_shapefile, extract_latlongs
 
 

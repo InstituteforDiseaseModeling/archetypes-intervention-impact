@@ -26,7 +26,7 @@ base_dir <- file.path(root_dir,
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 
 overwrite <- T
-out_subdir <- "v3_era5_climate_rescaled"
+out_subdir <- "v4_era5_bounded_transmission"
 
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))

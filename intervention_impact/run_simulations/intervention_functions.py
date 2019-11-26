@@ -1,9 +1,22 @@
+###############################################################################################################
+## intervention_functions.py
+## Amelia Bertozzi-Villa
+## October 2019
+##
+## Library of functions to set up sweeps of different interventions.
+##############################################################################################################
+
+## Importing  ---------------------------------------------------------------------------------------
+
 import pandas as pd
 import json
 import math
 
 import os
 import pdb
+
+from simtools.Utilities.Experiments import retrieve_experiment
+from simtools.ModBuilder import ModBuilder, ModFn
 
 from dtk.vector.species import set_params_by_species, set_species_param
 from dtk.interventions.habitat_scale import scale_larval_habitats
@@ -12,59 +25,125 @@ from dtk.interventions.itn_age_season import add_ITN_age_season
 from dtk.interventions.property_change import change_individual_property
 from dtk.interventions.novel_vector_control import add_ATSB, add_ors_node, add_larvicides
 from dtk.interventions.ivermectin import add_ivermectin
+from malaria.interventions.malaria_vaccine import add_vaccine
 
+from malaria.reports.MalariaReport import add_summary_report
 from malaria.interventions.malaria_drug_campaigns import add_drug_campaign
 from malaria.interventions.health_seeking import add_health_seeking
 
-def assign_net_ip(cb, hates_net_prop):
-    change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop),
-    change_individual_property(cb, "NetUsage", "HatesNets", coverage=hates_net_prop,
-          trigger_condition_list=["Births"])
-    return {"Hates_Nets": hates_net_prop}
+## Interventions ---------------------------------------------------------------------------------------
 
-def simulation_setup(cb, species_details, site_vector_props, max_larval_capacity=4e8,
-                     site_dir=os.path.join("sites", "all")):
+def generate_intervention_tuples(coverages, start_days, years, vaccine_durations=None, ivermectin_durations=None):
 
-    # directories
-    cb.update_params({
-                    "Demographics_Filenames": [os.path.join(site_dir, "demographics.json"),
-                                               os.path.join(site_dir, "demographics_net_overlay.json")],
-                    "Air_Temperature_Filename": os.path.join(site_dir,
-                                                             "air_temperature_daily.bin"),
-                    "Land_Temperature_Filename": os.path.join(site_dir,
-                                                              "air_temperature_daily.bin"),
-                    "Rainfall_Filename": os.path.join(site_dir,
-                                                      "rainfall_daily.bin"),
-                    "Relative_Humidity_Filename": os.path.join(site_dir,
-                                                               "relative_humidity_daily.bin")
-                    }
-    )
+    # defaults for durations until we find a better way to pass these
+    if ivermectin_durations is None:
+        ivermectin_durations = [14]
+    if vaccine_durations is None:
+        vaccine_durations = [365]
+    intervention_dict = {
+        start_day: {
+            cov: {
+                "itn": [ModFn(add_annual_itns,
+                              year_count=years,
+                              n_rounds=1,
+                              coverage=cov / 100,
+                              discard_halflife=180,
+                              start_day=start_day,
+                              IP=[{"NetUsage": "LovesNets"}]
+                              )],
+                "irs": [ModFn(add_irs_group,
+                              coverage=cov / 100,
+                              decay=180,
+                              start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                              )],
+                "al_cm": [ModFn(add_healthseeking_by_coverage,
+                                coverage=cov / 100,
+                                rate=0.15
+                                )],
+                "dp_cm": [ModFn(add_healthseeking_by_coverage,
+                                coverage=cov / 100,
+                                rate=0.15,
+                                drugname="DP"
+                                )],
+                "dp_mda": [ModFn(add_mda,
+                                 coverage=cov / 100
+                                 )],
+                "mAb": [ModFn(add_vaccine,
+                              vaccine_type="PEV",
+                              coverage=cov / 100,
+                              vaccine_params={
+                                  "Waning_Config": {
+                                      "class": "WaningEffectBox",
+                                      "Box_Duration": 90
+                                  }
+                              },
+                              target_group={"agemin": 15, "agemax": 49},
+                              start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                              )],
+                "pev": [ModFn(add_vaccine,
+                              vaccine_type="PEV",
+                              coverage=cov / 100,
+                              vaccine_params={
+                                  "Reduced_Acquire": 0.75,
+                                  "Waning_Config": {
+                                      "class": "WaningEffectExponential",
+                                      "Decay_Time_Constant": vaccine_hl / math.log(2)
+                                  }
+                              },
+                              trigger_condition_list=["Births"],
+                              start_days=[0],
+                              triggered_delay=182)
+                        for vaccine_hl in vaccine_durations
+                        ],
+                "tbv": [ModFn(add_vaccine,
+                              vaccine_type="TBV",
+                              coverage=cov / 100,
+                              vaccine_params={
+                                  "Reduced_Transmit": 0.75,
+                                  "Waning_Config": {
+                                      "class": "WaningEffectExponential",
+                                      "Decay_Time_Constant": vaccine_hl / math.log(2)
+                                  }
+                              },
+                              target_group={"agemin": 15, "agemax": 49},
+                              start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                              )
+                        for vaccine_hl in vaccine_durations
+                        ],
+                "atsb": [ModFn(add_atsb,
+                               coverage=cov / 100,
+                               # renew atsb every 6 months
+                               start_days=[(365 * year_idx) + start_day + midyear_start
+                                           for year_idx in range(years) for midyear_start in [0, 182]],
+                               initial_effect= 1
+                               )
+                         ],
+                "ors": [ModFn(add_ors,
+                              coverage=cov / 100,
+                              start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                              )],
+                "larvicides": [ModFn(add_larvicide_wrapper,
+                                     coverage=cov / 100,
+                                     start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                                     )],
+                "ivermectin": [ModFn(add_ivermectin_wrapper,
+                                     coverage=cov / 100,
+                                     drug_duration=duration,
+                                     start_days=[(365 * year_idx) + start_day for year_idx in range(years)],
+                                     monthly_rounds=3
+                                     )
+                               for duration in ivermectin_durations
+                               ]
 
-    # change net-hating proportion
-    assign_net_ip(cb, 0.1) #10% based on opinion from Caitlin Bever
+            }
+            for cov in coverages
+        }
+        for start_day in start_days
+    }
 
-    # Find vector counts for each vector based on relative abundances
-    set_params_by_species(cb.params, [name for name in species_details.keys()])
-
-    larval_habs_per_site = {"NodeID": site_vector_props["node_id"]}
-
-    for species_name, species_modifications in species_details.items():
-        set_species_param(cb, species_name, "Adult_Life_Expectancy", 20)
-        set_species_param(cb, species_name, "Vector_Sugar_Feeding_Frequency", "VECTOR_SUGAR_FEEDING_EVERY_DAY")
-
-        for param, val in species_modifications.items():
-            if param == "habitat_split":
-                new_vals = {hab: hab_prop * max_larval_capacity for hab, hab_prop in val.items()}
-                set_species_param(cb, species_name, "Larval_Habitat_Types", new_vals)
-                larval_habs_per_site.update({".".join([species_name, hab]): site_vector_props[species_name]
-                                             for hab in val.keys()})
-            else:
-                set_species_param(cb, species_name, param, val)
-
-    scale_larval_habitats(cb, pd.DataFrame(larval_habs_per_site))
+    return(intervention_dict)
 
 
-# itns
 def add_annual_itns(cb, year_count=1, n_rounds=1, coverage=0.8, discard_halflife=270, start_day=0, IP=[]):
 
     # per-round coverage: 1 minus the nth root of *not* getting a net in any one round
@@ -208,3 +287,4 @@ def add_ivermectin_wrapper(cb, coverage, start_days=[0], drug_duration=7, monthl
 
     return {"Ivermectin_Coverage": coverage, "Ivermectin_Start": start_days[0], "Ivermectin_Duration": drug_duration,
             "Ivermectin_Monthly_Rounds": monthly_rounds}
+
