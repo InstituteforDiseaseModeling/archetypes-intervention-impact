@@ -114,7 +114,7 @@ if __name__=="__main__":
             run_count = 1
             hab_exps = [0, 1, 2]
         else:
-            run_count = 10
+            run_count = instructions["n_random_seeds"]
             hab_exps = np.concatenate((np.arange(-3.75, -2, 0.25), np.arange(-2, 2.25, 0.1)))
 
         builder = ModBuilder.from_list([[
@@ -145,7 +145,11 @@ if __name__=="__main__":
             df = df.iloc[0:1]
 
         # find burnin length for filename (should be the same for all sims in df)
-        burnin_length_in_days = df["Serialization_Time_Steps"][0].strip('[]')
+        try:
+            burnin_length_in_days = df["Serialization_Time_Steps"][0].strip('[]')
+        except AttributeError:
+             # different versions of pandas save this as either a string or a list
+            burnin_length_in_days = df["Serialization_Time_Steps"][0][-1]
 
         from_burnin_list = [
             [ModFn(DTKConfigBuilder.update_params, {

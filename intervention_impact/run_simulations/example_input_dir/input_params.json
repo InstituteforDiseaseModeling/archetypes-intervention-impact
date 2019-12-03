@@ -25,6 +25,7 @@
 	"climate_res_in_arcsec": 900,
 	"node_pop": 2000,
 
+	"n_random_seeds": 1,
 	"burnin_years": 16,
 	"burnin_id": "",
 	"asset_exp_id": "",
