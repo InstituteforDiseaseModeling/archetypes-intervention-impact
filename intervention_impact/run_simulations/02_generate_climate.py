@@ -5,11 +5,17 @@
 ##
 ## EMOD needs climate files and demographics files. Based on the instructions specified in the input_params.json,
 ## this script creates ERA5 climate parameters for the specified times and locations.
+
+## Requirements: input directory containing an "input_params.json" and a "site_details.csv" file.
+##                see "example_input_dir" in this repo.
+##
+## Outputs: A directory named "climate", possibly with subdirectories "burnin" and "intervention"
+## (if different climate files are needed for each). Relevant input files must be collected from COMPS
+## and stored in these directories.
 ##############################################################################################################
 
 ## Importing and setup ---------------------------------------------------------------------------------------
 import pandas as pd
-import pdb
 import os
 import json
 
@@ -29,7 +35,6 @@ def check_files(fname_dict, base_dir):
     return(all(files_exist))
 
 
-
 def confirm_climate_files(instructions, climate_dir):
     if "era5_climate_params" in instructions.keys():
         all_files_exist = [check_files(instructions["climate_fnames"],
@@ -44,6 +49,9 @@ def confirm_climate_files(instructions, climate_dir):
 main_dir = os.path.join(os.path.expanduser("~"),
                         "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                         "20191009_megatrends_era5_new_archetypes")
+
+# uncomment this to run the example
+# main_dir = "example_input_dir"
 
 with open(os.path.join(main_dir, "input_params.json")) as f:
     instructions = json.loads(f.read())

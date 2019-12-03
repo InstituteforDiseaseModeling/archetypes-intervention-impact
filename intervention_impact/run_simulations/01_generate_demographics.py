@@ -5,11 +5,15 @@
 ##
 ## EMOD needs climate files and demographics files. Based on the instructions specified in the input_params.json,
 ## this script creates a new demographics file with the appropriate vector and population parameters.
+##
+## Requirements: input directory containing an "input_params.json" and a "site_details.csv" file.
+##                see "example_input_dir" in this repo.
+##
+## Outputs: directories named "demog" and "vector" containing the specified input files.
 ##############################################################################################################
 
 ## Importing and setup ---------------------------------------------------------------------------------------
 import pandas as pd
-import pdb
 import os
 import shapely.geometry
 import sys
@@ -28,7 +32,6 @@ pd.set_option('display.width', desired_width)
 pd.set_option('display.max_columns', 10)
 
 ## Functions ---------------------------------------------------------------------------------------
-
 
 def find_vector_props_africa(africa_sites, vector_raster_dir):
     # Find relative vector abundance of three african vectors
@@ -107,6 +110,9 @@ main_dir = os.path.join(os.path.expanduser("~"),
                         "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                         "20191009_megatrends_era5_new_archetypes")
 
+# uncomment this to run the example
+# main_dir = "example_input_dir"
+
 with open(os.path.join(main_dir, "input_params.json")) as f:
     instructions = json.loads(f.read())
 
@@ -131,7 +137,7 @@ else:
     # Step 1: relative vector abundance. Define manually outside of Africa, and using rasters within Africa.
     print("Finding vector mix")
     vector_props = find_vector_props_africa(sites.query("continent=='Africa'"),
-                                    os.path.join(main_input_dir, instructions["vector_raster_dir"]))
+                                    os.path.join(os.path.expanduser("~"), instructions["vector_raster_dir"]))
 
     non_africa = sites.query("continent!='Africa'")
     if len(non_africa)>0:
