@@ -3,12 +3,21 @@
 ## Amelia Bertozzi-Villa
 ## October 2019
 ##
-## EMOD needs climate files and demographics files. Based on the instructions specified in the input_params.json,
-## this script creates ERA5 climate parameters for the specified times and locations.
+## Using the climate, demographic, and (possibly) intervention inputs prepared in steps 0-2, this script submits
+## the appropriate burnin or intervention simulations, pulling further input details from the "input_params.json"
+## file in the input directory.
+##
+## Requirements: input directory containing:
+##                       - an "input_params.json"
+##                       - a "site_details.csv"
+##                       - "vector", "demog", and "climate" directories with the appropriate inputs.
+##                       - if running interventions, an "interventions.csv"
+##  For formatting, see "example_input_dir" in this repo.
+
+## Outputs: Submitted experiments with the expected behavior.
 ##############################################################################################################
 
 ## Importing and setup ---------------------------------------------------------------------------------------
-
 import pandas as pd
 import numpy as np
 import itertools
@@ -33,17 +42,31 @@ desired_width = 320
 pd.set_option('display.width', desired_width)
 pd.set_option('display.max_columns', 10)
 
-## VARIABLES-- user should set these ---------------------------------------------------------------------------------------
+## Workaround for strange asset issues on mac
+os.environ['NO_PROXY'] = 'comps.idmod.org'
+
+## VARIABLES-- user should set these ---------------------------------------------------------------------------------
 
 node_group = "emod_abcd"
 priority = "Lowest"
 
 version_name = "20191009_megatrends_era5_new_archetypes"
-run_type = "intervention" # run_type: set to "burnin" or "intervention"
-test_run = True
+main_dir = os.path.join(os.path.expanduser("~"),
+                            "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
+                            version_name)
+experiment_root_name = "MAP_" + version_name
+
+# uncomment this to run the example
+# main_dir = "example_input_dir"
+# experiment_root_name = "int_impact_example"
+
+# run_type: set to "burnin" or "intervention".
+# If "intervention", the "burnin_id" field of "input_params.json" must be populated.
+run_type = "burnin"
+test_run = False
 node_group = "emod_32cores" if test_run else "emod_abcd"
 
-## Main code setup ---------------------------------------------------------------------------------------
+## Main code setup ---------------------------------------------------------------------------------------------------
 
 # setup
 location = "HPC"
@@ -56,40 +79,33 @@ if __name__=="__main__":
 
     COMPS_login("https://comps.idmod.org")
 
-    main_dir = os.path.join(os.path.expanduser("~"),
-                            "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
-                            version_name)
-
     with open(os.path.join(main_dir, "input_params.json")) as f:
         instructions = json.loads(f.read())
 
     sites = pd.read_csv(os.path.join(main_dir, instructions["site_fname"]))
-
-
     instructions["this_run_type"] = run_type
 
     # Serialization and naming
     if run_type == "burnin":
         years = instructions["burnin_years"]
-        sim_name = "MAP_" + instructions["version_name"] + "_Burnin"
+        experiment_name = experiment_root_name + "_Burnin"
     elif run_type == "intervention":
         years = instructions["intervention_years"]
-        sim_name = "MAP_" + instructions["version_name"] + "_Intervention"
+        experiment_name = experiment_root_name + "_Intervention"
     else:
         raise ValueError("Unknown run type " + run_type)
 
-    sim_name = "{sim_name}_TEST".format(sim_name=sim_name) if test_run else sim_name
+    experiment_name = "{experiment_name}_TEST".format(experiment_name=experiment_name) if test_run else experiment_name
 
     # initialize cb
     cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                         Simulation_Duration=int(365 * years),
-                                        Config_Name=sim_name
+                                        Config_Name=experiment_name
                                         )
     # run main setup function
     set_up_simulation(cb, instructions)
 
-    ## Set up burnin ---------------------------------------------------------------------------------------
-
+    ## Set up burnin ---------------------------------------------------------------------------------------------
     if run_type=="burnin":
 
         print("Building burnin")
@@ -112,7 +128,7 @@ if __name__=="__main__":
             for hab_exp in hab_exps
         ])
 
-    ## Set up intervention scenarios ---------------------------------------------------------------------------------------
+    ## Set up intervention scenarios --------------------------------------------------------------------------------
     else:
 
         print("Building intervention scenarios")
@@ -171,7 +187,7 @@ if __name__=="__main__":
     print("Submitting")
 
     run_sim_args = {"config_builder": cb,
-                        "exp_name": sim_name,
+                        "exp_name": experiment_name,
                         "exp_builder": builder}
 
     em = ExperimentManagerFactory.from_cb(cb)

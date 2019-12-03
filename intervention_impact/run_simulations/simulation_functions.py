@@ -79,9 +79,9 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                      )
 
     # climate and demographic files
-    demog_path = os.path.join(instructions["version_name"],  "demog")
-    vector_path = os.path.join(instructions["version_name"], "vector")
-    climate_path = os.path.join(instructions["version_name"],
+    demog_path = os.path.join(instructions["subdir_name"],  "demog")
+    vector_path = os.path.join(instructions["subdir_name"], "vector")
+    climate_path = os.path.join(instructions["subdir_name"],
                                 "climate", instructions["this_run_type"])
     climate_path = climate_path if os.path.exists(os.path.join(instructions["root_dir"], climate_path)) else \
         os.path.join(climate_path, "..")
@@ -108,8 +108,50 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
     # Find vector counts for each vector based on relative abundances
     print("adding vectors and scaling larval habitats")
 
-    with open(os.path.join(instructions["root_dir"], vector_path, "species_details.json")) as f:
-        species_details = json.loads(f.read())
+    # custom list of species parameters
+    species_details = { "arabiensis": {"habitat_split": {"CONSTANT": 0.1,
+                                                    "TEMPORARY_RAINFALL": 0.9
+                                                      },
+                                    "Anthropophily": 0.65,
+                                    "Indoor_Feeding_Fraction": 0.5
+                                    },
+                        "darlingi": {"habitat_split": {
+                                                  "WATER_VEGETATION": 0.9,
+                                                  "CONSTANT": 0.09,
+                                                  "BRACKISH_SWAMP": 0.01
+                                                 },
+                                  "Anthropophily": 0.5
+                                  },
+                        "funestus": {"habitat_split": {
+                                                    "WATER_VEGETATION": 1
+                                                    },
+                                  "Anthropophily": 0.65,
+                                  "Indoor_Feeding_Fraction": 0.85
+
+                                  },
+                        "gambiae": {"habitat_split": {
+                                                    "CONSTANT": 0.1,
+                                                    "TEMPORARY_RAINFALL": 0.9
+                                                   },
+                                 "Anthropophily": 0.85,
+                                 "Indoor_Feeding_Fraction": 0.85
+                                 },
+                        "maculatus": {"habitat_split": {
+                                                    "TEMPORARY_RAINFALL": 0.8,
+                                                    "WATER_VEGETATION": 0.1,
+                                                    "CONSTANT": 0.1
+                                                    },
+                                   "Anthropophily": 0.5
+                                   },
+                        "minimus": {"habitat_split": {
+                                                   "WATER_VEGETATION":  0.9,
+                                                   "CONSTANT": 0.1
+                                                  }
+                        }
+                    }
+
+    # with open(os.path.join(instructions["root_dir"], vector_path, "species_details.json")) as f:
+    #     species_details = json.loads(f.read())
     set_params_by_species(cb.params, [name for name in species_details.keys()])
 
     site_vector_props = pd.read_csv(os.path.join(instructions["root_dir"], vector_path, "vector_proportions.csv"))
