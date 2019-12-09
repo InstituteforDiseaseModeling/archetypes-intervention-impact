@@ -6,26 +6,35 @@ from simtools.Analysis.SSMTAnalysis import SSMTAnalysis
 from simtools.SetupParser import SetupParser
 from pfpr_analyzer_ssmt import PfPRAnalyzer
 import pandas as pd
+import os
+import json
 from simtools.AssetManager.FileList import FileList
+
+version_name = "20191009_megatrends_era5_new_archetypes"
+main_dir = os.path.join(os.path.expanduser("~"),
+                            "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
+                            version_name)
+with open(os.path.join(main_dir, "input_params.json")) as f:
+    instructions = json.loads(f.read())
 
 # Add these 2 files to server under current working dir's Assets dir, these 2 files not used by server, just for record
 asset_files = FileList(root='.', files_in_root=["run_ssmt_analysis.py"])
-asset_files.add_file("../input_files/site_details.csv")
+asset_files.add_file(os.path.join(main_dir, "site_details.csv"))
 
 if __name__ == "__main__":
     SetupParser.default_block = 'HPC'
     SetupParser.init()
 
-    sites = pd.read_csv("../input_files/site_details.csv")
+    sites = pd.read_csv(os.path.join(main_dir, "site_details.csv"))
 
-    experiments = {"interventions": ["664a7c04-ba75-e911-a2c0-c4346bcb1554"
-                                       ]
+    experiments = {"burnin": instructions["burnin_id"],
+                   "intervention": instructions["intervention_id"]
                    }
 
-    tags = tags = {'Demo': 'dtktools SSMTAnalysis', 'WorkItem type': 'Docker'}
+    tags = {'Demo': 'dtktools SSMTAnalysis', 'WorkItem type': 'Docker'}
 
     for dirname, exp_ids in experiments.items():
-        args = dict(dir_name=dirname, report_names=sites["name"].tolist(),
+        args = dict(dir_name=dirname, report_names=sites["cluster"].tolist(),
                     sweep_variables=["Run_Number", "x_Temporary_Larval_Habitat",
                                      "CM_Drug", "CM_Coverage",
                                      "IRS_Coverage",

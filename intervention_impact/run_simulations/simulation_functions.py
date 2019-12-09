@@ -150,8 +150,6 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                         }
                     }
 
-    # with open(os.path.join(instructions["root_dir"], vector_path, "species_details.json")) as f:
-    #     species_details = json.loads(f.read())
     set_params_by_species(cb.params, [name for name in species_details.keys()])
 
     site_vector_props = pd.read_csv(os.path.join(instructions["root_dir"], vector_path, "vector_proportions.csv"))
