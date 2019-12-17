@@ -17,7 +17,7 @@ class PfPRAnalyzer(BaseAnalyzer):
         self.last_year_only = last_year_only
 
     def select_simulation_data(self, data, simulation):
-        colname = "initial_prev" if self.dir_name == "initial" else "final_prev"
+        colname = "initial_prev" if self.dir_name == "burnin" else "final_prev"
 
         simdata = []
 
@@ -27,7 +27,7 @@ class PfPRAnalyzer(BaseAnalyzer):
                 channeldata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTime"]["PfPR_2to10"]
                 timedata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTime"]["Time Of Report"]
             except:
-                print("file not found for sim" + simulation.id)
+                raise FileNotFoundError("file not found for sim" + simulation.id)
 
             if self.last_year_only:
                 tempdata = pd.DataFrame({colname: channeldata,
@@ -49,7 +49,11 @@ class PfPRAnalyzer(BaseAnalyzer):
         return simdata
 
     def filter(self, simulation):
-        return True
+
+        if "ClonedToRerun" in simulation.tags.keys():
+            return False
+        else:
+            return True
 
     def finalize(self, all_data):
         data_sets_per_experiment = {}

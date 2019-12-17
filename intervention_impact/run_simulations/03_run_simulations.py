@@ -53,7 +53,7 @@ priority = "Lowest"
 version_name = "20191009_megatrends_era5_new_archetypes"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
-                            version_name)
+                            version_name, "input")
 experiment_root_name = "MAP_" + version_name
 
 # uncomment this to run the example

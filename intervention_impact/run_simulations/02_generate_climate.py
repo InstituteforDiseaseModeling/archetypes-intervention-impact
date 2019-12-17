@@ -48,7 +48,8 @@ def confirm_climate_files(instructions, climate_dir):
 
 main_dir = os.path.join(os.path.expanduser("~"),
                         "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
-                        "20191009_megatrends_era5_new_archetypes")
+                        "20191009_megatrends_era5_new_archetypes",
+                        "input")
 
 # uncomment this to run the example
 # main_dir = "example_input_dir"
