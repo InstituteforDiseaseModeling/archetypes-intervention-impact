@@ -150,12 +150,14 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                         }
                     }
 
-    set_params_by_species(cb.params, [name for name in species_details.keys()])
-
     site_vector_props = pd.read_csv(os.path.join(instructions["root_dir"], vector_path, "vector_proportions.csv"))
-    larval_habs_per_site = {"NodeID": site_vector_props["cluster"]}
+    larval_habs_per_site = {"NodeID": site_vector_props["id"]}
+    species_needed = [value for value in species_details.keys() if value in site_vector_props.columns]
+    set_params_by_species(cb.params, [name for name in species_needed])
 
     for species_name, species_modifications in species_details.items():
+        if species_name not in species_needed:
+            continue
         set_species_param(cb, species_name, "Adult_Life_Expectancy", 20)
         set_species_param(cb, species_name, "Vector_Sugar_Feeding_Frequency", "VECTOR_SUGAR_FEEDING_EVERY_DAY")
 
@@ -179,9 +181,9 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                            age_bins=list(range(10, 130, 10)),
                            nodes={
                                "class": "NodeSetNodeList",
-                               "Node_List": [int(row["cluster"])]
+                               "Node_List": [int(row["id"])]
                            },
-                           description=str(row["cluster"]))
+                           description=str(row["id"]))
 
     # if applicable, set assets
     if instructions["asset_exp_id"]!="":

@@ -48,7 +48,7 @@ def confirm_climate_files(instructions, climate_dir):
 
 main_dir = os.path.join(os.path.expanduser("~"),
                         "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
-                        "20191009_megatrends_era5_new_archetypes",
+                        "20191218_site_sensitivity",
                         "input")
 
 # uncomment this to run the example
@@ -84,7 +84,7 @@ else:
             os.makedirs(this_out_dir)
 
         wi_name = "ERA5 weather: {run_type}".format(run_type=run_type)
-        optional_args = "--ds ERA5 --id-ref 'Custom user' --node-col cluster"
+        optional_args = "--ds ERA5 --id-ref 'Custom user' --node-col id"
 
         # To run a specific version add a tag (for example, "weather-files:1.1").
         # See available versions here: https://github.com/InstituteforDiseaseModeling/dst-era5-weather-data-tools/releases.

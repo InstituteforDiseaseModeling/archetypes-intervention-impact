@@ -47,10 +47,9 @@ os.environ['NO_PROXY'] = 'comps.idmod.org'
 
 ## VARIABLES-- user should set these ---------------------------------------------------------------------------------
 
-node_group = "emod_abcd"
 priority = "Lowest"
 
-version_name = "20191009_megatrends_era5_new_archetypes"
+version_name = "20191218_site_sensitivity"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")

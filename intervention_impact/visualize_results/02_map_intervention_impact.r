@@ -89,6 +89,7 @@ lut <- unique(lut[, list(Site_Name, int_id, label, mean_initial, mean_final)])
 
 # merge on a "cluster id" corresponding to the cluster values in each raster.
 # For procedurally generated sites, this should be identical to Site_Name
+# todo: update this with new cluster-id naming
 if ("cluster_for_raster" %in% names(site_details)){
   # this will also drop the sites that are outside of the region of interest.
   lut <- merge(lut, site_details[, list(Site_Name=cluster, cluster_id=cluster_for_raster)], by="Site_Name")
