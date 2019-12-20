@@ -39,7 +39,7 @@ def find_vector_props_africa(africa_sites, vector_raster_dir):
                             to_crs={"init": "epsg:4326"}, lat_name="lat", lon_name="lon")
     shapes = [shapely.geometry.mapping(g) for g in shp_df["geometry"]]
 
-    africa_props = africa_sites[["cluster"]].copy()
+    africa_props = africa_sites[["id"]].copy()
     for species in ["arabiensis", "funestus", "gambiae"]:
         pattern = re.compile(".*_{species}.*\.tif$".format(species=species))
         species_rasters = [x for x in os.listdir(vector_raster_dir) if pattern.match(x)]
@@ -53,15 +53,15 @@ def find_vector_props_africa(africa_sites, vector_raster_dir):
 
 
 def find_vector_props_non_africa(non_africa_sites):
-    col_names = ["cluster", "darlingi", "minimus", "maculatus"]
+    col_names = ["id", "darlingi", "minimus", "maculatus"]
     non_africa_vectors = pd.DataFrame(columns=col_names)
     for idx in list(range(0, len(non_africa_sites))):
         site = non_africa_sites.iloc[idx]
         if site["continent"] == "Asia":
-            non_africa_vectors = non_africa_vectors.append(pd.DataFrame([[ site["cluster"], 0, 0.6, 0.4]],
+            non_africa_vectors = non_africa_vectors.append(pd.DataFrame([[ site["id"], 0, 0.6, 0.4]],
                                                                         columns=col_names))
         elif site["continent"] == "Americas":
-            non_africa_vectors = non_africa_vectors.append(pd.DataFrame([[site["cluster"], 1, 0, 0]],
+            non_africa_vectors = non_africa_vectors.append(pd.DataFrame([[site["id"], 1, 0, 0]],
                                                                         columns=col_names))
         else:
             print("Continent {cont} not found!".format(cont=site["continent"]))
@@ -76,7 +76,7 @@ def update_demog(demographics, vectors, tot_vector_count=20000):
     demographics["Defaults"]["IndividualAttributes"]["RiskDistribution1"] = 1
 
     # add node-specific vectors
-    vectors = pd.melt(vectors, id_vars=["cluster", "continent", "lat", "lon"],
+    vectors = pd.melt(vectors, id_vars=["id", "continent", "lat", "lon"],
                       var_name="species", value_name="proportion")
     vectors["count"] = vectors["proportion"] * tot_vector_count
 
@@ -85,7 +85,7 @@ def update_demog(demographics, vectors, tot_vector_count=20000):
         node["NodeAttributes"]["InitialVectorsPerSpecies"] = {row["species"]: round(row["count"])
                                                                   for idx, row in
                                                                   vectors.query(
-                                                                      "cluster==@node_id").iterrows()}
+                                                                      "id==@node_id").iterrows()}
     return demographics
 
 def net_usage_overlay(base_demog_path, overlay_path):
@@ -108,7 +108,7 @@ def net_usage_overlay(base_demog_path, overlay_path):
 
 main_dir = os.path.join(os.path.expanduser("~"),
                         "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
-                        "20191009_megatrends_era5_new_archetypes",
+                        "20191218_site_sensitivity",
                         "input")
 
 # uncomment this to run the example
@@ -145,7 +145,7 @@ else:
         non_africa_vectors = find_vector_props_non_africa(non_africa)
         vector_props = vector_props.append(non_africa_vectors, sort=False).fillna(0)
 
-    vector_props = pd.merge(sites[["cluster", "continent", "lat", "lon"]], vector_props)
+    vector_props = pd.merge(sites[["id", "continent", "lat", "lon"]], vector_props)
     vector_out_dir = os.path.join(main_dir, "vector")
     if not os.path.isdir(vector_out_dir):
         os.mkdir(vector_out_dir)
@@ -157,7 +157,7 @@ else:
     nodes = [Node(this_site["lat"], this_site["lon"],
           instructions["node_pop"],
           name= this_site["name"] if "name" in this_site.index else "",
-          forced_id=this_site["cluster"],
+          forced_id=this_site["id"],
           extra_attributes={"Country": this_site["birth_rate_country"]})
      for ix, this_site in sites.iterrows()]
 
