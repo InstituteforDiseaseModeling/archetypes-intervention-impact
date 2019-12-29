@@ -99,7 +99,8 @@ if __name__=="__main__":
     # initialize cb
     cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                         Simulation_Duration=int(365 * years),
-                                        Config_Name=experiment_name
+                                        Config_Name=experiment_name,
+                                        Num_Cores=2
                                         )
     # run main setup function
     set_up_simulation(cb, instructions)
