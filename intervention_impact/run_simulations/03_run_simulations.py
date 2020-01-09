@@ -47,8 +47,6 @@ os.environ['NO_PROXY'] = 'comps.idmod.org'
 
 ## VARIABLES-- user should set these ---------------------------------------------------------------------------------
 
-priority = "Lowest"
-
 version_name = "20191218_site_sensitivity"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
@@ -61,8 +59,10 @@ experiment_root_name = "MAP_" + version_name
 
 # run_type: set to "burnin" or "intervention".
 # If "intervention", the "burnin_id" field of "input_params.json" must be populated.
-run_type = "burnin"
+run_type = "intervention"
 test_run = False
+priority = "Lowest"
+num_cores = 1
 node_group = "emod_32cores" if test_run else "emod_abcd"
 
 ## Main code setup ---------------------------------------------------------------------------------------------------
@@ -100,7 +100,7 @@ if __name__=="__main__":
     cb = DTKConfigBuilder.from_defaults("MALARIA_SIM",
                                         Simulation_Duration=int(365 * years),
                                         Config_Name=experiment_name,
-                                        Num_Cores=2
+                                        Num_Cores=num_cores
                                         )
     # run main setup function
     set_up_simulation(cb, instructions)
@@ -141,21 +141,47 @@ if __name__=="__main__":
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
 
         if test_run:
-            print("Running three test sims")
+            print("Running test sims")
             df = df.iloc[0:1]
+
+        # find serialization files
+        def get_core_count(sim_id):
+            from simtools.Utilities.COMPSUtilities import get_simulation_by_id
+            from COMPS.Data import QueryCriteria
+
+            sim = get_simulation_by_id(sim_id)
+            sim.refresh(QueryCriteria().select_children('hpc_jobs'))
+            num_cores = int(sim.hpc_jobs[-1].configuration.max_cores)
+
+            return num_cores
+
+        print("finding core counts for burnins")
+        df["sim_id"] = pd.Series([sim.id for sim in expt.simulations])
+        df["Num_Cores"] = df["sim_id"].apply(get_core_count)
 
         # find burnin length for filename (should be the same for all sims in df)
         try:
-            burnin_length_in_days = df["Serialization_Time_Steps"][0].strip('[]')
+            burnin_length_in_days = df["Serialization_Time_Steps"].iloc[0].strip('[]')
         except AttributeError:
              # different versions of pandas save this as either a string or a list
-            burnin_length_in_days = df["Serialization_Time_Steps"][0][-1]
+            burnin_length_in_days = df["Serialization_Time_Steps"].iloc[0][-1]
+
+        def name_serialized_files(num_cores, timesteps):
+            if num_cores==1:
+                serialized_list = ["state-{timesteps}.dtk".format(timesteps=str(timesteps).zfill(5))]
+            else:
+                serialized_list = ["state-{timesteps}-{core}.dtk".format(timesteps=str(timesteps).zfill(5),
+                                                                          core=str(core_count).zfill(3))
+                                   for core_count in range(num_cores)]
+            return serialized_list
+
+        df["serialized_path"] = df["Num_Cores"].apply(name_serialized_files, args=(burnin_length_in_days,))
 
         from_burnin_list = [
             [ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
-                "Serialized_Population_Filenames":
-                    ["state-{burnin_str}.dtk".format(burnin_str=str(burnin_length_in_days).zfill(5))],
+                "Serialized_Population_Filenames": df["serialized_path"][x],
+                "Num_Cores": df["Num_Cores"][x],
                 "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})]
             for x in df.index]
