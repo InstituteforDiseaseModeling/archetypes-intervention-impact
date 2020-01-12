@@ -16,7 +16,7 @@ setwd(func_dir)
 source("pr_to_r0.r")
 source("map_ii_functions.r")
 
-analysis_subdir <- "20191008_replicate_megatrends"
+analysis_subdir <- "20191009_megatrends_era5_new_archetypes"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 cluster_raster_dir <- file.path(base_dir, "../archetypes/results")
@@ -40,8 +40,10 @@ region <- "Africa" # geography for which you want to predict. currently responds
 lut_fname <- file.path(main_dir, "results/clean/summary_impact.csv")
 
 # what interventions from the lookup table do you want to run? Select "all" if you want every intervention in your LUT to run
-interventions <- c(132, # 80/80/80 with dp cp
-                   125:128, # 80/80/80 + nothing/mAb/pev/tbv
+interventions <- c(105, # 80/80 itn/al cm
+                   125, # 80/80/80 itn/irs/al cm
+                   132, # 80/80/80 with dp cm
+                   126:128, # 80/80/80 + mAb/pev/tbv
                    149:152, # 80/80/80 + 0.15, 3, 15, 25% atsb
                    134,138,142,146 # 3% atsb + 0/20/40/60% itn/irs/al_cm
                    )
@@ -90,13 +92,10 @@ lut <- unique(lut[, list(Site_Name, int_id, label, mean_initial, mean_final)])
 # merge on a "cluster id" corresponding to the cluster values in each raster.
 # For procedurally generated sites, this should be identical to Site_Name
 # todo: update this with new cluster-id naming
-if ("cluster_for_raster" %in% names(site_details)){
-  # this will also drop the sites that are outside of the region of interest.
-  lut <- merge(lut, site_details[, list(Site_Name=cluster, cluster_id=cluster_for_raster)], by="Site_Name")
-}else{
-  lut <- lut[Site_Name %in% site_details$cluster]
-  lut[, cluster_id:=Site_Name]
-}
+
+# this will also drop the sites that are outside of the region of interest.
+lut <- merge(lut, site_details[, list(Site_Name=id, cluster_id=cluster)], by="Site_Name")
+
 
 ### Bounding raster -----------------------------------------------------
 bounding_pr <- raster(bounding_fname)
