@@ -41,16 +41,6 @@ apply_spline_to_raster<-function(splObj,inRaster, return_r0=F){ # todo: there mu
 
 apply_lookup <- function(intervention, baseline_pr, lut, cluster_map, bounding_pr){
   
-  # for(this_cluster in unique(lut$cluster_id)){
-  #   print(this_cluster)
-  #   this_mask <- cluster_map==unique(lut[cluster_id==this_cluster]$cluster_id)
-  #   pr_masked <- raster::mask(baseline_pr, this_mask, maskvalue=0)
-  #   this_lut <- lut[cluster_id==this_cluster & int_id==intervention, list(mean_initial, mean_final)]
-  #   this_spline <- get_splinefunction(this_lut$mean_initial,this_lut$mean_final)
-  #   this_pr <- apply_spline_to_raster(this_spline, pr_masked, return_r0 = F)
-  # }
-  
-  
   final_prs <- lapply(unique(lut$cluster_id), function(this_cluster){
     this_mask <- cluster_map==unique(lut[cluster_id==this_cluster]$cluster_id)
     pr_masked <- raster::mask(baseline_pr, this_mask, maskvalue=0)
