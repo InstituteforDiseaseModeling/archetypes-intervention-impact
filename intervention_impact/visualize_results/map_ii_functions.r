@@ -99,6 +99,6 @@ generate_full_pal <- function(){
   full_pal <- unlist(full_pal)
   full_breaks <- unlist(full_breaks)
   
-  return(list(pal=full_pal, breaks=full_breaks))
+  return(list(pal=full_pal, breaks=full_breaks, zscaleLog=F))
 }
 
