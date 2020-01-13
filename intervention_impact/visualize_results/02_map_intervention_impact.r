@@ -16,7 +16,7 @@ setwd(func_dir)
 source("pr_to_r0.r")
 source("map_ii_functions.r")
 
-analysis_subdir <- "20191009_megatrends_era5_new_archetypes"
+analysis_subdir <- "20191008_replicate_megatrends"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 cluster_raster_dir <- file.path(base_dir, "../archetypes/results")
@@ -199,7 +199,7 @@ if (calculate_par==T){
   }
   
   graphics.off()
-  writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, ".tif")), overwrite=T)
+  writeRaster(par, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, ".tif")), overwrite=T)
   
 }
 
