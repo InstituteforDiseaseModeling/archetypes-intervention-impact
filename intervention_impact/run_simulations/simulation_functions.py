@@ -49,7 +49,7 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
 
     # general settings
     print("customizing config")
-    cb.update_params({"Birth_Rate_Depencence": "FIXED_BIRTH_RATE",
+    cb.update_params({"Birth_Rate_Dependence": "FIXED_BIRTH_RATE",
                       "Age_Initialization_Distribution_Type": "DISTRIBUTION_COMPLEX",
 
                       # interventions

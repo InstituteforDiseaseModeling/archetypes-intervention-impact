@@ -35,9 +35,6 @@ from simtools.Utilities.COMPSUtilities import COMPS_login
 from simulation_functions import *
 from intervention_functions import *
 
-vars = sorted(os.environ.keys())
-print([os.environ[var] for var in vars])
-
 desired_width = 320
 pd.set_option('display.width', desired_width)
 pd.set_option('display.max_columns', 10)
@@ -47,7 +44,7 @@ os.environ['NO_PROXY'] = 'comps.idmod.org'
 
 ## VARIABLES-- user should set these ---------------------------------------------------------------------------------
 
-version_name = "20191218_site_sensitivity"
+version_name = "20191009_megatrends_era5_new_archetypes"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")
@@ -59,11 +56,12 @@ experiment_root_name = "MAP_" + version_name
 
 # run_type: set to "burnin" or "intervention".
 # If "intervention", the "burnin_id" field of "input_params.json" must be populated.
-run_type = "intervention"
+run_type = "burnin"
+suffix = ""
 test_run = False
 priority = "Lowest"
 num_cores = 1
-node_group = "emod_32cores" if test_run else "emod_abcd"
+node_group = "emod_abcd" # if test_run else "emod_abcd"
 
 ## Main code setup ---------------------------------------------------------------------------------------------------
 
@@ -87,10 +85,10 @@ if __name__=="__main__":
     # Serialization and naming
     if run_type == "burnin":
         years = instructions["burnin_years"]
-        experiment_name = experiment_root_name + "_Burnin"
+        experiment_name = experiment_root_name + "_Burnin" + suffix
     elif run_type == "intervention":
         years = instructions["intervention_years"]
-        experiment_name = experiment_root_name + "_Intervention"
+        experiment_name =  experiment_root_name + "_Int" + suffix
     else:
         raise ValueError("Unknown run type " + run_type)
 
