@@ -21,7 +21,7 @@ source("pr_to_r0.r")
 source("map_ii_functions.r")
 
 old_dir <- "20191008_replicate_megatrends"
-new_dir <- "20191009_megatrends_era5_new_archetypes"
+new_dir <- "20191009_mega_era5_new_arch"
 suffix <- "results/megatrend_ii_rasters"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")

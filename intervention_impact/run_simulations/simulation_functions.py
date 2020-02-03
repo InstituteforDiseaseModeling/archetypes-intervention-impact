@@ -177,8 +177,10 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
     print("adding node-specific reports")
     # todo: can we use node demographics instead?
     for idx, row in site_vector_props.iterrows():
-        add_summary_report(cb,
-                           age_bins=list(range(10, 130, 10)),
+        add_summary_report(cb, nreports=int(cb.params["Simulation_Duration"]/365),
+                           age_bins=[125],
+                           parasitemia_bins=[5000.0],
+                           infection_bins=[100.0],
                            nodes={
                                "class": "NodeSetNodeList",
                                "Node_List": [int(row["id"])]

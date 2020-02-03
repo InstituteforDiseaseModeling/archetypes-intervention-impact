@@ -1,4 +1,4 @@
-from __future__ import print_function
+# from __future__ import print_function
 import sys, datetime
 from multiprocessing import Pool
 from clone_simulation_hpc2hpc import clone_simulation_hpc2hpc
@@ -12,7 +12,7 @@ import pdb
 compshost = 'https://comps.idmod.org'
 
 
-def should_rerun_sim(s):
+def should_rerun_sim_custom(s):
     """
     Method to validate that this sim should be rerun (failed, is missing some
     expected output files, etc...
@@ -29,9 +29,16 @@ def should_rerun_sim(s):
     fi = s.retrieve_output_file_info(None)
 
     if not any(filter(lambda x: x.path_from_root == "output" and x.friendly_name.startswith("MalariaSummaryReport_"), fi)):
+        print("found sim to rerun")
         return True
 
     return False
+
+def should_rerun_sim(s):
+    if s.state == SimulationState.Canceled:
+        return True
+    else:
+        return False
 
 
 if __name__ == "__main__":
@@ -46,10 +53,12 @@ if __name__ == "__main__":
 
     sims = exp.get_simulations()
 
+    import pdb
+
     print(datetime.datetime.now())
 
     with Pool() as p:
-        results = p.map(should_rerun_sim, sims)
+        results = p.map(should_rerun_sim_custom, sims)
 
     sims_to_rerun = [ sims[i] for i in filter(lambda x: results[x] == True, range(len(results))) ]
 

@@ -10,10 +10,10 @@ import os
 import json
 from simtools.AssetManager.FileList import FileList
 
-version_name = "20191008_replicate_megatrends"
+version_name = "20191009_mega_era5_new_arch"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
-                            version_name)
+                            version_name, "input")
 with open(os.path.join(main_dir, "input_params.json")) as f:
     instructions = json.loads(f.read())
 
@@ -34,7 +34,7 @@ if __name__ == "__main__":
     tags = {'Demo': 'dtktools SSMTAnalysis', 'WorkItem type': 'Docker'}
 
     for dirname, exp_ids in experiments.items():
-        args = dict(dir_name=dirname, report_names=sites["cluster"].tolist(),
+        args = dict(dir_name=dirname, report_names=sites["id"].tolist(),
                     sweep_variables=["Run_Number", "x_Temporary_Larval_Habitat",
                                      "CM_Drug", "CM_Coverage",
                                      "IRS_Coverage",
