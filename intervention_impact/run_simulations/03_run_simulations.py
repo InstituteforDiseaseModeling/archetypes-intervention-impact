@@ -44,7 +44,7 @@ os.environ['NO_PROXY'] = 'comps.idmod.org'
 
 ## VARIABLES-- user should set these ---------------------------------------------------------------------------------
 
-version_name = "20191009_megatrends_era5_new_archetypes"
+version_name = "20191218_site_sensitivity"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")
@@ -60,7 +60,8 @@ run_type = "burnin"
 suffix = ""
 test_run = False
 priority = "Lowest"
-num_cores = 1
+num_cores = 4
+find_burnin_cores = False # set to true if your burnin is mixed-core
 node_group = "emod_abcd" # if test_run else "emod_abcd"
 
 ## Main code setup ---------------------------------------------------------------------------------------------------
@@ -155,7 +156,7 @@ if __name__=="__main__":
 
         print("finding core counts for burnins")
         df["sim_id"] = pd.Series([sim.id for sim in expt.simulations])
-        df["Num_Cores"] = df["sim_id"].apply(get_core_count)
+        df["Num_Cores"] =  df["sim_id"].apply(get_core_count) if find_burnin_cores else num_cores
 
         # find burnin length for filename (should be the same for all sims in df)
         try:

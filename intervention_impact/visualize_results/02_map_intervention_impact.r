@@ -16,7 +16,7 @@ setwd(func_dir)
 source("pr_to_r0.r")
 source("map_ii_functions.r")
 
-analysis_subdir <- "20191008_replicate_megatrends"
+analysis_subdir <- "20191009_mega_era5_new_arch"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 cluster_raster_dir <- file.path(base_dir, "../archetypes/results")
@@ -24,7 +24,7 @@ main_dir <- file.path(base_dir, analysis_subdir)
 out_dir <- file.path(main_dir,"results", "megatrend_ii_rasters")
 dir.create(out_dir, recursive = T, showWarnings = F)
 
-africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/shapefiles/Africa.shp"
+africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/general/shapefiles/Africa.shp"
 raster_input_dir <- file.path(base_dir, "megatrend_rasters")
 
 ### Input variables  -----------------------------------------------------

@@ -12,7 +12,7 @@ library(ggplot2)
 
 rm(list=ls())
 
-analysis_subdir <- "20191008_replicate_megatrends"
+analysis_subdir <- "20191009_mega_era5_new_arch"
 main_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                       analysis_subdir)
@@ -21,7 +21,7 @@ dir.create(out_dir, recursive = T, showWarnings = F)
 
 # read in data
 initial <- fread(file.path(main_dir, "results/raw", paste0("MAP_", analysis_subdir, "_Burnin.csv")))
-final <- fread(file.path(main_dir, "results/raw", paste0("MAP_", analysis_subdir, "_Intervention.csv")))
+final <- fread(file.path(main_dir, "results/raw", paste0("MAP_", analysis_subdir, "_Int.csv")))
 
 # read original intervention specs
 int_list <- fread(file.path(main_dir, "input", "interventions.csv"))
