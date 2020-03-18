@@ -73,7 +73,9 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
 
                       # reporting
                       "Disable_IP_Whitelist": 1,
-                      "Enable_Property_Output": 0
+                      "Enable_Property_Output": 0,
+                      "logLevel_Default": "WARNING",
+                      "logLevel_Simulation": "INFO"
 
                       }
                      )

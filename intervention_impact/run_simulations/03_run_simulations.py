@@ -56,7 +56,7 @@ experiment_root_name = "MAP_" + version_name
 
 # run_type: set to "burnin" or "intervention".
 # If "intervention", the "burnin_id" field of "input_params.json" must be populated.
-run_type = "burnin"
+run_type = "intervention"
 suffix = ""
 test_run = False
 priority = "Lowest"
@@ -156,6 +156,7 @@ if __name__=="__main__":
 
         print("finding core counts for burnins")
         df["sim_id"] = pd.Series([sim.id for sim in expt.simulations])
+        # pdb.set_trace()
         df["Num_Cores"] =  df["sim_id"].apply(get_core_count) if find_burnin_cores else num_cores
 
         # find burnin length for filename (should be the same for all sims in df)

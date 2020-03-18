@@ -18,7 +18,10 @@ def should_rerun_sim_custom(s):
     expected output files, etc...
     """
 
-    if s.state == SimulationState.Failed:
+    print(s.id)
+
+    if s.state == SimulationState.Failed or s.state==SimulationState.Canceled or s.state==SimulationState.CancelRequested:
+        print("found failed or canceled sim to rerun")
         return True
 
     try:
@@ -35,7 +38,7 @@ def should_rerun_sim_custom(s):
     return False
 
 def should_rerun_sim(s):
-    if s.state == SimulationState.Canceled:
+    if s.state == SimulationState.Failed or s.state==SimulationState.Canceled or s.state==SimulationState.CancelRequested:
         return True
     else:
         return False
@@ -54,7 +57,7 @@ if __name__ == "__main__":
     sims = exp.get_simulations()
 
     import pdb
-
+    # pdb.set_trace()
     print(datetime.datetime.now())
 
     with Pool() as p:
