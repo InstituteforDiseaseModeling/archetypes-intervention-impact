@@ -10,7 +10,7 @@ import os
 import json
 from simtools.AssetManager.FileList import FileList
 
-version_name = "20191009_mega_era5_new_arch"
+version_name = "20191218_site_sensitivity"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")
@@ -50,6 +50,6 @@ if __name__ == "__main__":
 
         # no need to set working_dir. using default working_dir as '.'
         analysis = SSMTAnalysis(experiment_ids=exp_ids, analyzers=[PfPRAnalyzer], analyzers_args=[args],
-                                asset_files=asset_files, tags=tags)
+                                asset_files=asset_files, tags=tags, analysis_name="Intervention Impact Analysis")
 
         analysis.analyze()
