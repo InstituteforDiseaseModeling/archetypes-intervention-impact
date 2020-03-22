@@ -12,7 +12,7 @@ library(ggplot2)
 
 rm(list=ls())
 
-analysis_subdir <- "20191009_mega_era5_new_arch"
+analysis_subdir <- "20191218_site_sensitivity"
 main_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                       analysis_subdir)
