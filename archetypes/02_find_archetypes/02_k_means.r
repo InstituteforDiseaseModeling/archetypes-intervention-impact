@@ -24,7 +24,7 @@ library(FNN)
 rm(list=ls())
 overwrite_rotation <- T
 overwrite_kmeans <- T
-out_subdir <- "v4_era5_bounded_transmission"
+out_subdir <- "v5_interventions_only"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
@@ -32,11 +32,15 @@ base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))
 
-cluster_counts <- 3:15
+cluster_counts <- c(10, 20, 30, 40, 50, 60)
 
 for (this_continent in unique(guide$continent)){
   
   this_guide <- guide[continent==this_continent]
+  
+  # temp: itn only
+  this_guide <- this_guide[covariate=="itn_coverage"]
+  
   this_cov <- paste(this_guide$covariate, collapse=".")
   print(paste("clustering", this_cov, "for", this_continent))
   

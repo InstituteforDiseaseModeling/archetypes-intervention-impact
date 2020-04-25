@@ -26,7 +26,7 @@ base_dir <- file.path(root_dir,
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 
 overwrite <- T
-out_subdir <- "v4_era5_bounded_transmission"
+out_subdir <- "v5_interventions_only"
 
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))
@@ -37,6 +37,11 @@ for (this_continent in unique(guide$continent)){
   
   print(paste("running svd on", this_continent))
   cov_dir <- file.path(base_dir, "covariates", unique(this_guide$cov_directory), this_continent)
+  
+# test with just ITN for now
+  this_guide <- this_guide[covariate=="itn_coverage"]
+  
+  
   this_out_dir <- file.path(out_dir, this_continent, "01_svd")
   dir.create(this_out_dir, showWarnings=F, recursive=T)
   
@@ -66,6 +71,7 @@ for (this_continent in unique(guide$continent)){
       return(vals)
     })
     
+    
     # keep only those pixels with values for all covariates
     non_null_ids <- lapply(all_vals, function(df){
       return(unique(df$id))
@@ -73,6 +79,11 @@ for (this_continent in unique(guide$continent)){
     shared_ids <- Reduce(intersect, non_null_ids)
     all_vals <- rbindlist(all_vals)
     all_vals <- all_vals[id %in% shared_ids]
+    
+    # TEMP: remove incorrect years and null values here. in the future, do in the cov extractions
+    all_vals <- all_vals[variable_val<2018]
+    all_vals[value<0, value:=0]
+    all_vals[value>1, value:=1]
     
     # to ensure replication
     all_vals[variable_name=="month", variable_val:= str_pad(variable_val, 2, side="left", pad="0")]

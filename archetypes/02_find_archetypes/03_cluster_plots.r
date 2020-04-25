@@ -26,13 +26,16 @@ theme_set(theme_minimal(base_size = 12))
 rm(list=ls())
 
 plot_vectors <- T
-out_subdir <- "v4_era5_bounded_transmission"
+out_subdir <- "v5_interventions_only"
 
 root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))
+
+# temp
+guide <- guide[covariate=="itn_coverage"]
 
 palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "#902E57", "#F98400", "#B33539", "#367A40")
 
@@ -50,6 +53,7 @@ for (this_continent in unique(guide$continent)){
   # find cluster counts
   cluster_counts <- list.files(this_in_dir)[list.files(this_in_dir) %like% "k_out"]
   cluster_counts <- sort(as.integer(gsub("k_out_([0-9]+)_.*", "\\1", cluster_counts)))
+  cluster_counts <- c(10, 20, 40, 50, 60)
   
   print("loading matrix rotations")
   rotation <- fread(file.path(this_in_dir, "svd_rotations.csv"))
