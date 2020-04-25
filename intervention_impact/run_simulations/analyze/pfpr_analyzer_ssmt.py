@@ -32,13 +32,12 @@ class PfPRAnalyzer(BaseAnalyzer):
             if self.last_year_only:
                 tempdata = pd.DataFrame({colname: channeldata,
                                         "Site_Name": site_name})
-                tempdata = tempdata[-2:-1]
+                tempdata = tempdata[-1]
 
             else:
                 tempdata = pd.DataFrame({"day": timedata,
                                          colname: channeldata,
                                          "Site_Name": site_name})
-                tempdata = tempdata[:-1]
 
             simdata.append(tempdata)
         simdata = pd.concat(simdata)

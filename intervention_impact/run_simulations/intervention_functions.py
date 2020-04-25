@@ -26,20 +26,24 @@ from dtk.interventions.property_change import change_individual_property
 from dtk.interventions.novel_vector_control import add_ATSB, add_ors_node, add_larvicides
 from dtk.interventions.ivermectin import add_ivermectin
 from malaria.interventions.malaria_vaccine import add_vaccine
+from malaria.interventions.adherent_drug import configure_adherent_drug
 
 from malaria.reports.MalariaReport import add_summary_report
-from malaria.interventions.malaria_drug_campaigns import add_drug_campaign
+from malaria.interventions.malaria_drug_campaigns import add_drug_campaign, add_diagnostic_survey
 from malaria.interventions.health_seeking import add_health_seeking
 
 ## Interventions ---------------------------------------------------------------------------------------
 
-def generate_intervention_tuples(coverages, start_days, years, vaccine_durations=None, ivermectin_durations=None):
+def generate_intervention_tuples(coverages, start_days, years,
+                                 vaccine_durations=None, ivermectin_durations=None, smc_max_ages=None):
 
     # defaults for durations until we find a better way to pass these
     if ivermectin_durations is None:
         ivermectin_durations = [14]
     if vaccine_durations is None:
         vaccine_durations = [365]
+    if smc_max_ages is None:
+        smc_max_ages = [5]
     intervention_dict = {
         start_day: {
             cov: {
@@ -133,7 +137,14 @@ def generate_intervention_tuples(coverages, start_days, years, vaccine_durations
                                      monthly_rounds=3
                                      )
                                for duration in ivermectin_durations
-                               ]
+                               ],
+                "smc": {max_age: [ModFn(add_smc,
+                              coverage=cov/100,
+                              start_day=start_day,
+                              agemax=max_age
+                              )]
+                        for max_age in smc_max_ages
+                        }
 
             }
             for cov in coverages
@@ -232,7 +243,7 @@ def add_mda(cb, coverage=0.8, drugname="DP", start_days=[0], reps=3):
                       coverage=coverage,
                       # nodes={"class": "NodeSetAll"},
                       repetitions=reps,
-                      interval=30)
+                      tsteps_btwn_repetitions=30)
 
     return {"MDA_Drug": drugname, "MDA_Repetitions": reps, "MDA_Coverage": coverage}
 
@@ -288,3 +299,52 @@ def add_ivermectin_wrapper(cb, coverage, start_days=[0], drug_duration=7, monthl
     return {"Ivermectin_Coverage": coverage, "Ivermectin_Start": start_days[0], "Ivermectin_Duration": drug_duration,
             "Ivermectin_Monthly_Rounds": monthly_rounds}
 
+def smc_adherent_configuration(cb, adherence):
+    smc_adherent_config = configure_adherent_drug(cb, doses = [["Sulfadoxine", "Pyrimethamine",'Amodiaquine'],
+                                                         ['Amodiaquine'],
+                                                         ['Amodiaquine']],
+                                                  dose_interval=1,
+                                                  non_adherence_options=['Stop'],
+                                                  non_adherence_distribution=[1],
+                                                  adherence_config={
+                                                        "class": "WaningEffectMapCount",
+                                                        "Initial_Effect": 1,
+                                                        "Durability_Map": {
+                                                            "Times": [
+                                                                1.0,
+                                                                2.0,
+                                                                3.0
+                                                            ],
+                                                            "Values": [
+                                                                1, # for day 1
+                                                                adherence, # day 2
+                                                                adherence # day 3
+                                                            ]
+                                                        }
+                                                    }
+    )
+    return smc_adherent_config
+
+def add_smc(cb, coverage, start_day=0, adherence=0.6, agemax=5):
+
+    adherent_drug_configs = smc_adherent_configuration(cb, adherence)  # adherence
+    add_diagnostic_survey(cb, start_day=start_day,
+                          coverage=1,
+                          target={"agemin": 0.25, "agemax": agemax},
+                          diagnostic_type='FEVER',
+                          diagnostic_threshold=0.5,
+                          negative_diagnosis_configs=[{
+                              "Broadcast_Event": "No_SMC_Fever",
+                              "class": "BroadcastEvent"}],
+                          positive_diagnosis_configs=[{
+                              "Broadcast_Event": "Has_SMC_Fever",
+                              "class": "BroadcastEvent"}]
+                          )
+    add_drug_campaign(cb, 'SMC', 'SPA', start_days=[start_day],
+                      coverage=coverage, target_group={'agemin': 0.25, 'agemax': agemax},
+                      listening_duration=2,
+                      trigger_condition_list=['No_SMC_Fever'],
+                      adherent_drug_configs=[adherent_drug_configs])
+
+    return {"SMC_Coverage": coverage, "SMC_Start": start_day, "SMC_Adherence": adherence,
+            "SMC_Max_Age": agemax}

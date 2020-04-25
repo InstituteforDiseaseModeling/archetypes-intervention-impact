@@ -10,7 +10,7 @@ import os
 import json
 from simtools.AssetManager.FileList import FileList
 
-version_name = "20191218_site_sensitivity"
+version_name = "20200423_test_smc"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")
@@ -43,8 +43,9 @@ if __name__ == "__main__":
                                      "Larvicide_Coverage",
                                      "Ivermectin_Coverage", "Ivermectin_Duration", "Ivermectin_Monthly_Rounds",
                                      "PEV_Coverage", "PEV_Waning_Config_class", "PEV_Waning_Config_Decay_Time_Constant",
-                                     "TBV_Coverage", "TBV_Waning_Config_Decay_Time_Constant"],
-                    last_year_only=True)
+                                     "TBV_Coverage", "TBV_Waning_Config_Decay_Time_Constant",
+                                     "SMC_Coverage", "SMC_Start", "SMC_Adherence", "SMC_Max_Age"],
+                    last_year_only=False)
 
         exp_ids = exp_ids if isinstance(exp_ids, list) else [exp_ids]
 

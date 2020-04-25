@@ -44,7 +44,7 @@ os.environ['NO_PROXY'] = 'comps.idmod.org'
 
 ## VARIABLES-- user should set these ---------------------------------------------------------------------------------
 
-version_name = "20191218_site_sensitivity"
+version_name = "20200423_test_smc"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")
@@ -60,7 +60,7 @@ run_type = "intervention"
 suffix = ""
 test_run = False
 priority = "Lowest"
-num_cores = 4
+num_cores = 1
 find_burnin_cores = False # set to true if your burnin is mixed-core
 node_group = "emod_abcd" # if test_run else "emod_abcd"
 
@@ -193,17 +193,25 @@ if __name__=="__main__":
 
         # load intervention dataset
         interventions = pd.read_csv(os.path.join(main_dir, "interventions.csv"))
+        max_ages = interventions["max_age"].unique().tolist() if "max_age" in interventions.columns else None
         intervention_dict = generate_intervention_tuples(coverages=interventions["cov"].unique().tolist(),
                                                          start_days=interventions["start_day"].unique().tolist(),
-                                                         years=years)
+                                                         years=years,
+                                                         smc_max_ages=max_ages)
+
 
         # generate a list of intervention packages from dataset
         # (each sublist is its own intervention package)
         full_int_list = []
+
         for this_int_idx in interventions["int_id"].unique().tolist():
             this_int_package = interventions.query("int_id==@this_int_idx")
-            this_int_list = [intervention_dict[row["start_day"]][row["cov"]][row["int"]]
-            for idx, row in this_int_package.iterrows()]
+            this_int_list = []
+            for idx, row in this_int_package.iterrows():
+                this_int = intervention_dict[row["start_day"]][row["cov"]][row["int"]][row["max_age"]] if row["int"]=="smc" \
+                    else intervention_dict[row["start_day"]][row["cov"]][row["int"]]
+                this_int_list.append(this_int)
+
             # flatten
             this_int_list = list(itertools.chain.from_iterable(this_int_list))
             full_int_list.append(this_int_list)
