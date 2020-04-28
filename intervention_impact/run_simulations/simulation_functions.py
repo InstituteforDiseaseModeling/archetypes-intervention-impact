@@ -19,15 +19,10 @@ from simtools.Utilities.Experiments import retrieve_experiment
 
 from dtk.vector.species import set_params_by_species, set_species_param
 from dtk.interventions.habitat_scale import scale_larval_habitats
-from dtk.interventions.irs import add_IRS
-from dtk.interventions.itn_age_season import add_ITN_age_season
 from dtk.interventions.property_change import change_individual_property
-from dtk.interventions.novel_vector_control import add_ATSB, add_ors_node, add_larvicides
-from dtk.interventions.ivermectin import add_ivermectin
+from dtk.interventions.outbreakindividual import recurring_outbreak
 
-from malaria.reports.MalariaReport import add_summary_report
-from malaria.interventions.malaria_drug_campaigns import add_drug_campaign
-from malaria.interventions.health_seeking import add_health_seeking
+from malaria.reports.MalariaReport import add_summary_report, add_event_counter_report
 
 ## Simulation setup ---------------------------------------------------------------------------------------
 
@@ -52,9 +47,13 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
     cb.update_params({"Birth_Rate_Dependence": "FIXED_BIRTH_RATE",
                       "Age_Initialization_Distribution_Type": "DISTRIBUTION_COMPLEX",
 
-                      # interventions
+                      # intervention reporting
+                      "Report_Event_Recorder": 1,
+                      "Report_Event_Recorder_Events": ["No_SMC_Fever", "Has_SMC_Fever"],
+                      "Report_Event_Recorder_Ignore_Events_In_List": 0,
                       "Listed_Events" : ["Bednet_Discarded", "Bednet_Got_New_One",
-                                       "Bednet_Using", "Received_Vaccine"],
+                                       "Bednet_Using", "Received_Vaccine",
+                                         "No_SMC_Fever", "Has_SMC_Fever"],
                       "Enable_Default_Reporting" : 0,
                       "Enable_Demographics_Risk" : 1,
                       "Enable_Vector_Species_Report": 0,
@@ -71,11 +70,12 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                       "Max_Individual_Infections" : 3,
                       "Nonspecific_Antigenicity_Factor" : 0.415111634,
 
-                      # reporting
+                      # other reporting
                       "Disable_IP_Whitelist": 1,
                       "Enable_Property_Output": 0,
                       "logLevel_Default": "WARNING",
                       "logLevel_Simulation": "INFO"
+
 
                       }
                      )
@@ -175,6 +175,10 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
     # this function adds a per-node campaign event that scales larval habitat as specified.
     scale_larval_habitats(cb, pd.DataFrame(larval_habs_per_site))
 
+    # add a recurring outbreak to infect a small portion of the population and help sustain transmission
+    # in the absence of formal migration
+    recurring_outbreak(cb, outbreak_fraction=0.01, repetitions=int(cb.params["Simulation_Duration"]/365))
+
     # reporting
     print("adding node-specific reports")
     # todo: can we use node demographics instead?
@@ -188,6 +192,10 @@ def set_up_simulation(cb, instructions, max_larval_capacity=4e8):
                                "Node_List": [int(row["id"])]
                            },
                            description=str(row["id"]))
+
+    # smc reporting
+    event_trigger_list = ["No_SMC_Fever",  "Has_SMC_Fever"]
+    add_event_counter_report(cb, event_trigger_list=event_trigger_list)
 
     # if applicable, set assets
     if instructions["asset_exp_id"]!="":

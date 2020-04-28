@@ -12,16 +12,22 @@ library(ggplot2)
 
 rm(list=ls())
 
-analysis_subdir <- "20191218_site_sensitivity"
+analysis_subdir <- "20200426_int_history"
 main_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                       analysis_subdir)
 out_dir <- file.path(main_dir,"results", "clean")
+suffix <- "_no_reps"
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 # read in data
-initial <- fread(file.path(main_dir, "results/raw", paste0("MAP_", analysis_subdir, "_Burnin.csv")))
-final <- fread(file.path(main_dir, "results/raw", paste0("MAP_", analysis_subdir, "_Int.csv")))
+in_dir <- file.path(main_dir, "results", "raw")
+fnames <- list.files(in_dir)
+initial <- fread(file.path(in_dir, fnames[fnames %like% "Burnin"]))
+final <- fread(file.path(in_dir, fnames[fnames %like% "Int"]))
+
+final <- final[day==max(final$day)]
+final[, day:=NULL]
 
 # read original intervention specs
 int_list <- fread(file.path(main_dir, "input", "interventions.csv"))
@@ -112,7 +118,7 @@ if ("tbv" %in% unique_ints){
 final <- final[, ..colnames_to_keep]
 
 # collate into a single dataframe
-int_impact <- merge(initial, final, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
+int_impact <- merge(final, initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all.x=T)
 
 # find intervention counts and labels
 int_list[, cov:=cov/100]
@@ -133,8 +139,8 @@ summary_colnames <- c("Site_Name", "int_id", "label", "x_Temporary_Larval_Habita
 summary <- unique(int_impact[, ..summary_colnames])
 
 # save
-write.csv(int_impact, file=file.path(out_dir, "full_impact.csv"), row.names=F)
-write.csv(summary, file=file.path(out_dir, "summary_impact.csv"), row.names=F)
+write.csv(int_impact, file=file.path(out_dir, paste0("full_impact", suffix, ".csv")), row.names=F)
+write.csv(summary, file=file.path(out_dir, paste0("summary_impact", suffix, ".csv")), row.names=F)
 
 
 

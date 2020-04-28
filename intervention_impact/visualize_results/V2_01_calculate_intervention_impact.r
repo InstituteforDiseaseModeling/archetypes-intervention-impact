@@ -1,5 +1,5 @@
 ###############################################################################################################
-## 01_calculate_intervention_impact_SMC.r
+## V2_01_calculate_intervention_impact.r
 ## Amelia Bertozzi-Villa
 ## December 2019
 ## 
@@ -12,7 +12,7 @@ library(ggplot2)
 
 rm(list=ls())
 
-analysis_subdir <- "20200423_test_smc"
+analysis_subdir <- "20200426_int_history"
 main_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                       analysis_subdir)
@@ -24,7 +24,8 @@ in_dir <- file.path(main_dir, "results", "raw")
 fnames <- list.files(in_dir)
 initial <- fread(file.path(in_dir, fnames[fnames %like% "Burnin"]))
 final <- fread(file.path(in_dir, fnames[fnames %like% "Int"]))
-final <- final[day==365]
+
+final <- final[day==max(final$day)]
 final[, day:=NULL]
 
 # read original intervention specs
@@ -34,13 +35,18 @@ unique_ints <- unique(int_list$int)
 if (length(unique(int_list$start_day))==1 & unique(int_list$start_day)[1]==0){
   int_list[, start_day:=NULL]
 }
-setnames(int_list, c("start_day", "cov", "max_age"), c("Start", "Coverage", "Max_Age"))
-int_list <- melt(int_list, id.vars=c("int_id", "int"))
-int_list[, variable:=paste0(int, "_", variable)]
-int_list[, variable:=gsub("itn", "ITN", variable)]
-int_list[, variable:=gsub("smc", "SMC", variable)]
-int_list <- dcast.data.table(int_list, int_id ~ variable, value.var="value")
-# 
+
+int_list <- dcast.data.table(int_list, int_id ~ int)
+setnames(int_list, c("al_cm", "irs", "itn"), c("CM_Coverage", "IRS_Coverage", "ITN_Coverage"))
+
+# smc-specific stuff
+# setnames(int_list, c("start_day", "cov", "max_age"), c("Start", "Coverage", "Max_Age"))
+# int_list <- melt(int_list, id.vars=c("int_id", "int"))
+# int_list[, variable:=paste0(int, "_", variable)]
+# int_list[, variable:=gsub("itn", "ITN", variable)]
+# int_list[, variable:=gsub("smc", "SMC", variable)]
+# int_list <- dcast.data.table(int_list, int_id ~ variable, value.var="value")
+
 # # add labels -- TODO
 # int_labels <- rbindlist(lapply(unique(int_list$int_id), function(this_id){
 #   subset <- int_list[int_id==this_id]
@@ -57,11 +63,12 @@ int_list <- dcast.data.table(int_list, int_id ~ variable, value.var="value")
 # set of modifications to create a separate "coverage" column for each intervention
 
 # collate into a single dataframe
-int_impact <- merge(initial, final, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all=T)
+int_impact <- merge(final, initial, by=c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat"), all.x=T)
 
 # find intervention counts and labels
 
 int_impact <- merge(int_impact, int_list, by=intersect(names(int_list), names(int_impact)), all=T)
+
 # int_impact <- merge(int_impact, int_labels, by="int_id", all=T)
 # int_impact[, label:=factor(label, levels=int_labels$label)]
 
@@ -73,8 +80,8 @@ int_impact[, min_final:= min(final_prev), by=list(Site_Name, x_Temporary_Larval_
 int_impact[, max_final:=max(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, int_id)]
 
 # summarize 
-# summary_colnames <- c("Site_Name", "int_id", "label", "x_Temporary_Larval_Habitat", "mean_initial", "mean_final", "min_final", "max_final", unique_ints)
-# summary <- unique(int_impact[, ..summary_colnames])
+summary_colnames <- c("Site_Name", "int_id", "x_Temporary_Larval_Habitat", "mean_initial", "mean_final", "min_final", "max_final", unique_ints)
+summary <- unique(int_impact[, ..summary_colnames])
 
 # save
 write.csv(int_impact, file=file.path(out_dir, "full_impact.csv"), row.names=F)

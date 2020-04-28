@@ -48,7 +48,7 @@ def generate_intervention_tuples(coverages, start_days, years,
         start_day: {
             cov: {
                 "itn": [ModFn(add_annual_itns,
-                              year_count=years,
+                              year_count=  years,
                               n_rounds=1,
                               coverage=cov / 100,
                               discard_halflife=180,
@@ -58,7 +58,7 @@ def generate_intervention_tuples(coverages, start_days, years,
                 "irs": [ModFn(add_irs_group,
                               coverage=cov / 100,
                               decay=180,
-                              start_days=[(365 * year_idx) + start_day for year_idx in range(years)]
+                              start_days=  [(365 * year_idx) + start_day for year_idx in range(years)]
                               )],
                 "al_cm": [ModFn(add_healthseeking_by_coverage,
                                 coverage=cov / 100,

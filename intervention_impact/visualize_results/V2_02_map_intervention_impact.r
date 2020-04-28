@@ -1,7 +1,7 @@
 ###############################################################################################################
-## 02_map_intervention_impact.r
+## V2_02_map_intervention_impact.r
 ## Amelia Bertozzi-Villa
-## December 2019
+## April 2020
 ## 
 ##############################################################################################################
 
@@ -16,41 +16,46 @@ setwd(func_dir)
 source("pr_to_r0.r")
 source("map_ii_functions.r")
 
-analysis_subdir <- "20200426_int_history"
+analysis_subdir <- "20191009_mega_era5_new_arch"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 cluster_raster_dir <- file.path(base_dir, "../archetypes/results")
 main_dir <- file.path(base_dir, analysis_subdir)
-suffix <- ""
-out_dir <- file.path(main_dir,"results", "rasters")
+out_dir <- file.path(main_dir,"results", "megatrend_ii_rasters")
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/general/shapefiles/Africa.shp"
-raster_input_dir <- "~/Desktop/covid_mitigation_project/pfpr_mean_rasters_20200214"
+raster_input_dir <- file.path(base_dir, "megatrend_rasters")
 
 ### Input variables  -----------------------------------------------------
 
-calculate_par <- F
+calculate_par <- T
 pop_fname <- file.path(raster_input_dir, "ssp5_total_2050_MG_5K.tif")
 
-calculate_repro_number <- F
+calculate_repro_number <- T
 
 region <- "Africa" # geography for which you want to predict. currently responds only to "Africa" 
 
 # where is your lookup table? 
-lut_fname <- file.path(main_dir, paste0("results/clean/summary_impact", suffix, ".csv"))
+lut_fname <- file.path(main_dir, "results/clean/summary_impact.csv")
 
 # what interventions from the lookup table do you want to run? Select "all" if you want every intervention in your LUT to run
-interventions <- c(1:18)
+interventions <- c(105, # 80/80 itn/al cm
+                   125, # 80/80/80 itn/irs/al cm
+                   132, # 80/80/80 with dp cm
+                   126:128, # 80/80/80 + mAb/pev/tbv
+                   149:152, # 80/80/80 + 0.15, 3, 15, 25% atsb
+                   134,138,142,146 # 3% atsb + 0/20/40/60% itn/irs/al_cm
+)
 
 # what rasters do you want to use as baselines? You'll get a new set of results for each
 baseline_raster_fnames <- list( # "True PfPR 2017"="PfPR_rmean_Global_admin0_2017.tif",
-  "MAP PfPR 2016"="pr_2016_rmean_Africa.tif"
+  "Megatrends Base 2000"="actual_ssp2_base2000_2050.tif"
   # "Megatrends Base 2016"="actual_ssp2_base2016_2050.tif"
 )
 
 # What raster do you want to use as a maximum value on all results?
-bounding_fname <- file.path(raster_input_dir, "pr_2019_rmean_Africa.tif")
+bounding_fname <- file.path(raster_input_dir, "actual_ssp2_base2016_2050.tif")
 
 # Are there additional rasters you want to visualize, but not apply a lookup table to?
 comparison_fnames <- c()
@@ -92,12 +97,10 @@ lut <- unique(lut[, list(Site_Name, int_id, label, mean_initial, mean_final)])
 lut <- merge(lut, site_details[, list(Site_Name=id, cluster_id=cluster)], by="Site_Name")
 
 
-### Align cluster and int history rasters -----------------------------------------------------
+### Bounding raster -----------------------------------------------------
 bounding_pr <- raster(bounding_fname)
 cluster_map <- crop(cluster_map, bounding_pr)
-cluster_map <- extend(cluster_map, bounding_pr)
-cluster_map <- raster::mask(cluster_map, bounding_pr)
-
+bounding_pr <- crop(bounding_pr, cluster_map)
 bounding_pr <- raster::mask(bounding_pr, cluster_map)
 
 ### Format any preliminary rasters  #####----------------------------------------------------------------------------------------------------------------------------------
@@ -132,20 +135,16 @@ for (baseline_label in names(baseline_raster_fnames)){
   
   for (intervention in interventions){
     print(intervention)
-    pr_list[[pr_idx]] <- apply_lookup(intervention, baseline_pr, lut, cluster_map, bounding_pr, bound=F)
+    pr_list[[pr_idx]] <- apply_lookup(intervention, baseline_pr, lut, cluster_map, bounding_pr)
     pr_idx <- pr_idx + 1 
   }
 }
 
 stacked_pr <- stack(pr_list)
 
-# maybe: calculate all interventions as usual, and then stitch them together later!!!
-
-
-
-# if (region=="Africa"){
-#   stacked_pr <- extend(stacked_pr, africa_shp)
-# }
+if (region=="Africa"){
+  stacked_pr <- extend(stacked_pr, africa_shp)
+}
 
 # Plot and save
 color_vals <- generate_full_pal()
@@ -158,12 +157,12 @@ for(base_val in 1:length(baseline_raster_fnames)){
   start_idx <- end_idx - int_count
   print(levelplot(stacked_pr[[start_idx:end_idx]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
                   xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)) +
-                    latticeExtra::layer(sp.polygons(africa_shp))
+          latticeExtra::layer(sp.polygons(africa_shp))
   )
 }
 
 graphics.off()
-writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, suffix, ".tif")), overwrite=T)
+writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, ".tif")), overwrite=T)
 
 
 ### Convert to populations-at-risk  #####----------------------------------------------------------------------------------------------------------------------------------
@@ -200,7 +199,7 @@ if (calculate_par==T){
   }
   
   graphics.off()
-  writeRaster(par, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, suffix, ".tif")), overwrite=T)
+  writeRaster(par, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, ".tif")), overwrite=T)
   
 }
 
@@ -235,9 +234,6 @@ if (calculate_repro_number){
     )
   }
   graphics.off()
-  writeRaster(repro_numbers, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("repro_number_",region, suffix, ".tif")), overwrite=T)
+  writeRaster(repro_numbers, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("repro_number_",region, ".tif")), overwrite=T)
 }
-
-
-
 
