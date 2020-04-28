@@ -44,7 +44,7 @@ os.environ['NO_PROXY'] = 'comps.idmod.org'
 
 ## VARIABLES-- user should set these ---------------------------------------------------------------------------------
 
-version_name = "20200423_test_smc"
+version_name = "20200426_int_history"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")
@@ -57,12 +57,13 @@ experiment_root_name = "MAP_" + version_name
 # run_type: set to "burnin" or "intervention".
 # If "intervention", the "burnin_id" field of "input_params.json" must be populated.
 run_type = "intervention"
-suffix = ""
+suffix = "_recur_out"
 test_run = False
 priority = "Lowest"
 num_cores = 1
 find_burnin_cores = False # set to true if your burnin is mixed-core
 node_group = "emod_abcd" # if test_run else "emod_abcd"
+serialize = True
 
 ## Main code setup ---------------------------------------------------------------------------------------------------
 
@@ -138,10 +139,11 @@ if __name__=="__main__":
 
         df = pd.DataFrame([x.tags for x in expt.simulations])
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
-
+        # IMPORTANT: limit to just the most realistic baseline prevalence scenarios
+        df = df.query("x_Temporary_Larval_Habitat>0.09 & x_Temporary_Larval_Habitat<26")
         if test_run:
             print("Running test sims")
-            df = df.iloc[0:1]
+            df = df.iloc[10:11]
 
         # find serialization files
         def get_core_count(sim_id):
@@ -183,7 +185,9 @@ if __name__=="__main__":
                 "Serialized_Population_Filenames": df["serialized_path"][x],
                 "Num_Cores": df["Num_Cores"][x],
                 "Run_Number": df["Run_Number"][x],
-                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x]})]
+                "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x],
+                "Serialization_Time_Steps": [365 * years]
+            })]
             for x in df.index]
 
         # generate interventions
@@ -208,7 +212,8 @@ if __name__=="__main__":
             this_int_package = interventions.query("int_id==@this_int_idx")
             this_int_list = []
             for idx, row in this_int_package.iterrows():
-                this_int = intervention_dict[row["start_day"]][row["cov"]][row["int"]][row["max_age"]] if row["int"]=="smc" \
+                this_int = intervention_dict[row["start_day"]][row["cov"]][row["int"]][row["max_age"]] \
+                    if row["int"]=="smc" \
                     else intervention_dict[row["start_day"]][row["cov"]][row["int"]]
                 this_int_list.append(this_int)
 

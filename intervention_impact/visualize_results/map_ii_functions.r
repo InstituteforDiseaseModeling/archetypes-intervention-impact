@@ -39,7 +39,7 @@ apply_spline_to_raster<-function(splObj,inRaster, return_r0=F){ # todo: there mu
 }
 
 
-apply_lookup <- function(intervention, baseline_pr, lut, cluster_map, bounding_pr){
+apply_lookup <- function(intervention, baseline_pr, lut, cluster_map, bounding_pr, bound=T){
   
   final_prs <- lapply(unique(lut$cluster_id), function(this_cluster){
     this_mask <- cluster_map==unique(lut[cluster_id==this_cluster]$cluster_id)
@@ -59,7 +59,10 @@ apply_lookup <- function(intervention, baseline_pr, lut, cluster_map, bounding_p
   this_pr_final <- do.call(merge, final_prs)
   
   # bound if needed
-  this_pr_final <- min(stack(this_pr_final, bounding_pr)) 
+  if (bound){
+    this_pr_final <- min(stack(this_pr_final, bounding_pr)) 
+  }
+  
   names(this_pr_final) <- unique(lut[int_id==intervention, list(label)])
   
   return(this_pr_final)
