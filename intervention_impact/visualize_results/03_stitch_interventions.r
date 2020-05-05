@@ -21,7 +21,7 @@ base_dir <- file.path(Sys.getenv("HOME"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 cluster_raster_dir <- file.path(base_dir, "../archetypes/results")
 main_dir <- file.path(base_dir, analysis_subdir)
-suffix <- ""
+suffix <- "recur_out"
 out_dir <- file.path(main_dir,"results", "rasters")
 dir.create(out_dir, recursive = T, showWarnings = F)
 
