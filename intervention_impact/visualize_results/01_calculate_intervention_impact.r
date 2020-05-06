@@ -17,7 +17,7 @@ main_dir <- file.path(Sys.getenv("HOME"),
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                       analysis_subdir)
 out_dir <- file.path(main_dir,"results", "clean")
-suffix <- "_no_reps"
+suffix <- "recur_out"
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 # read in data
