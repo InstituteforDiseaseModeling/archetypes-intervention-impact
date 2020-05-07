@@ -12,13 +12,14 @@ library(ggplot2)
 
 rm(list=ls())
 
-analysis_subdir <- "20200426_int_history"
+analysis_subdir <- "20200506_reextract_20191009_mega_era5_new_arch"
 main_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                       analysis_subdir)
 out_dir <- file.path(main_dir,"results", "clean")
-suffix <- "recur_out"
+suffix <- ""
 dir.create(out_dir, recursive = T, showWarnings = F)
+final_day <- 365
 
 # read in data
 in_dir <- file.path(main_dir, "results", "raw")
@@ -26,7 +27,22 @@ fnames <- list.files(in_dir)
 initial <- fread(file.path(in_dir, fnames[fnames %like% "Burnin"]))
 final <- fread(file.path(in_dir, fnames[fnames %like% "Int"]))
 
-final <- final[day==max(final$day)]
+# in some cases, the final year will be duplicated, with "0" in the prevalence column. Flag and remove these.
+remove_duplicates <- function(this_dt){
+  dt_names <- names(this_dt)[!names(this_dt) %like% "prev"]
+  this_dt[, count:=seq_len(.N), by=dt_names]
+  this_dt <- this_dt[count==1]
+  this_dt[, count:=NULL]
+  return(this_dt)
+}
+
+initial <- remove_duplicates(initial)
+final <- remove_duplicates(final)
+
+initial <- initial[day==max(initial$day)]
+initial[, day:=NULL]
+
+final <- final[day==final_day]
 final[, day:=NULL]
 
 # read original intervention specs

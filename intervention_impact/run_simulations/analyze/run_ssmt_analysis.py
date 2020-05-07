@@ -10,7 +10,7 @@ import os
 import json
 from simtools.AssetManager.FileList import FileList
 
-version_name = "20200426_int_history"
+version_name = "20200506_reextract_20191009_mega_era5_new_arch"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")

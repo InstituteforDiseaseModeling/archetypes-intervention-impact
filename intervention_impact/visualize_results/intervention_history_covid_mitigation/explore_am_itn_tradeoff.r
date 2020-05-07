@@ -22,13 +22,13 @@ setwd(func_dir)
 source("pr_to_r0.r")
 source("map_ii_functions.r")
 
-analysis_subdir <- "20191009_mega_era5_new_arch"
+analysis_subdir <- "20200506_reextract_20191009_mega_era5_new_arch"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 archetype_raster_dir <- file.path(base_dir, "../archetypes/results")
 main_dir <- file.path(base_dir, analysis_subdir)
 suffix <- ""
-out_dir <- "~/Desktop"  # file.path(main_dir,"results", "rasters")
+out_dir <-  file.path(main_dir,"results", "rasters")
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 region <- "Africa"
@@ -39,7 +39,7 @@ act_raster_fname <- file.path(main_raster_input_dir, "effective_treatment_with_a
 itn_raster_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20200418_BMGF_ITN_C1.00_R1.00_V2/04_predictions/ITN_2019_use.tif"
 
 # by what percent do you want to *reduce* act coverage?
-act_percent_reductions <- c(20)
+act_percent_reductions <- c(60, 80)
 
 ### Shapefile  -----------------------------------------------------
 print("Loading Shapefile")
@@ -101,6 +101,8 @@ print("Converting to data tables")
 archetype_dt <- data.table(cellnumber=1:ncell(archetype_raster), archetype=extract(archetype_raster, 1:ncell(archetype_raster)))
 archetype_dt <- archetype_dt[!is.na(archetype)]
 
+
+
 ### Functions  ----------------------------------------------------------------------------------------------------------------------------------------------------------
 
 make_interp_matrix <- function(for_interp, itn_vals, act_vals){
@@ -112,14 +114,14 @@ make_interp_matrix <- function(for_interp, itn_vals, act_vals){
 }
 
 # for testing
-orig_itn_cov <- 0.4809626
-orig_act_cov <- 0.448775
-new_act <- 0.35902
-prevalence <- 0.7248536
-archetype <- 4
-interp_matrices <- all_interp_matrices[[archetype]]
-act_vals <- unique_act
-itn_vals <- unique_itn
+# orig_itn_cov <- 0.4809626
+# orig_act_cov <- 0.448775
+# new_act <- 0.35902
+# prevalence <- 0.7248536
+# archetype <- 4
+# interp_matrices <- all_interp_matrices[[archetype]]
+# act_vals <- unique_act
+# itn_vals <- unique_itn
 
 
 find_new_itn <- function(orig_itn_cov, orig_act_cov, new_act, prevalence, archetype, interp_matrices, new_act_type="cov", 
@@ -182,8 +184,6 @@ raster_stack <- stack(pfpr_raster, itn_raster, act_raster)
 names(raster_stack) <- c("prevalence", "itn_orig", "act_orig")
 raster_dt <- cbind(archetype_dt, extract(raster_stack, archetype_dt$cellnumber))
 
-new_itn_list <- list()
-new_itn_idx <- 1
 
 # note: these take about an hour each, be warned
 for(percent_reduction in act_percent_reductions){
@@ -194,51 +194,32 @@ for(percent_reduction in act_percent_reductions){
   this_raster_dt[, act_prop:=new_act_prop]
   this_raster_dt[, act_new:=act_orig*new_act_prop]
   print("Calculating new ITN coverage")
+  tic <- Sys.time()
+  print(tic)
   this_raster_dt[, itn_new:=find_new_itn(itn_orig, act_orig, act_new, prevalence, archetype, interp_matrices = all_interp_matrices),
              by = seq_len(nrow(this_raster_dt))]
+  toc <- Sys.time()
+  elapsed <- toc-tic
+  print(paste("Time elapsed:", elapsed, units(elapsed)))
   
   this_raster_dt[itn_new>0, itn_final:=itn_new]
   this_raster_dt[itn_new==0, itn_final:=itn_orig] # better alternative than setting to zero
   this_raster_dt[itn_new==-1, itn_final:=itn_orig] # places where we project no transmission (archetype 1)
   this_raster_dt[itn_new==-2, itn_final:=1] # maximize nets since we don't know the upper bound
   this_raster_dt[itn_new==-3, itn_final:=itn_orig] # places where cov is already >80%
+  this_raster_dt[itn_new==-4, itn_final:=1] # placeholder until we get a better idea
+
   
+  write.csv(this_raster_dt, file.path(out_dir, paste0("derived_itn_cov_reduce_act_", percent_reduction, ".csv")), row.names = F)
   
-  #todo: check weird behavior for itn_new == 0, -1, and -2 before you commit
+  this_itn_raster <- copy(raster_template)
+  this_itn_raster[this_raster_dt$cellnumber] <- this_raster_dt$itn_final
+  this_itn_raster[is.na(this_itn_raster) & !is.na(itn_raster)] <- itn_raster[is.na(this_itn_raster) & !is.na(itn_raster)]
   
-  write.csv(this_raster_dt, file.path(out_dir, paste0("derived_itn_cov_reduce_acts_", percent_reduction, ".csv")), row.names = F)
-  
-  this_raster <- copy(raster_template)
-  this_raster[this_raster_dt$cellnumber] <- this_raster_dt$itn_final
-  
-  compare <- stack(raster::mask(itn_raster, this_raster), this_raster)
-  names(compare) <- c("ITN 2019", "ITN Needed")
-  
-  new_itn_list[[new_itn_idx]] <- this_raster
-  new_itn_idx <- new_itn_idx +1
+  writeRaster(this_itn_raster, filename = file.path(out_dir, paste0("derived_itn_cov_reduce_act_", percent_reduction, ".tif")), overwrite=T)
   
 }
 
-
-
-
-# Plot and save
-color_vals <- generate_full_pal()
-int_count <- length(interventions)
-
-pdf(file.path(out_dir, paste0("pfpr_", region, ".pdf")), width=12, height=10)
-
-for(base_val in 1:length(baseline_raster_fnames)){
-  end_idx <- (int_count+1) * base_val
-  start_idx <- end_idx - int_count
-  print(levelplot(stacked_pr[[start_idx:end_idx]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
-                  xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)) +
-          latticeExtra::layer(sp.polygons(africa_shp))
-  )
-}
-
-graphics.off()
-writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, suffix, ".tif")), overwrite=T)
 
 
 
@@ -246,16 +227,16 @@ writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", fi
 # 
 # for (this_site in unique(impact$Site_Name)){
 #   this_heatmap <- 
-    ggplot(sim_prevs[Site_Name==5 & transmission_intensity<0], aes(x=al_cm, y=itn, fill=prev)) +
-    geom_tile() +
-    geom_text(aes(label=round(prev, 2))) +
-    scale_fill_distiller(name="Prevalence", palette = "Spectral") +
-    facet_wrap(.~transmission_intensity) +
-    theme_minimal() +
-    scale_x_continuous(breaks=seq(0, 0.8, 0.2), labels=c("0%", "20%", "40%", "60%", "80%")) +
-    scale_y_continuous(breaks=seq(0, 0.8, 0.2), labels=c("0%", "20%", "40%", "60%", "80%")) +
-    labs(x="Effective Treatment",
-         y="ITN Coverage")
+    # ggplot(sim_prevs[Site_Name==5 & transmission_intensity<0], aes(x=al_cm, y=itn, fill=prev)) +
+    # geom_tile() +
+    # geom_text(aes(label=round(prev, 2))) +
+    # scale_fill_distiller(name="Prevalence", palette = "Spectral") +
+    # facet_wrap(.~transmission_intensity) +
+    # theme_minimal() +
+    # scale_x_continuous(breaks=seq(0, 0.8, 0.2), labels=c("0%", "20%", "40%", "60%", "80%")) +
+    # scale_y_continuous(breaks=seq(0, 0.8, 0.2), labels=c("0%", "20%", "40%", "60%", "80%")) +
+    # labs(x="Effective Treatment",
+    #      y="ITN Coverage")
 #   # print(this_heatmap)
 # }
 # 
