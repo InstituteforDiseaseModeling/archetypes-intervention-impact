@@ -5,6 +5,7 @@ Its role is to collect the experiment ids and analyzers (w/o paramenters) and us
 from simtools.Analysis.SSMTAnalysis import SSMTAnalysis
 from simtools.SetupParser import SetupParser
 from pfpr_analyzer_ssmt import PfPRAnalyzer
+from incidence_analyzer_ssmt import IncAnalyzer
 import pandas as pd
 import os
 import json
@@ -50,7 +51,7 @@ if __name__ == "__main__":
         exp_ids = exp_ids if isinstance(exp_ids, list) else [exp_ids]
 
         # no need to set working_dir. using default working_dir as '.'
-        analysis = SSMTAnalysis(experiment_ids=exp_ids, analyzers=[PfPRAnalyzer], analyzers_args=[args],
+        analysis = SSMTAnalysis(experiment_ids=exp_ids, analyzers=[IncAnalyzer], analyzers_args=[args],
                                 asset_files=asset_files, tags=tags, analysis_name="Intervention Impact Analysis")
 
         analysis.analyze()

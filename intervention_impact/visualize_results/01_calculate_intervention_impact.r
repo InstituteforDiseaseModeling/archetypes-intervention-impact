@@ -13,21 +13,25 @@ library(ggplot2)
 rm(list=ls())
 
 analysis_subdir <- "20200506_reextract_20191009_mega_era5_new_arch"
+analysis_metric <- "prev"
+final_day <- 365
+suffix <- ""
+
 main_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                       analysis_subdir)
 out_dir <- file.path(main_dir,"results", "clean")
-suffix <- ""
 dir.create(out_dir, recursive = T, showWarnings = F)
-final_day <- 365
+
 
 # read in data
-in_dir <- file.path(main_dir, "results", "raw")
+in_dir <- file.path(main_dir, "results", "raw", analysis_metric)
 fnames <- list.files(in_dir)
 initial <- fread(file.path(in_dir, fnames[fnames %like% "Burnin"]))
 final <- fread(file.path(in_dir, fnames[fnames %like% "Int"]))
 
 # in some cases, the final year will be duplicated, with "0" in the prevalence column. Flag and remove these.
+# (should only happen for the older prevalence datasets)
 remove_duplicates <- function(this_dt){
   dt_names <- names(this_dt)[!names(this_dt) %like% "prev"]
   this_dt[, count:=seq_len(.N), by=dt_names]
@@ -36,8 +40,10 @@ remove_duplicates <- function(this_dt){
   return(this_dt)
 }
 
-initial <- remove_duplicates(initial)
-final <- remove_duplicates(final)
+if (analysis_metric=="prev"){
+  initial <- remove_duplicates(initial)
+  final <- remove_duplicates(final)
+}
 
 initial <- initial[day==max(initial$day)]
 initial[, day:=NULL]
@@ -66,8 +72,16 @@ int_labels <- rbindlist(lapply(unique(int_list$int_id), function(this_id){
 }))
 
 # set of modifications to create a separate "coverage" column for each intervention
+if (analysis_metric=="prev"){
+  base_metrics <- "prev"
+}else if (analysis_metric=="inc"){
+  base_metrics <- c("inc", "severe_inc")
+}
 
-colnames_to_keep <- c("Run_Number", "Site_Name", "x_Temporary_Larval_Habitat", "final_prev")
+initial_cols <- paste0("initial_", base_metrics)
+final_cols <- paste0("final_", base_metrics)
+
+colnames_to_keep <- c("Run_Number", "Site_Name", "x_Temporary_Larval_Habitat", final_cols)
 
 # itn 
 if ("itn" %in% unique_ints){
@@ -143,20 +157,60 @@ int_impact <- merge(int_impact, int_list_wide, by=unique_ints, all=T)
 int_impact <- merge(int_impact, int_labels, by="int_id", all=T)
 int_impact[, label:=factor(label, levels=int_labels$label)]
 
-setcolorder(int_impact, c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat", "int_id", "label", "initial_prev", "final_prev", unique_ints))
+setcolorder(int_impact, c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat", "int_id", "label", initial_cols, final_cols, unique_ints))
 int_impact <- int_impact[order(int_id, Site_Name, x_Temporary_Larval_Habitat, Run_Number)]
-int_impact[, mean_initial:= mean(initial_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, int_id)]
-int_impact[, mean_final:=mean(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, int_id)]
-int_impact[, min_final:= min(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, int_id)]
-int_impact[, max_final:=max(final_prev), by=list(Site_Name, x_Temporary_Larval_Habitat, int_id)]
+
+# test plots
+int_impact[, transmission_intensity:=round(log10(x_Temporary_Larval_Habitat), 2)]
+
+
+for(this_col in c(initial_cols, final_cols)){
+  setnames(int_impact, this_col, "to_agg")
+  int_impact[, new_col:=mean(to_agg), by=list(Site_Name, x_Temporary_Larval_Habitat, int_id)] 
+  setnames(int_impact, "new_col", paste0("mean_", this_col))
+  
+  if (this_col %like% "final"){
+    int_impact[, new_col:=min(to_agg), by=list(Site_Name, x_Temporary_Larval_Habitat, int_id)] 
+    setnames(int_impact, "new_col", paste0("min_", this_col))
+    int_impact[, new_col:=max(to_agg), by=list(Site_Name, x_Temporary_Larval_Habitat, int_id)] 
+    setnames(int_impact, "new_col", paste0("max_", this_col))
+  }
+  setnames(int_impact, "to_agg", this_col)
+}
+
+# ggplot(int_impact[Site_Name==10 & transmission_intensity>0 & int_id<125 & irs==0 & Run_Number==1], aes(x=al_cm, y=itn, fill=mean_final_severe_inc)) +
+#   geom_tile() +
+#   # geom_text(aes(label=round(value, 2))) +
+#   scale_fill_distiller(name="Incidence", palette = "Spectral") +
+#   facet_wrap(.~transmission_intensity) +
+#   theme_minimal() +
+#   scale_x_continuous(breaks=seq(0, 0.8, 0.2), labels=c("0%", "20%", "40%", "60%", "80%")) +
+#   scale_y_continuous(breaks=seq(0, 0.8, 0.2), labels=c("0%", "20%", "40%", "60%", "80%")) +
+#   labs(x="Effective Treatment",
+#        y="ITN Coverage")
+
+
+int_impact <- melt(int_impact, id.vars = c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat", "int_id", "label", unique_ints))
+for (this_metric in base_metrics){
+  int_impact[variable %like% paste0("initial_", this_metric) | variable %like% paste0("final_", this_metric), metric:=this_metric]
+}
+
+int_impact[, variable:=gsub("(.*[initial|final])_.*", "\\1", variable)]
+
+for_cast <- paste(paste(c("Site_Name", "Run_Number", "x_Temporary_Larval_Habitat", "int_id", "label", unique_ints, "metric"), collapse=" + "),
+                  "~ variable") 
+
+int_impact <- dcast.data.table(int_impact, formula(for_cast))
+
 
 # summarize 
-summary_colnames <- c("Site_Name", "int_id", "label", "x_Temporary_Larval_Habitat", "mean_initial", "mean_final", "min_final", "max_final", unique_ints)
+summary_colnames <- c("Site_Name", "int_id", "label", "x_Temporary_Larval_Habitat", "metric",
+                      "initial", "final", "mean_initial", "mean_final", "min_final", "max_final", unique_ints)
 summary <- unique(int_impact[, ..summary_colnames])
 
 # save
-write.csv(int_impact, file=file.path(out_dir, paste0("full_impact", suffix, ".csv")), row.names=F)
-write.csv(summary, file=file.path(out_dir, paste0("summary_impact", suffix, ".csv")), row.names=F)
+write.csv(int_impact, file=file.path(out_dir, paste0("full_impact_", analysis_metric, suffix, ".csv")), row.names=F)
+write.csv(summary, file=file.path(out_dir, paste0("summary_impact_",analysis_metric, suffix, ".csv")), row.names=F)
 
 
 
