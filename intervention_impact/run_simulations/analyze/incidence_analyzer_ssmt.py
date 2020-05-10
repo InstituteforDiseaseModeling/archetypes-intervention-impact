@@ -1,12 +1,13 @@
 import os
 import pandas as pd
+import numpy as np
 from simtools.Analysis.BaseAnalyzers import BaseAnalyzer
 
-class PfPRAnalyzer(BaseAnalyzer):
+class IncAnalyzer(BaseAnalyzer):
 
     def __init__(self, dir_name, report_names=["AnnualAverage"], sweep_variables=None, working_dir=".",
                  last_year_only=True):
-        super(PfPRAnalyzer, self).__init__(working_dir=working_dir,
+        super(IncAnalyzer, self).__init__(working_dir=working_dir,
                                         filenames=["output/MalariaSummaryReport_{name}.json".format(name=name)
                                                       for name in report_names]
                                            )
@@ -17,31 +18,36 @@ class PfPRAnalyzer(BaseAnalyzer):
         self.last_year_only = last_year_only
 
     def select_simulation_data(self, data, simulation):
-        colname = "initial_prev" if self.dir_name == "burnin" else "final_prev"
+        inc_colname = "initial_inc" if self.dir_name == "burnin" else "final_inc"
+        severe_colname = "initial_severe_inc" if self.dir_name == "burnin" else "final_severe_inc"
 
         simdata = []
 
         for site_name in self.sitenames:
 
             try:
-                channeldata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTime"]["PfPR_2to10"]
+                timeinterval = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["Metadata"]["Reporting_Interval"]
+                incdata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTimeAndAgeBins"]["Annual Clinical Incidence by Age Bin"]
+                severedata =  data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTimeAndAgeBins"]["Annual Severe Incidence by Age Bin"]
+                popdata =  data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTimeAndAgeBins"]["Average Population by Age Bin"]
                 timedata = data["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["DataByTime"]["Time Of Report"]
-                timeinterval = data["Metadata"]["output/MalariaSummaryReport_{name}.json".format(name=site_name)]["Reporting_Interval"]
-
             except:
                 raise FileNotFoundError("file not found for sim" + simulation.id)
 
             max_years = int(max(timedata) / timeinterval)
-            channeldata = channeldata[range(0, max_years)]
+            incidence = [np.average(incdata[x], weights=popdata[x]) for x in range(0, max_years)]
+            severe_incidence = [severedata[x][0] for x in range(0, max_years)]
 
             if self.last_year_only:
-                tempdata = pd.DataFrame({colname: channeldata,
+                tempdata = pd.DataFrame({inc_colname: incidence,
+                                         severe_colname: severe_incidence,
                                         "Site_Name": site_name})
                 tempdata = tempdata[-1]
 
             else:
-                tempdata = pd.DataFrame({"day": timedata,
-                                         colname: channeldata,
+                tempdata = pd.DataFrame({"day": timedata[0:max_years],
+                                         inc_colname: incidence,
+                                         severe_colname:severe_incidence,
                                          "Site_Name": site_name})
 
             simdata.append(tempdata)
@@ -76,6 +82,7 @@ class PfPRAnalyzer(BaseAnalyzer):
             if not os.path.exists(os.path.join(self.working_dir, self.dir_name)):
                 os.mkdir(os.path.join(self.working_dir, self.dir_name))
 
-            d.to_csv(os.path.join(self.working_dir, self.dir_name, "{name}.csv".format(name=experiment_name)), index=False)
+            d.to_csv(os.path.join(self.working_dir, self.dir_name, "{name}_incidence.csv".format(name=experiment_name)),
+                     index=False)
 
 
