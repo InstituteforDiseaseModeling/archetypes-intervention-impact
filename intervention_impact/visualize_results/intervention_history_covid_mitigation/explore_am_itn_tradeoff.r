@@ -32,19 +32,26 @@ archetype_raster_dir <- file.path(base_dir, "../archetypes/results")
 main_dir <- file.path(base_dir, analysis_subdir)
 
 suffix <- ""
-out_dir <-  file.path(main_dir,"results", "rasters", "base_2020", analysis_metric)
+out_dir <-  file.path(main_dir,"results", "rasters", "base_2019", analysis_metric)
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 region <- "Africa"
 africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/general/shapefiles/Africa.shp"
 main_raster_input_dir <- "/Volumes/GoogleDrive/My Drive/covid_mitigation_project"
-pfpr_raster_fname <- file.path(main_raster_input_dir, "pfpr_2020_realizations", "MEAN.PFPR.2020.tif")
 
-act_raster_fname <- file.path(main_raster_input_dir, "effective_treatment_with_an_antimalarial3/2020.effective.treatment.tif")
-itn_raster_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20200418_BMGF_ITN_C1.00_R1.00_V2/04_predictions/ITN_2020_use.tif"
+if (out_dir %like% "base_2020"){
+  pfpr_raster_fname <- file.path(main_raster_input_dir, "pfpr_2020_realizations", "MEAN.PFPR.2020.tif")
+  act_raster_fname <- file.path(main_raster_input_dir, "effective_treatment_with_an_antimalarial3/2020.effective.treatment.tif")
+  itn_raster_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20200418_BMGF_ITN_C1.00_R1.00_V2/04_predictions/ITN_2020_use.tif"
+}else if (out_dir %like% "base_2019"){
+  pfpr_raster_fname <- file.path(main_raster_input_dir, "pfpr_mean_rasters_20200214/pr_2019_rmean_Africa.tif")
+  act_raster_fname <- file.path(main_raster_input_dir, "effective_treatment_with_an_antimalarial3/2019.effective.treatment.tif")
+  itn_raster_fname <- "/Volumes/GoogleDrive/My Drive/itn_cube/results/20200418_BMGF_ITN_C1.00_R1.00_V2/04_predictions/ITN_2019_use.tif"
+}
+
 
 # by what percent do you want to *reduce* act coverage?
-act_percent_reductions <- c(20, 40, 60, 80)
+act_percent_reductions <- c(20)
 
 ### Shapefile  -----------------------------------------------------
 print("Loading Shapefile")

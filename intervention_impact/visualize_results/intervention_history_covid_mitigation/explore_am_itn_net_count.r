@@ -99,12 +99,12 @@ counterfactuals <- stack(list.files(in_dir, pattern=".tif", full.names=T))
 
 cant_maintain <- counterfactuals==1
 names(cant_maintain) <- gsub("derived_itn_cov_", "", names(counterfactuals))
-names(cant_maintain) <- gsub("act", "am", names(cant_maintain))
+names(cant_maintain) <- gsub("act", "cm", names(cant_maintain))
 
-pdf(file.path(in_dir, "cant_maintain.pdf"), width=7, height=7)
+pdf(file.path(in_dir, "cant_mitigate.pdf"), width=7, height=7)
 cant_maintain_plot <-levelplot(cant_maintain,
                             par.settings=rasterTheme(region= brewer.pal(9, "Purples")),
-                            xlab=NULL, ylab=NULL, scales=list(draw=F), margin=F, main="Pixels where ITN coverage cannot mitigate AM reduction") +
+                            xlab=NULL, ylab=NULL, scales=list(draw=F), margin=F, main="Pixels where ITN coverage cannot mitigate CM reduction") +
                     latticeExtra::layer(sp.polygons(africa_shp))
 print(cant_maintain_plot)
 graphics.off()
@@ -116,7 +116,7 @@ names(cant_maintain_pop) <- c(names(cant_maintain), "pop")
 cant_maintain_aggregated <- data.table(zonal(cant_maintain_pop, admin_raster, fun="sum"))
 setnames(cant_maintain_aggregated, "zone", "gaul")
 cant_maintain_aggregated <- melt(cant_maintain_aggregated, id.vars=c("gaul", "pop"), value.name = "pop_cant_maintain", variable.name = "type")
-cant_maintain_aggregated[, type:=paste0("-", gsub(".*_([0-9]+).*", "\\1", type), "% AM")]
+cant_maintain_aggregated[, type:=paste0("-", gsub(".*_([0-9]+).*", "\\1", type), "% CM")]
 cant_maintain_aggregated <- merge(cant_maintain_aggregated, iso_gaul_map, all.x=T)
 cant_maintain_aggregated <- cant_maintain_aggregated[pop>0]
 setcolorder(cant_maintain_aggregated, c("iso3", "country", "gaul", "type", "pop", "pop_cant_maintain"))
@@ -145,14 +145,14 @@ counterfactuals_aggregated <- lapply(1:nlayers(counterfactuals), function(raster
   
   this_net_count <- this_percapita_itn * pop_raster
   this_net_count_aggregated <- aggregate_npc(this_net_count, admin_raster, iso_gaul_map)
-  this_net_count_aggregated[, type:=paste0("-", percent_reduction, "% AM")]
+  this_net_count_aggregated[, type:=paste0("-", percent_reduction, "% CM")]
   
   return(this_net_count_aggregated)
 })
 
 counterfactuals_aggregated <- rbindlist(counterfactuals_aggregated)
 compare_aggregated <- rbind(net_count_baseline_aggregated, counterfactuals_aggregated)
-compare_aggregated[, class:=ifelse(type %like% "AM", "counter", "baseline")]
+compare_aggregated[, class:=ifelse(type %like% "CM", "counter", "baseline")]
 compare_aggregated[, mil_nets:=nets/1000000]
 
 compare_aggregated <- merge(compare_aggregated, cant_maintain_aggregated[, list(iso3, type, perc_cant_maintain, cant_maintain=cant_maintain_binary)], all.x=T)
@@ -164,6 +164,7 @@ compare_aggregated[iso3=="COD", country:="DRC"]
 
 label <- ifelse(analysis_metric=="prev", "Prevalence", "Severe Incidence")
 
+pdf(file.path(in_dir, "mitigation_bar_plots.pdf"), width=14, height=10)
 ggplot(compare_aggregated[class=="counter"]) +
   geom_bar(aes(x=type, y=mil_nets, alpha=type, fill=cant_maintain), position="dodge", stat="identity") +
   geom_hline(data=compare_aggregated[class=="baseline"], aes(yintercept=mil_nets, linetype=type)) + 
@@ -178,16 +179,17 @@ ggplot(compare_aggregated[class=="counter"]) +
          linetype=guide_legend("")) + 
   labs(x="",
        y="ITNs (Millions)",
-       title=paste("ITNs needed In-Country to Maintain", label))
+       title=paste("ITNs needed In-Country to Mitigate", label))
+graphics.off()
 
 # compare <- stack(itn_percapita_raster, this_percapita_itn)
 # names(compare) <- c("NPC 2019", "NPC Needed")
 # 
 
-for_bmgf <- compare_aggregated[, list(iso3, country, scenario=type, 
+for_bmgf <- compare_aggregated[, list(iso3, country, metric=analysis_metric, scenario=type, 
                                       nets, nets_in_millions=mil_nets,
                                       perc_cant_maintain, cant_maintain)]
-write.csv(for_bmgf, file.path(in_dir, "itn_am_scenario_comparisons.csv"), row.names=F)
+write.csv(for_bmgf, file.path(in_dir, "itn_cm_scenario_comparisons.csv"), row.names=F)
 
 
 
