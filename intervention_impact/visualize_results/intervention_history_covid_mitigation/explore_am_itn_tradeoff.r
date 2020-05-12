@@ -24,7 +24,7 @@ source("pr_to_r0.r")
 source("map_ii_functions.r")
 
 analysis_subdir <- "20200506_reextract_20191009_mega_era5_new_arch"
-analysis_metric <- "prev"
+analysis_metric <- "severe_inc"
 
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
@@ -32,7 +32,7 @@ archetype_raster_dir <- file.path(base_dir, "../archetypes/results")
 main_dir <- file.path(base_dir, analysis_subdir)
 
 suffix <- ""
-out_dir <-  file.path(main_dir,"results", "rasters", "base_2019", analysis_metric)
+out_dir <-  file.path(main_dir,"results", "rasters", "base_2020", analysis_metric)
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 region <- "Africa"
@@ -51,7 +51,7 @@ if (out_dir %like% "base_2020"){
 
 
 # by what percent do you want to *reduce* act coverage?
-act_percent_reductions <- c(20)
+act_percent_reductions <- c(20, 40, 60, 80)
 
 ### Shapefile  -----------------------------------------------------
 print("Loading Shapefile")
@@ -191,7 +191,7 @@ find_new_itn <- function(orig_itn_cov, orig_act_cov, new_act, prevalence, archet
   return(this_new_itn_coverage)
 }
 
-### Main loop: find new ITN coverages  #####----------------------------------------------------------------------------------------------------------------------------------
+### Find/calculate matrices for interpolation #####----------------------------------------------------------------------------------------------------------------------------------
 print("Finding interpolated prevalence matrices")
 sim_prevs <- sim_result_list[["prev"]]
 interp_prev_matrices <- lapply(unique(sim_prevs$Site_Name), function(this_site){
@@ -300,7 +300,9 @@ for(percent_reduction in act_percent_reductions){
                                            ),
                    by = seq_len(nrow(this_raster_dt))]
   }else{
-    this_raster_dt[, itn_new:=find_new_itn(itn_orig, act_orig, act_new, prevalence, archetype, interp_matrices = interp_prev_matrices),
+    this_raster_dt[, itn_new:=find_new_itn(itn_orig, act_orig, act_new, prevalence, archetype,
+                                           interp_matrices = interp_prev_matrices,
+                                           interp_matrices_new = interp_prev_matrices),
                    by = seq_len(nrow(this_raster_dt))]
   }
   
