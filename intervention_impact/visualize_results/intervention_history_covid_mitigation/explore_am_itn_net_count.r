@@ -23,7 +23,7 @@ source("pr_to_r0.r")
 source("map_ii_functions.r")
 
 analysis_subdir <- "20200506_reextract_20191009_mega_era5_new_arch"
-analysis_metric <- "severe_inc"
+analysis_metric <- "prev"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 archetype_raster_dir <- file.path(base_dir, "../archetypes/results")
@@ -96,6 +96,15 @@ net_count_baseline_aggregated <- rbind(net_count_baseline_aggregated, net_count_
 
 print("Finding countries that can't maintain prevalence with nets alone")
 counterfactuals <- stack(list.files(in_dir, pattern=".tif", full.names=T))
+
+# cap counterfactuals at true baseline coverage
+these_names <- names(counterfactuals)
+for (idx in 1:nlayers(counterfactuals)){
+  counterfactuals[[idx]][itn_raster>counterfactuals[[idx]]] <- itn_raster[itn_raster>counterfactuals[[idx]]]
+  # assume that places with true baseline coverage >80% fall into the "can't mitigate" scenario
+  counterfactuals[[idx]][counterfactuals[[idx]]>0.8] <- 1
+}
+names(counterfactuals) <- these_names
 
 cant_maintain <- counterfactuals==1
 names(cant_maintain) <- gsub("derived_itn_cov_", "", names(counterfactuals))

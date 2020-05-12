@@ -140,7 +140,7 @@ if __name__=="__main__":
         df = pd.DataFrame([x.tags for x in expt.simulations])
         df["outpath"] = pd.Series([sim.get_path() for sim in expt.simulations])
         # IMPORTANT: limit to just the most realistic baseline prevalence scenarios
-        df = df.query("x_Temporary_Larval_Habitat<=0.09 | x_Temporary_Larval_Habitat>=26")
+        # df = df.query("x_Temporary_Larval_Habitat<=0.09 | x_Temporary_Larval_Habitat>=26")
         if test_run:
             print("Running test sims")
             df = df.iloc[10:11]
@@ -179,17 +179,16 @@ if __name__=="__main__":
 
         df["serialized_path"] = df["Num_Cores"].apply(name_serialized_files, args=(burnin_length_in_days,))
 
-        run_number_multiplier = 3
         from_burnin_list = [
             [ModFn(DTKConfigBuilder.update_params, {
                 "Serialized_Population_Path": os.path.join(df["outpath"][x], "output"),
                 "Serialized_Population_Filenames": df["serialized_path"][x],
                 "Num_Cores": df["Num_Cores"][x],
-                "Run_Number": int(str(df["Run_Number"][x]) + str(y)) ,
+                "Run_Number": df["Run_Number"][x],
                 "x_Temporary_Larval_Habitat": df["x_Temporary_Larval_Habitat"][x],
-                "Serialization_Time_Steps": [365 * years]
+                # "Serialization_Time_Steps": [365 * years]
             })]
-            for x in df.index for y in range(1, run_number_multiplier+1)]
+            for x in df.index]
 
         # generate interventions
         def get_combos_and_flatten(old_list):
