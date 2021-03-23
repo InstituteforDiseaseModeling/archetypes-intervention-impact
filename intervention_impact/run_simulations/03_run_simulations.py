@@ -44,7 +44,7 @@ os.environ['NO_PROXY'] = 'comps.idmod.org'
 
 ## VARIABLES-- user should set these ---------------------------------------------------------------------------------
 
-version_name = "20200508_am_itn_tradeoff"
+version_name = "20210315_itn_counter"
 main_dir = os.path.join(os.path.expanduser("~"),
                             "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact",
                             version_name, "input")
@@ -58,7 +58,7 @@ experiment_root_name = "MAP_" + version_name
 # If "intervention", the "burnin_id" field of "input_params.json" must be populated.
 run_type = "intervention"
 suffix = ""
-test_run = False
+test_run = True
 priority = "Normal"
 num_cores = 1
 find_burnin_cores = False # set to true if your burnin is mixed-core

@@ -335,15 +335,16 @@ for(percent_reduction in act_percent_reductions){
 # 
 # for (this_site in unique(impact$Site_Name)){
 #   this_heatmap <- 
-    # ggplot(sim_prevs[Site_Name==4 & transmission_intensity>-4], aes(x=al_cm, y=itn, fill=value)) +
+    # ggplot(sim_prevs[Site_Name==8 & transmission_intensity==1.5], aes(x=al_cm, y=itn, fill=value)) +
     # geom_tile() +
     # geom_text(aes(label=round(value, 2))) +
-    # scale_fill_distiller(name="Incidence", palette = "Spectral") +
-    # facet_wrap(.~transmission_intensity) +
+    # scale_fill_distiller(name="Prevalence", palette = "Spectral") +
+    # facet_grid(Site_Name~transmission_intensity) +
     # theme_minimal() +
+    # theme(axis.text.x = element_text(angle=45, hjust=1)) + 
     # scale_x_continuous(breaks=seq(0, 0.8, 0.2), labels=c("0%", "20%", "40%", "60%", "80%")) +
     # scale_y_continuous(breaks=seq(0, 0.8, 0.2), labels=c("0%", "20%", "40%", "60%", "80%")) +
-    # labs(x="Effective Treatment",
+    # labs(x="Case Management",
     #      y="ITN Coverage")
 #   # print(this_heatmap)
 # }
