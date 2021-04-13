@@ -16,17 +16,17 @@ setwd(func_dir)
 source("pr_to_r0.r")
 source("map_ii_functions.r")
 
-analysis_subdir <- "20200426_int_history"
+analysis_subdir <- "20191009_mega_era5_new_arch"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 cluster_raster_dir <- file.path(base_dir, "../archetypes/results")
 main_dir <- file.path(base_dir, analysis_subdir)
-suffix <- "recur_out"
+suffix <- ""
 out_dir <- file.path(main_dir,"results", "rasters")
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/general/shapefiles/Africa.shp"
-raster_input_dir <- "~/Desktop/covid_mitigation_project/pfpr_mean_rasters_20200214"
+raster_input_dir <- file.path(base_dir, "map_rasters/pfpr_gbd2020")
 
 ### Input variables  -----------------------------------------------------
 
@@ -41,16 +41,16 @@ region <- "Africa" # geography for which you want to predict. currently responds
 lut_fname <- file.path(main_dir, paste0("results/clean/summary_impact", suffix, ".csv"))
 
 # what interventions from the lookup table do you want to run? Select "all" if you want every intervention in your LUT to run
-interventions <- c(1:18)
+interventions <- "all"
 
 # what rasters do you want to use as baselines? You'll get a new set of results for each
 baseline_raster_fnames <- list( # "True PfPR 2017"="PfPR_rmean_Global_admin0_2017.tif",
-  "MAP PfPR 2016"="pr_2016_rmean_Africa.tif"
+  "MAP PfPR 2000"="pr_2000_rmean_Africa.tif"
   # "Megatrends Base 2016"="actual_ssp2_base2016_2050.tif"
 )
 
 # What raster do you want to use as a maximum value on all results?
-bounding_fname <- file.path(raster_input_dir, "pr_2019_rmean_Africa.tif")
+bounding_fname <- file.path(raster_input_dir, "pr_2020_rmean_Africa.tif")
 
 # Are there additional rasters you want to visualize, but not apply a lookup table to?
 comparison_fnames <- c()
@@ -141,8 +141,6 @@ stacked_pr <- stack(pr_list)
 
 # maybe: calculate all interventions as usual, and then stitch them together later!!!
 
-
-
 # if (region=="Africa"){
 #   stacked_pr <- extend(stacked_pr, africa_shp)
 # }
@@ -151,18 +149,21 @@ stacked_pr <- stack(pr_list)
 color_vals <- generate_full_pal()
 int_count <- length(interventions)
 
-pdf(file.path(out_dir, paste0("pfpr_", region, ".pdf")), width=12, height=10)
-
-for(base_val in 1:length(baseline_raster_fnames)){
-  end_idx <- (int_count+1) * base_val
-  start_idx <- end_idx - int_count
-  print(levelplot(stacked_pr[[start_idx:end_idx]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
-                  xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)) +
-                    latticeExtra::layer(sp.polygons(africa_shp))
-  )
+if (plot_results){
+  pdf(file.path(out_dir, paste0("pfpr_", region, ".pdf")), width=12, height=10)
+  
+  for(base_val in 1:length(baseline_raster_fnames)){
+    end_idx <- (int_count+1) * base_val
+    start_idx <- end_idx - int_count
+    print(levelplot(stacked_pr[[start_idx:end_idx]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
+                    xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)) +
+            latticeExtra::layer(sp.polygons(africa_shp))
+    )
+  }
+  
+  graphics.off()
 }
 
-graphics.off()
 writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, suffix, ".tif")), overwrite=T)
 
 
@@ -187,19 +188,24 @@ if (calculate_par==T){
   par_millions <- cellStats(par, sum)/1000000
   
   # Plot and save
-  pal <- wpal("seaside")
-  pdf(file.path(out_dir, paste0("par_", region, ".pdf")), width=12, height=10)
-  
-  for(base_val in 1:length(baseline_raster_fnames)){
-    end_idx <- (int_count+1) * base_val
-    start_idx <- end_idx - int_count
-    print(levelplot(par[[start_idx:end_idx]] + 1, par.settings=rasterTheme(pal), zscaleLog=T, margin=F, 
-                    xlab=NULL, ylab=NULL, scales=list(draw=F))  +
-            latticeExtra::layer(sp.polygons(africa_shp))
-    )
+  if (plot_results)
+  {
+    pal <- wpal("seaside")
+    pdf(file.path(out_dir, paste0("par_", region, ".pdf")), width=12, height=10)
+    
+    for(base_val in 1:length(baseline_raster_fnames)){
+      end_idx <- (int_count+1) * base_val
+      start_idx <- end_idx - int_count
+      print(levelplot(par[[start_idx:end_idx]] + 1, par.settings=rasterTheme(pal), zscaleLog=T, margin=F, 
+                      xlab=NULL, ylab=NULL, scales=list(draw=F))  +
+              latticeExtra::layer(sp.polygons(africa_shp))
+      )
+    }
+    
+    graphics.off()
+    
   }
   
-  graphics.off()
   writeRaster(par, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, suffix, ".tif")), overwrite=T)
   
 }
@@ -224,17 +230,22 @@ if (calculate_repro_number){
   breaks <- c(0,1,seq(1.5, 5, length.out=25), seq(5.1, 80, length.out=4))
   pal = c("#e0e0e0", terrain.colors(31)[1:30])
   
-  pdf(file.path(out_dir, paste0("repro_number_", region, ".pdf")), width=12, height=10)
-  
-  for(base_val in 1:length(baseline_raster_fnames)){
-    end_idx <- (int_count+1) * base_val
-    start_idx <- end_idx - int_count
-    print(levelplot(repro_numbers[[start_idx:end_idx]], par.settings=rasterTheme(pal), at=breaks,
-                    xlab=NULL, ylab=NULL, scales=list(draw=F)) +
-            latticeExtra::layer(sp.polygons(africa_shp))
-    )
+  if (plot_results){
+    pdf(file.path(out_dir, paste0("repro_number_", region, ".pdf")), width=12, height=10)
+    
+    for(base_val in 1:length(baseline_raster_fnames)){
+      end_idx <- (int_count+1) * base_val
+      start_idx <- end_idx - int_count
+      print(levelplot(repro_numbers[[start_idx:end_idx]], par.settings=rasterTheme(pal), at=breaks,
+                      xlab=NULL, ylab=NULL, scales=list(draw=F)) +
+              latticeExtra::layer(sp.polygons(africa_shp))
+      )
+    }
+    graphics.off()
+    
   }
-  graphics.off()
+  
+  
   writeRaster(repro_numbers, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("repro_number_",region, suffix, ".tif")), overwrite=T)
 }
 
