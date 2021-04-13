@@ -53,7 +53,6 @@ for (this_continent in unique(guide$continent)){
   # find cluster counts
   cluster_counts <- list.files(this_in_dir)[list.files(this_in_dir) %like% "k_out"]
   cluster_counts <- sort(as.integer(gsub("k_out_([0-9]+)_.*", "\\1", cluster_counts)))
-  cluster_counts <- c(10, 20, 40, 50, 60)
   
   print("loading matrix rotations")
   rotation <- fread(file.path(this_in_dir, "svd_rotations.csv"))
