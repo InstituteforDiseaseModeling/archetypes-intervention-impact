@@ -8,6 +8,7 @@
 # https://www.overleaf.com/read/hqbdxggcwvwv
 ## -----------------------------------------------------------------------------------------------------------------------
 
+library(stringr)
 library(raster)
 library(rasterVis)
 library(data.table)
@@ -65,15 +66,20 @@ summary_impact <- fread(file.path(ii_in_dir, "summary_impact.csv"))
 smooth_impact <- smooth_data(summary_impact)
 smooth_impact[, Site_Name:= factor(Site_Name)]
 
-impact_brick <- brick(file.path(ii_dir, "results/rasters/pfpr_Africa.tif"))
+smooth_impact[, label:= factor(paste0(str_pad(int_id, 3, side="left", pad="0"), ": ", gsub(" ", "", label)))]
 
+impact_brick <- brick(file.path(ii_dir, "results/rasters/pfpr_Africa.tif"))
+names(impact_brick) <- c("baseline", as.character(unique(smooth_impact$label)))
 
 ### Shapefile  -----------------------------------------------------
 africa_shp <- readOGR(africa_shp_dir)
+africa_dt <- data.table(fortify(africa_shp, region = "COUNTRY_ID"))
 africa_shp <- gSimplify(africa_shp, tol=0.1, topologyPreserve=TRUE)
 
 
 ### Explainer Figure -----------------------------------------------------------------------------------------------------------------------
+
+final_nclust <- 10 # no clusters in actual analysis
 
 ## Part 1: 4-Site Map
 cluster_counts <- c(4, 10)
@@ -109,14 +115,35 @@ for (nclust in cluster_counts){
   # convert sites to lat-longs spatialpoints
   site_id_spoints <- xyFromCell(cluster_raster, site_ids$id, spatial=T)
   
-  cluster_raster <- ratify(cluster_raster)
-  map_plot <- levelplot(cluster_raster, att="ID", col.regions=these_colors,
-                        xlab=NULL, ylab=NULL, scales=list(draw=F),
-                        main = "", colorkey=F, margin=F)   +
-    latticeExtra::layer(sp.points(site_id_spoints), theme = simpleTheme(col = "black",
-                                                                        cex=2))
+  cluster_dt <- data.table(rasterToPoints(cluster_raster))
+  names(cluster_dt) <- c("long", "lat", "value")
+  cluster_dt[, value:= as.factor(value)]
   
-  plotlist[[1]] <- map_plot
+  cluster_plot <- ggplot() +
+    geom_raster(data = cluster_dt, aes(fill = value, y = lat, x = long)) +
+    geom_path(data = africa_dt, aes(x = long, y = lat, group = group), color = "black", size = 0.3) + 
+    scale_fill_manual(values= these_colors) +
+    coord_equal(xlim = c(-18, 52), ylim = c(-35, 38)) +
+    labs(x = NULL, y = NULL, title = NULL) +
+    theme_classic(base_size = 12) +
+    theme(axis.line = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(),
+          plot.margin = unit(c(0, 0, 0, 0), "in"), legend.position = "none")
+  
+  # cluster_raster <- ratify(cluster_raster)
+  # map_plot <- levelplot(cluster_raster, att="ID", col.regions=these_colors,
+  #                       xlab=NULL, ylab=NULL, scales=list(draw=F),
+  #                       main = "", colorkey=F, margin=F)   +
+  #   latticeExtra::layer(sp.points(site_id_spoints), theme = simpleTheme(col = "black",
+  #                                                                       cex=2))
+  
+  if (nclust == final_nclust){
+    cluster_plot_for_key <- copy(cluster_plot)
+  }
+  
+  cluster_plot <- cluster_plot + 
+                  geom_point(data=data.table(site_id_spoints@coords), aes(x=x, y=y), color="black", shape=3, size=3)
+  
+  plotlist[[1]] <- cluster_plot
   
   time_series <- summary_vals[variable_name=="month"]
   time_series[, cluster:=as.factor(cluster)]
@@ -187,10 +214,10 @@ for (nclust in cluster_counts){
 
 
 ## Part 2: Intervention Impact Curves
-int_to_use <- 79 # 79 is irs: 0%, itn: 60%, al_cm: 60% 
+ex_int_to_use <- 79 # 79 is irs: 0%, itn: 60%, al_cm: 60% 
 
 pdf(file.path(out_dir, "example_curves.pdf"), width=8, height=4.5)
-ggplot(smooth_impact[int_id==int_to_use & Site_Name %in% c(6, 5, 8, 10)], aes(x=mean_initial, y=mean_final)) +
+ggplot(smooth_impact[int_id==ex_int_to_use & Site_Name %in% c(6, 5, 8, 10)], aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5, alpha=0.5)+
   geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=Site_Name), alpha=0.25) +
   geom_line(aes(color=Site_Name, group=Site_Name), size=1.25) +
@@ -213,7 +240,7 @@ graphics.off()
 color_vals <- generate_full_pal()
 pdf(file.path(out_dir, "example_maps.pdf"), width=8, height=4.5)
 # first layer is PfPR in 2000, other layers are interventions in order
-print(levelplot(impact_brick[[c(1, int_to_use+1)]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
+print(levelplot(impact_brick[[c(1, ex_int_to_use+1)]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
                 xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)) +
         latticeExtra::layer(sp.polygons(africa_shp)))
 graphics.off()
@@ -236,8 +263,6 @@ setnames(site_anthro_endo, "id", "Site_Name")
 smooth_impact <- merge(smooth_impact, site_anthro_endo, all.x=T)
 smooth_impact[, human_indoor:=factor(human_indoor)]
 
-these_colors <- c(palette, "black")
-
 pdf(file.path(out_dir, "biting_intensity.pdf"), width=11, height=7)
 ggplot(smooth_impact[!Site_Name %in% c(1, 11, 12) & int_id %in% c(101, 25)], aes(x=mean_initial, y=mean_final)) +
   geom_abline(size=1.5, alpha=0.5)+
@@ -259,12 +284,222 @@ graphics.off()
 
 ### Example Intervention Packages and Maps -----------------------------------------------------------------------------------------------------------------------
 
+ints_to_use <- c(1, 59, 138)
+lines <- ggplot(smooth_impact[int_id==ints_to_use & Site_Name %in% 1:10], aes(x=mean_initial, y=mean_final)) +
+                geom_abline(size=1.5, alpha=0.5)+
+                geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=Site_Name), alpha=0.25) +
+                geom_line(aes(color=Site_Name, group=Site_Name), size=1.25) +
+                scale_color_manual(values=these_colors, name="Site") +
+                scale_fill_manual(values=these_colors, name="Site") +
+                xlim(0,0.8) +
+                ylim(0,0.8) +
+                facet_grid(. ~ label) + 
+                theme(legend.position="none",
+                      strip.background = element_blank(),
+                      # strip.text = element_blank()
+                      ) +
+                coord_fixed() +
+                labs(x="Initial Prevalence",
+                     y="Final Prevalence",
+                     title="")
+
+
+impact_dt <- data.table(rasterToPoints(impact_brick[[ints_to_use + 1]]))
+impact_dt <- melt(impact_dt, id.vars = c("x", "y"))
+setnames(impact_dt, c("x", "y"), c("long", "lat"))
+
+prev_cols <- c(color_vals$pal[1:10], rev(brewer.pal(11, "RdYlBu")))
+prev_breaks <- c(color_vals$breaks[1:9], seq(0.005, 1, length.out = 12))
+
+maps <- ggplot() +
+  geom_raster(data = impact_dt, aes(fill = value, y = lat, x = long)) +
+  geom_path(data = africa_dt, aes(x = long, y = lat, group = group), color = "black", size = 0.3) + 
+  # scale_fill_gradientn(colors= color_vals$pal, values=color_vals$breaks) +
+  scale_fill_gradientn(colors=prev_cols, values=prev_breaks) + 
+  facet_grid(. ~ variable) +  
+  coord_equal(xlim = c(-18, 52), ylim = c(-35, 38)) +
+  labs(x = NULL, y = NULL, title = NULL) +
+  theme_classic(base_size = 12) +
+  theme(axis.line = element_blank(), 
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(),
+        plot.margin = unit(c(0, 0, 0, 0), "in"), 
+        legend.title=element_blank(),
+        strip.background = element_blank(),
+        strip.text = element_blank()
+        )
+
+
+pdf(file.path(out_dir, "int_packages.pdf"), width = (11), height = (8))
+
+  lines_vp <- viewport(width = 0.85, height = 0.5, x = 0.45, y = 0.75)
+  maps_vp <- viewport(width = 0.95, height = 0.5, x = 0.5, y = 0.25)
+  key_vp <- viewport(width = 0.2, height = 0.2, x = 0.925, y = 0.7)
+  
+  print(lines, vp=lines_vp)
+  print(maps, vp = maps_vp)
+  print(cluster_plot_for_key, vp=key_vp)
+  
+graphics.off()
+
 
 ### Sensistivity Analysis Figure -----------------------------------------------------------------------------------------------------------------------
-sensitivity_in_dir <- file.path(sensitivity_dir, "results/clean")
-#sensitivity_full_impact <- fread(file.path(sensitivity_in_dir, "full_impact.csv"))
-sensitivity_summary_impact <- fread(file.path(sensitivity_in_dir, "summary_impact.csv"))
-sensitivity_smooth <- smooth_data(sensitivity_summary_impact)
+
+# plot of all sensitivity sites
+sensitivity_sites <- fread(file.path(sensitivity_dir, "input/site_details.csv" ))
+sensitivity_spoints <- xyFromCell(cluster_raster, sensitivity_sites$id, spatial=T)
+
+pdf(file.path(out_dir, "sensitivity_map.pdf"), width = (5), height = (5))
+
+  print(cluster_plot_for_key + 
+          geom_point(data=data.table(sensitivity_spoints@coords), aes(x=x, y=y), color="black", shape=3) 
+  )
+
+graphics.off()
+
+# load and prep results data
+
+sens_impact <- rbindlist(lapply(c(ii_dir, sensitivity_dir), function(this_dir){
+  sites <- fread(file.path(this_dir, "input", "site_details.csv"))
+  sites <- sites[continent=="Africa"]
+  impact <- fread(file.path(this_dir, "results", "clean", "summary_impact.csv"))
+  impact <- smooth_data(impact)
+  setnames(impact, "Site_Name", "site_id")
+  impact <- merge(sites[, list(site_id=id, cluster)], impact, all.x=T)
+  impact[, type:=ifelse(nrow(sites)>50, "sensitivity", "centroid")]
+  return(impact)
+}))
+
+sens_colormap <- fread(file.path(sensitivity_dir, "results", "clean", "cluster_color_map.csv"))
+sens_colormap <- sens_colormap[order(ns_order)]
+sens_palette <- sens_colormap$color
+sens_impact <- merge(sens_impact, sens_colormap)
+sens_impact[, cluster_label:= factor(ns_order, labels=sens_colormap$name)]
+
+
+
+
+# example plots to show measures of center
+
+to_plot <- sens_impact[int_id==ex_int_to_use]
+ex_sens_center_plot <- ggplot(to_plot[type=="sensitivity"], aes(x=mean_initial, y=smooth_mean, group=site_id)) +
+  geom_abline() + 
+  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max), alpha=0.25) + 
+  geom_line(alpha=0.8) +
+  geom_ribbon(data=to_plot[type=="centroid"], aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.75, color=NA) + 
+  geom_line(data=to_plot[type=="centroid"], aes(color=cluster_label)) +
+  scale_color_manual(values=sens_palette) + 
+  scale_fill_manual(values=sens_palette) + 
+  facet_wrap(~cluster_label) + 
+  theme_minimal() + 
+  theme(legend.position = "none") + 
+  labs(x="Initial PfPR",
+       y="Final PfPR",
+       title=unique(to_plot$label))
+
+key_vp <- viewport(width = 0.3, height = 0.3, x = 0.75, y = 0.2)
+
+pdf(file.path(out_dir, paste0("sensitivity_center.pdf")), width=8.5, height=11)
+  print (ex_sens_center_plot)
+  print(cluster_plot_for_key, vp=key_vp)
+
+graphics.off()
+
+
+# example plots to show differences between sites
+
+to_plot_sensitivity <- to_plot[type=="sensitivity"]
+setnames(to_plot_sensitivity, "cluster_label", "sensitivity_label")
+to_plot_centroid <- rbindlist(lapply(unique(to_plot$cluster_label), function(this_label){
+  subset <- to_plot[type=="centroid"]
+  subset[, sensitivity_label:=this_label]
+  return(subset)
+}))
+
+ex_sens_dist_plot <- ggplot(to_plot_centroid, aes(x=mean_initial, y=smooth_mean, group=site_id)) +
+  geom_abline() + 
+  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.3, color=NA) + 
+  geom_line(aes(color=cluster_label)) + 
+  geom_ribbon(data=to_plot_sensitivity, aes(ymin=smooth_min, ymax=smooth_max), alpha=0.75) + 
+  geom_line(data=to_plot_sensitivity) + 
+  scale_color_manual(values=sens_palette) + 
+  scale_fill_manual(values=sens_palette) + 
+  facet_wrap(~sensitivity_label) + 
+  theme_minimal() + 
+  theme(legend.title = element_blank()) + 
+  labs(x="Initial PfPR",
+       y="Final PfPR",
+       title=unique(to_plot$label))
+
+
+pdf(file.path(out_dir, paste0("sensitivity_dist.pdf")), width=8.5, height=11)
+  print (ex_sens_dist_plot)
+  print(cluster_plot_for_key, vp=key_vp)
+graphics.off()
+
+
+# for supplement: full plots to show measures of center
+pdf(file.path(out_dir, paste0("supp_sensitivity_center_all.pdf")), width=8.5, height=11)
+
+for (this_id in unique(sens_impact$int_id)){
+  print(this_id)
+  to_plot <- sens_impact[int_id==this_id]
+
+  this_plot <- ggplot(to_plot[type=="sensitivity"], aes(x=mean_initial, y=smooth_mean, group=site_id)) +
+    geom_abline() + 
+    geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max), alpha=0.25) + 
+    geom_line(alpha=0.8) +
+    geom_ribbon(data=to_plot[type=="centroid"], aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.75, color=NA) + 
+    geom_line(data=to_plot[type=="centroid"], aes(color=cluster_label)) +
+    scale_color_manual(values=sens_palette) + 
+    scale_fill_manual(values=sens_palette) + 
+    facet_wrap(~cluster_label) + 
+    theme_minimal() + 
+    theme(legend.position = "none") + 
+    labs(x="Initial PfPR",
+         y="Final PfPR",
+         title=unique(to_plot$label))
+  print (this_plot)
+  print(cluster_plot_for_key, vp=key_vp)
+}
+
+graphics.off()
+
+
+# for supplement: full plots to show differences between sites
+pdf(file.path(out_dir, paste0("supp_sensitivity_dist_all.pdf")), width=8.5, height=11)
+
+for (this_id in unique(sens_impact$int_id)){
+  print(this_id)
+  to_plot <- sens_impact[int_id==this_id]
+  
+  to_plot_sensitivity <- to_plot[type=="sensitivity"]
+  setnames(to_plot_sensitivity, "cluster_label", "sensitivity_label")
+  to_plot_centroid <- rbindlist(lapply(unique(to_plot$cluster_label), function(this_label){
+    subset <- to_plot[type=="centroid"]
+    subset[, sensitivity_label:=this_label]
+    return(subset)
+  }))
+  
+  this_plot <- ggplot(to_plot_centroid, aes(x=mean_initial, y=smooth_mean, group=site_id)) +
+    geom_abline() + 
+    geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.3, color=NA) + 
+    geom_line(aes(color=cluster_label)) + 
+    geom_ribbon(data=to_plot_sensitivity, aes(ymin=smooth_min, ymax=smooth_max), alpha=0.75) + 
+    geom_line(data=to_plot_sensitivity) + 
+    scale_color_manual(values=sens_palette) + 
+    scale_fill_manual(values=sens_palette) + 
+    facet_wrap(~sensitivity_label) + 
+    theme_minimal() + 
+    theme(legend.title = element_blank()) + 
+    labs(x="Initial PfPR",
+         y="Final PfPR",
+         title=unique(to_plot$label))
+  print(this_plot)
+  print(cluster_plot_for_key, vp=key_vp)
+}
+
+graphics.off()
 
 
 ### Supplement: Covariate Normalization -----------------------------------------------------------------------------------------------------------------------
@@ -277,6 +512,83 @@ sensitivity_smooth <- smooth_data(sensitivity_summary_impact)
 
 
 ### Supplement: All cluster maps -----------------------------------------------------------------------------------------------------------------------
-
+## PDF already made in arch_dir 
 
 ### Supplement: All package plots and maps -----------------------------------------------------------------------------------------------------------------------
+
+# takes FOREVER with ggplot framework, only run if necessary
+
+plot_all <- F
+
+if (plot_all){
+  n_perpage <- 4
+  start_idx <- 1
+  max_int_id <-  max(smooth_impact$int_id)
+  
+  
+  
+  while(start_idx < max_int_id){
+    end_idx <- start_idx + n_perpage-1
+    end_idx <- ifelse( end_idx > max_int_id, max_int_id, end_idx)
+    
+    print(paste(start_idx, end_idx))
+    
+    this_impact <- smooth_impact[!Site_Name %in% c(1, 11, 12) & int_id %in% start_idx:end_idx]
+    
+    lines <- ggplot(this_impact, aes(x=mean_initial, y=mean_final)) +
+      geom_abline(size=1.5, alpha=0.5)+
+      geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=Site_Name), alpha=0.25) +
+      geom_line(aes(color=Site_Name, group=Site_Name), size=1.25) +
+      scale_color_manual(values=these_colors, name="Site ID") +
+      scale_fill_manual(values=these_colors, name="Site ID") +
+      theme_classic(base_size = 12) +
+      theme(legend.position = "none") +
+      xlim(0,0.85) +
+      ylim(0,0.85) +
+      facet_grid(factor(label) ~ .) +
+      coord_fixed() +
+      labs(x="Initial Prevalence",
+           y="Final Prevalence",
+           title="")
+    
+    impact_dt <- data.table(rasterToPoints(impact_brick[[(start_idx+1):(end_idx+1)]]))
+    names(impact_dt) <- c("long", "lat", as.character(unique(this_impact$label)))
+    impact_dt <- melt(impact_dt, id.vars = c("long", "lat"))
+    
+    maps <- ggplot() +
+      geom_raster(data = impact_dt, aes(fill = value, y = lat, x = long)) +
+      geom_path(data = africa_dt, aes(x = long, y = lat, group = group), color = "black", size = 0.3) + 
+      # scale_fill_gradientn(colors= color_vals$pal, values=color_vals$breaks) +
+      scale_fill_gradientn(colors=prev_cols, values=prev_breaks) + 
+      facet_grid(variable~ .) +  
+      coord_equal(xlim = c(-18, 52), ylim = c(-35, 38)) +
+      labs(x = NULL, y = NULL, title = NULL) +
+      theme_classic(base_size = 12) +
+      theme(axis.line = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(),
+            plot.margin = unit(c(0, 0, 0, 0), "in"), legend.title=element_blank())
+    
+    lines_vp <- viewport(width = 0.4, height = 1, x = 0.4, y = 0.5)
+    maps_vp <- viewport(width = 0.4, height = 1, x = 0.8, y = 0.5)
+    key_vp <- viewport(width = 0.2, height = 0.2, x = 0.1, y = 0.25)
+    
+    pdf(file.path(out_dir, paste0("all_int_plots/", "int_", start_idx, "_", end_idx, ".pdf")), width=8.5, height=11)
+    
+      print(lines, vp=lines_vp)
+      print(maps, vp = maps_vp)
+      print(cluster_plot_for_key, vp=key_vp)
+      
+    graphics.off()
+    
+    start_idx <- start_idx + n_perpage
+    
+  }
+  
+  
+  
+  
+  
+}
+
+
+
+
