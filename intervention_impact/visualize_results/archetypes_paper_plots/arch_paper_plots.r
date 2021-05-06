@@ -77,12 +77,11 @@ africa_dt <- data.table(fortify(africa_shp, region = "COUNTRY_ID"))
 africa_shp <- gSimplify(africa_shp, tol=0.1, topologyPreserve=TRUE)
 
 
-### Explainer Figure -----------------------------------------------------------------------------------------------------------------------
-
+### 10-Site Archetype Figure -----------------------------------------------------------------------------------------------------------------------
 final_nclust <- 10 # no clusters in actual analysis
 
 ## Part 1: 4-Site Map
-cluster_counts <- c(4, 10)
+cluster_counts <- c(10)
 for (nclust in cluster_counts){
   print(paste("generating archetypes plot for cluster count", nclust))
   
@@ -213,41 +212,7 @@ for (nclust in cluster_counts){
 }
 
 
-## Part 2: Intervention Impact Curves
-ex_int_to_use <- 79 # 79 is irs: 0%, itn: 60%, al_cm: 60% 
 
-pdf(file.path(out_dir, "example_curves.pdf"), width=8, height=4.5)
-ggplot(smooth_impact[int_id==ex_int_to_use & Site_Name %in% c(6, 5, 8, 10)], aes(x=mean_initial, y=mean_final)) +
-  geom_abline(size=1.5, alpha=0.5)+
-  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=Site_Name), alpha=0.25) +
-  geom_line(aes(color=Site_Name, group=Site_Name), size=1.25) +
-  scale_color_manual(values=these_colors, name="Site") +
-  scale_fill_manual(values=these_colors, name="Site") +
-  xlim(0,0.8) +
-  ylim(0,0.8) +
-  facet_grid(. ~ Site_Name) + 
-  theme(legend.position="none",
-        strip.background = element_blank(),
-        strip.text = element_blank()) +
-  coord_fixed() +
-  labs(x="Initial Prevalence",
-       y="Final Prevalence",
-       title="")
-graphics.off()
-
-
-## Part 3: Example output maps 
-color_vals <- generate_full_pal()
-pdf(file.path(out_dir, "example_maps.pdf"), width=8, height=4.5)
-# first layer is PfPR in 2000, other layers are interventions in order
-print(levelplot(impact_brick[[c(1, ex_int_to_use+1)]], par.settings=rasterTheme(color_vals$pal), at=color_vals$breaks,
-                xlab=NULL, ylab=NULL, margin=F, scales=list(draw=F)) +
-        latticeExtra::layer(sp.polygons(africa_shp)))
-graphics.off()
-
-
-
-### 10-Site Archetype Figure -----------------------------------------------------------------------------------------------------------------------
 
 ## see explainer figure code
 
@@ -284,8 +249,10 @@ graphics.off()
 
 ### Example Intervention Packages and Maps -----------------------------------------------------------------------------------------------------------------------
 
-ints_to_use <- c(1, 59, 138)
-lines <- ggplot(smooth_impact[int_id==ints_to_use & Site_Name %in% 1:10], aes(x=mean_initial, y=mean_final)) +
+ints_to_use <- c(1, 33, 76)
+impact_for_plot <- smooth_impact[int_id==ints_to_use & Site_Name %in% 1:10]
+
+lines <- ggplot(impact_for_plot, aes(x=mean_initial, y=mean_final)) +
                 geom_abline(size=1.5, alpha=0.5)+
                 geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=Site_Name), alpha=0.25) +
                 geom_line(aes(color=Site_Name, group=Site_Name), size=1.25) +
@@ -308,6 +275,8 @@ impact_dt <- data.table(rasterToPoints(impact_brick[[ints_to_use + 1]]))
 impact_dt <- melt(impact_dt, id.vars = c("x", "y"))
 setnames(impact_dt, c("x", "y"), c("long", "lat"))
 
+
+color_vals <- generate_full_pal()
 prev_cols <- c(color_vals$pal[1:10], rev(brewer.pal(11, "RdYlBu")))
 prev_breaks <- c(color_vals$breaks[1:9], seq(0.005, 1, length.out = 12))
 
@@ -325,8 +294,8 @@ maps <- ggplot() +
         axis.ticks = element_blank(),
         plot.margin = unit(c(0, 0, 0, 0), "in"), 
         legend.title=element_blank(),
-        strip.background = element_blank(),
-        strip.text = element_blank()
+        #strip.background = element_blank(),
+        #strip.text = element_blank()
         )
 
 
@@ -380,7 +349,7 @@ sens_impact[, cluster_label:= factor(ns_order, labels=sens_colormap$name)]
 
 
 # example plots to show measures of center
-
+ex_int_to_use <- 79 # 79 is irs: 0%, itn: 60%, al_cm: 60% 
 to_plot <- sens_impact[int_id==ex_int_to_use]
 ex_sens_center_plot <- ggplot(to_plot[type=="sensitivity"], aes(x=mean_initial, y=smooth_mean, group=site_id)) +
   geom_abline() + 
@@ -406,109 +375,92 @@ pdf(file.path(out_dir, paste0("sensitivity_center.pdf")), width=8.5, height=11)
 graphics.off()
 
 
-# example plots to show differences between sites
-
-to_plot_sensitivity <- to_plot[type=="sensitivity"]
-setnames(to_plot_sensitivity, "cluster_label", "sensitivity_label")
-to_plot_centroid <- rbindlist(lapply(unique(to_plot$cluster_label), function(this_label){
-  subset <- to_plot[type=="centroid"]
-  subset[, sensitivity_label:=this_label]
-  return(subset)
-}))
-
-ex_sens_dist_plot <- ggplot(to_plot_centroid, aes(x=mean_initial, y=smooth_mean, group=site_id)) +
-  geom_abline() + 
-  geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.3, color=NA) + 
-  geom_line(aes(color=cluster_label)) + 
-  geom_ribbon(data=to_plot_sensitivity, aes(ymin=smooth_min, ymax=smooth_max), alpha=0.75) + 
-  geom_line(data=to_plot_sensitivity) + 
-  scale_color_manual(values=sens_palette) + 
-  scale_fill_manual(values=sens_palette) + 
-  facet_wrap(~sensitivity_label) + 
-  theme_minimal() + 
-  theme(legend.title = element_blank()) + 
-  labs(x="Initial PfPR",
-       y="Final PfPR",
-       title=unique(to_plot$label))
-
-
-pdf(file.path(out_dir, paste0("sensitivity_dist.pdf")), width=8.5, height=11)
-  print (ex_sens_dist_plot)
-  print(cluster_plot_for_key, vp=key_vp)
-graphics.off()
-
-
 # for supplement: full plots to show measures of center
-pdf(file.path(out_dir, paste0("supp_sensitivity_center_all.pdf")), width=8.5, height=11)
+plot_all_sens <- F
 
-for (this_id in unique(sens_impact$int_id)){
-  print(this_id)
-  to_plot <- sens_impact[int_id==this_id]
-
-  this_plot <- ggplot(to_plot[type=="sensitivity"], aes(x=mean_initial, y=smooth_mean, group=site_id)) +
-    geom_abline() + 
-    geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max), alpha=0.25) + 
-    geom_line(alpha=0.8) +
-    geom_ribbon(data=to_plot[type=="centroid"], aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.75, color=NA) + 
-    geom_line(data=to_plot[type=="centroid"], aes(color=cluster_label)) +
-    scale_color_manual(values=sens_palette) + 
-    scale_fill_manual(values=sens_palette) + 
-    facet_wrap(~cluster_label) + 
-    theme_minimal() + 
-    theme(legend.position = "none") + 
-    labs(x="Initial PfPR",
-         y="Final PfPR",
-         title=unique(to_plot$label))
-  print (this_plot)
-  print(cluster_plot_for_key, vp=key_vp)
+if (plot_all_sens){
+  pdf(file.path(out_dir, paste0("supp_sensitivity_center_all.pdf")), width=8.5, height=11)
+  
+  for (this_id in unique(sens_impact$int_id)){
+    print(this_id)
+    to_plot <- sens_impact[int_id==this_id]
+    
+    this_plot <- ggplot(to_plot[type=="sensitivity"], aes(x=mean_initial, y=smooth_mean, group=site_id)) +
+      geom_abline() + 
+      geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max), alpha=0.25) + 
+      geom_line(alpha=0.8) +
+      geom_ribbon(data=to_plot[type=="centroid"], aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.75, color=NA) + 
+      geom_line(data=to_plot[type=="centroid"], aes(color=cluster_label)) +
+      scale_color_manual(values=sens_palette) + 
+      scale_fill_manual(values=sens_palette) + 
+      facet_wrap(~cluster_label) + 
+      theme_minimal() + 
+      theme(legend.position = "none") + 
+      labs(x="Initial PfPR",
+           y="Final PfPR",
+           title=unique(to_plot$label))
+    print (this_plot)
+    print(cluster_plot_for_key, vp=key_vp)
+  }
+  
+  graphics.off()
+  
 }
+
+
+###  SVD Vectors -----------------------------------------------------------------------------------------------------------------------
+
+# load svd outputs to get dataset of cell values
+load(file.path(arch_dir, "01_svd", "svd_output.rdata")) 
+
+init_variance <- svd_out$d^2/sum(svd_out$d^2)
+variance <- data.table(vector=1:length(init_variance), 
+                       variance_explained=init_variance)
+
+pdf(file=file.path(out_dir, "svd_variance_explained.pdf"))
+varplot <- ggplot(variance[vector<=5], aes(x=vector, y=variance_explained)) +
+  geom_line(size=1) +
+  geom_point(size=3) +
+  theme(legend.position = "none") +
+  labs(x="Singular Vector", 
+       y="Variance Explained",
+       title="Variance Explained"
+  )
+print(varplot)
 
 graphics.off()
 
 
-# for supplement: full plots to show differences between sites
-pdf(file.path(out_dir, paste0("supp_sensitivity_dist_all.pdf")), width=8.5, height=11)
+###  K-means elbow -----------------------------------------------------------------------------------------------------------------------
 
-for (this_id in unique(sens_impact$int_id)){
-  print(this_id)
-  to_plot <- sens_impact[int_id==this_id]
-  
-  to_plot_sensitivity <- to_plot[type=="sensitivity"]
-  setnames(to_plot_sensitivity, "cluster_label", "sensitivity_label")
-  to_plot_centroid <- rbindlist(lapply(unique(to_plot$cluster_label), function(this_label){
-    subset <- to_plot[type=="centroid"]
-    subset[, sensitivity_label:=this_label]
-    return(subset)
-  }))
-  
-  this_plot <- ggplot(to_plot_centroid, aes(x=mean_initial, y=smooth_mean, group=site_id)) +
-    geom_abline() + 
-    geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.3, color=NA) + 
-    geom_line(aes(color=cluster_label)) + 
-    geom_ribbon(data=to_plot_sensitivity, aes(ymin=smooth_min, ymax=smooth_max), alpha=0.75) + 
-    geom_line(data=to_plot_sensitivity) + 
-    scale_color_manual(values=sens_palette) + 
-    scale_fill_manual(values=sens_palette) + 
-    facet_wrap(~sensitivity_label) + 
-    theme_minimal() + 
-    theme(legend.title = element_blank()) + 
-    labs(x="Initial PfPR",
-         y="Final PfPR",
-         title=unique(to_plot$label))
-  print(this_plot)
-  print(cluster_plot_for_key, vp=key_vp)
-}
+this_in_dir <- file.path(arch_dir, "02_kmeans")
+cluster_counts <- list.files(this_in_dir)[list.files(this_in_dir) %like% "k_out"]
+cluster_counts <- sort(as.integer(gsub("k_out_([0-9]+)_.*", "\\1", cluster_counts)))
 
+# find variance explained
+var_explained <- lapply(cluster_counts, function(nclust){
+  load(file.path(this_in_dir, paste0("k_out_", nclust, "_cluster", ".rdata")))
+  return(k_out$betweenss/k_out$totss) 
+})
+  
+
+all_var <- data.table(k=cluster_counts, var=unlist(var_explained))
+pdf(file=file.path(out_dir, "elbow_plot.pdf"))
+elbow_plot<- ggplot(all_var, aes(x=k, y=var)) +
+  geom_vline(xintercept = 10, color="blue") + 
+  geom_line(size=1) +
+  geom_point(shape=1, size=4) +
+  theme_minimal()+
+  labs(title= "", 
+       x="Cluster Count",
+       y="Variance Explained")
+print(elbow_plot)
 graphics.off()
-
 
 ### Supplement: Covariate Normalization -----------------------------------------------------------------------------------------------------------------------
 
 
-### Supplement: SVD Vectors -----------------------------------------------------------------------------------------------------------------------
 
-
-### Supplement: K-means elbow -----------------------------------------------------------------------------------------------------------------------
 
 
 ### Supplement: All cluster maps -----------------------------------------------------------------------------------------------------------------------
