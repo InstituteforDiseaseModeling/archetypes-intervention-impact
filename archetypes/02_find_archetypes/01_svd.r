@@ -25,8 +25,8 @@ root_dir <- ifelse(Sys.getenv("USERPROFILE")=="", Sys.getenv("HOME"))
 base_dir <- file.path(root_dir, 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/archetypes/")
 
-overwrite <- T
-out_subdir <- "v5_interventions_only"
+overwrite <- F
+out_subdir <- "v4_era5_bounded_transmission"
 
 out_dir <- file.path(base_dir, "results", out_subdir)
 guide <- fread(file.path(out_dir, "instructions.csv"))
@@ -39,7 +39,7 @@ for (this_continent in unique(guide$continent)){
   cov_dir <- file.path(base_dir, "covariates", unique(this_guide$cov_directory), this_continent)
   
 # test with just ITN for now
-  this_guide <- this_guide[covariate=="itn_coverage"]
+  # this_guide <- this_guide[covariate=="itn_coverage"]
   
   
   this_out_dir <- file.path(out_dir, this_continent, "01_svd")
@@ -63,6 +63,7 @@ for (this_continent in unique(guide$continent)){
         if (!is.na(rescale_quantile)){
           print(paste("rescaling", cov_name, "to quantile", rescale_quantile))
           rescale_cap <- quantile(vals$value, rescale_quantile/100)[[1]]
+          vals[, was_capped:=value>rescale_cap]
           vals[, value:=pmin(value, rescale_cap)]
         }
         # rescale to range [0,1]
@@ -77,19 +78,19 @@ for (this_continent in unique(guide$continent)){
       return(unique(df$id))
     })
     shared_ids <- Reduce(intersect, non_null_ids)
-    all_vals <- rbindlist(all_vals)
+    all_vals <- rbindlist(all_vals, fill = T)
     all_vals <- all_vals[id %in% shared_ids]
     
-    # TEMP: remove incorrect years and null values here. in the future, do in the cov extractions
-    all_vals <- all_vals[variable_val<2018]
-    all_vals[value<0, value:=0]
-    all_vals[value>1, value:=1]
+    # # TEMP: remove incorrect years and null values here. in the future, do in the cov extractions
+    # all_vals <- all_vals[variable_val<2018]
+    # all_vals[value<0, value:=0]
+    # all_vals[value>1, value:=1]
     
     # to ensure replication
     all_vals[variable_name=="month", variable_val:= str_pad(variable_val, 2, side="left", pad="0")]
     all_vals <- all_vals[order(cov, variable_name, variable_val)]
     # print("saving appended dataset")
-    # write.csv(all_vals, file=all_vals_fname, row.names=F)
+    write.csv(all_vals, file=all_vals_fname, row.names=F)
   }
   
   # plot distribution of values
