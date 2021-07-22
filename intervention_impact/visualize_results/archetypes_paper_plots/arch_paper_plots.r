@@ -27,8 +27,8 @@ palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "
 
 main_dir <- "~/Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/"
 
-results_type <- "mega"
-plot_sens <- F
+results_type <- "arch"
+plot_sens <- T
 
 if (results_type=="arch"){
   arch_dir <- file.path(main_dir, "archetypes/results/v4_era5_bounded_transmission/africa")
@@ -46,6 +46,7 @@ if (results_type=="arch"){
   sites_to_use <- 1:6
   out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/malj_paper/figures/raw_figs")
 }
+dir.create(out_dir, showWarnings = F)
 
 sensitivity_dir <- file.path(main_dir, "intervention_impact/20191218_site_sensitivity")
 
@@ -102,7 +103,10 @@ africa_shp <- gSimplify(africa_shp, tol=0.1, topologyPreserve=TRUE)
 ### 10-site color map
 model_archs_colormap <- fread(file.path(ii_dir, "results", "clean", "cluster_color_map.csv"))
 model_archs_colormap <- model_archs_colormap[order(ns_order)]
-model_archs_colormap[, Site_Name:=as.factor(Site_Name)]
+if ("Site_Name" %in% names(model_archs_colormap)){
+  model_archs_colormap[, Site_Name:=as.factor(Site_Name)]
+}
+
 ns_palette <- model_archs_colormap$color
 
 
@@ -235,6 +239,7 @@ for (nclust in 3:14){
       y_lims <- c(0,1)
     }
 
+    
     line_plot <- ggplot(data, aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
                   facet_grid(ns_order~.) +
                   geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5, color=NA) +
@@ -369,16 +374,16 @@ if ("Site_Name" %in% names(model_archs_colormap)){
   
 }
 
-impact_for_plot <- impact_for_plot[cluster %in% sites_to_use]
 impact_for_plot[, cluster_label:= factor(ns_order, labels=model_archs_colormap$name)]
+impact_for_plot <- impact_for_plot[cluster %in% sites_to_use]
 
-
+lineplot_colors <- palette[1:final_nclust]
 lines <- ggplot(impact_for_plot, aes(x=mean_initial, y=mean_final)) +
                 geom_abline(size=0.75, alpha=0.25)+
                 geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=label), alpha=0.25) +
                 geom_line(aes(color=Site_Name, linetype=label), size=0.75) +
-                scale_color_manual(values=these_colors[sites_to_use], name="Site") +
-                scale_fill_manual(values=these_colors[sites_to_use], name="Site") +
+                scale_color_manual(values=lineplot_colors[sites_to_use], name="Site") +
+                scale_fill_manual(values=lineplot_colors[sites_to_use], name="Site") +
                 scale_linetype_manual(values=c( "dotdash", "dotted", "solid","dashed")) + 
                 guides(linetype=guide_legend("Intervention"), color = "nonee", fill="none") + 
                 xlim(0,0.8) +
@@ -426,7 +431,7 @@ maps <- ggplot() +
         #strip.text = element_blank()
         )
 
-lines_height <- ifelse(results_type=="arch", 0.5, 0.4)
+lines_height <- ifelse(results_type=="arch", 0.5, 0.35)
 
 
 pdf(file.path(out_dir, "int_packages.pdf"), width = (8), height = (11))
@@ -597,9 +602,12 @@ graphics.off()
 
 # takes FOREVER with ggplot framework, only run if necessary
 
-plot_all <- T
+plot_all <- F
 
 if (plot_all){
+  
+  dir.create(file.path(out_dir, "all_int_plots"), showWarnings = F)
+  
   n_perpage <- 4
   start_idx <- 1
   max_int_id <-  max(smooth_impact$int_id)
@@ -622,8 +630,8 @@ if (plot_all){
       geom_abline(size=1.5, alpha=0.5)+
       geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=Site_Name), alpha=0.25) +
       geom_line(aes(color=Site_Name, group=Site_Name), size=1.25) +
-      scale_color_manual(values=these_colors, name="Site ID") +
-      scale_fill_manual(values=these_colors, name="Site ID") +
+      scale_color_manual(values=lineplot_colors, name="Site ID") +
+      scale_fill_manual(values=lineplot_colors, name="Site ID") +
       theme_classic(base_size = 12) +
       theme(legend.position = "none") +
       xlim(0,0.85) +
