@@ -33,10 +33,17 @@ plot_sens <- F
 if (results_type=="arch"){
   arch_dir <- file.path(main_dir, "archetypes/results/v4_era5_bounded_transmission/africa")
   ii_dir <- file.path(main_dir, "intervention_impact/20191009_mega_era5_new_arch")
+  impact_raster_fname <- file.path(ii_dir, "results/rasters/pfpr_Africa.tif")
+  final_nclust <- 10 # number of clusters in actual analysis
+  sites_to_use <- 2:10
   out_dir <- file.path(main_dir, "writing_and_presentations/ii_paper/figures/raw_figs")
-}else{
+}else if (results_type=="mega"){
+  plot_sens <- F
   arch_dir <- file.path(main_dir, "archetypes/results/v1_original_megatrends/africa")
   ii_dir <- file.path(main_dir, "intervention_impact/20191008_replicate_megatrends")
+  impact_raster_fname <- file.path(ii_dir, "results/rasters/pfpr_Africa.tif")
+  final_nclust <- 6 # no clusters in actual analysis
+  sites_to_use <- 1:6
   out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/malj_paper/figures/raw_figs")
 }
 
@@ -44,7 +51,6 @@ sensitivity_dir <- file.path(main_dir, "intervention_impact/20191218_site_sensit
 
 africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/general/shapefiles/Africa.shp"
 source("~/repos/malaria-atlas-project/intervention_impact/visualize_results/map_ii_functions.r")
-
 
 
 
@@ -78,12 +84,13 @@ smooth_data <- function(input){
 ii_in_dir <- file.path(ii_dir, "results/clean")
 full_impact <- fread(file.path(ii_in_dir, "full_impact.csv"))
 summary_impact <- fread(file.path(ii_in_dir, "summary_impact.csv"))
+summary_impact[, Site_Name:= as.character(Site_Name)]
 smooth_impact <- smooth_data(summary_impact)
 smooth_impact[, Site_Name:= factor(Site_Name)]
 
 smooth_impact[, label:= factor(paste0(str_pad(int_id, 3, side="left", pad="0"), ": ", gsub(" ", "", label)))]
 
-impact_brick <- brick(file.path(ii_dir, "results/rasters/pfpr_Africa.tif"))
+impact_brick <- brick(impact_raster_fname)
 names(impact_brick) <- c("baseline", as.character(unique(smooth_impact$label)))
 
 ### Shapefile  -----------------------------------------------------
@@ -95,11 +102,11 @@ africa_shp <- gSimplify(africa_shp, tol=0.1, topologyPreserve=TRUE)
 ### 10-site color map
 model_archs_colormap <- fread(file.path(ii_dir, "results", "clean", "cluster_color_map.csv"))
 model_archs_colormap <- model_archs_colormap[order(ns_order)]
+model_archs_colormap[, Site_Name:=as.factor(Site_Name)]
 ns_palette <- model_archs_colormap$color
 
 
 ### Archetype Figures -----------------------------------------------------------------------------------------------------------------------
-final_nclust <- 10 # no clusters in actual analysis
 
 
 raster_plotlist <- NULL
@@ -117,6 +124,16 @@ for (nclust in 3:14){
   site_ids <- site_ids[order(-latitude)]
   site_ids[, ns_order:= as.integer(row.names(site_ids))]
   
+  custom_site_id_fname <- file.path(cluster_in_dir,  paste0("site_ids_", nclust, "_cluster_CUSTOM", ".csv"))
+  if (file.exists(custom_site_id_fname)){
+    custom_sites <- T
+    custom_site_ids <- fread(custom_site_id_fname)
+    custom_site_ids <- custom_site_ids[order(-latitude)]
+    custom_site_ids[, ns_order:= as.integer(row.names(custom_site_ids))]
+    custom_site_ids$id <- cellFromXY(cluster_raster, as.matrix(custom_site_ids[, list(longitude, latitude)]))
+  }else{
+    custom_sites <- F
+  }
   
   # load svd outputs to get dataset of cell values
   load(file.path(cluster_in_dir, "../01_svd/svd_output.rdata")) 
@@ -125,12 +142,22 @@ for (nclust in 3:14){
   rm(svd_wide_datatable); gc()
   
   # rename covariates
+  
+  if (results_type=="arch"){
+    old_cov_names <- c("air_temp_era5", "precip_era5", "relative_vector_abundance")
+    new_cov_names <- c("Air Temperature", "Precipitation", "Rel. Vector\nAbundance")
+  }else if (results_type=="mega"){
+    old_cov_names <- c("tsi", "rainfall_chirps", "relative_vector_abundance")
+    new_cov_names <- c("TSI", "Rainfall", "Rel. Vector\nAbundance")
+  }
+  
+  
   summary_vals[, cov:=factor(cov,
-                             levels=c("air_temp_era5", "precip_era5", "relative_vector_abundance"),
-                             labels=c("Air Temperature", "Precipitation", "Rel. Vector\nAbundance"))]
+                             levels=old_cov_names,
+                             labels=new_cov_names)]
   all_vals[, cov:=factor(cov,
-                         levels=c("air_temp_era5", "precip_era5", "relative_vector_abundance"),
-                         labels=c("Air Temperature", "Precipitation", "Rel. Vector\nAbundance"))]
+                         levels=old_cov_names,
+                         labels=new_cov_names)]
   
   
   # plot big plot
@@ -139,6 +166,9 @@ for (nclust in 3:14){
   
   # convert sites to lat-longs spatialpoints
   site_id_spoints <- xyFromCell(cluster_raster, site_ids$id, spatial=T)
+  if (custom_sites){
+    custom_site_id_spoints <- xyFromCell(cluster_raster, custom_site_ids$id, spatial=T)
+  }
   
   cluster_dt <- data.table(rasterToPoints(cluster_raster))
   names(cluster_dt) <- c("long", "lat", "value")
@@ -168,6 +198,11 @@ for (nclust in 3:14){
   cluster_plot <- cluster_plot + 
     geom_point(data=data.table(site_id_spoints@coords), aes(x=x, y=y), color="black", shape=3, size=3)
   
+  if (custom_sites){
+    cluster_plot <- cluster_plot + 
+      geom_point(data=data.table(custom_site_id_spoints@coords), aes(x=x, y=y), color="black", shape=1, size=5)
+  }
+  
   plotlist[[1]] <- cluster_plot
   raster_plotlist[[raster_plotlist_idx]] <- cluster_plot
   
@@ -183,34 +218,66 @@ for (nclust in 3:14){
     selected_sites <- merge(selected_sites, site_ids[, list(id, cluster, ns_order)], by="id", all=T)
     selected_sites[, cluster:=as.factor(cluster)]
     
-    ggplot(data, aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
-      facet_grid(ns_order~.) +
-      geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5, color=NA) +
-      geom_line(size=0.5) +
-      geom_line(aes(y=perc_05), size=0.25, linetype=2) +
-      geom_line(aes(y=perc_95), size=0.25, linetype=2) +
-      geom_line(data=selected_sites, aes(y=cov_val), color="black", size=0.5) +
-      scale_color_manual(values = these_colors) +
-      scale_fill_manual(values = these_colors) + 
-      scale_x_continuous(breaks=seq(2,12,2), labels=c("F","A","J","A","O","D"), minor_breaks=seq(1,12,2)) +
-      scale_y_continuous(breaks=c(0,0.5,1), labels=c("0", "0.5", "1"), limits=c(0,1)) +
-      theme_minimal(base_size=8) +
-      theme(legend.position="none",
-            # plot.title = element_text(size=8),
-            strip.background = element_blank(),
-            strip.text.y = element_blank()) +
-      labs(title=cov_value,
-           x="",
-           y="")
+    if(custom_sites){
+      custom_selected_sites <- all_vals[id %in% custom_site_ids$id & cov==cov_value & variable_name=="month"]
+      custom_selected_sites <- merge(custom_selected_sites, custom_site_ids[, list(id, cluster)], by="id", all=T)
+      custom_selected_sites <- merge(custom_selected_sites, site_ids[, list(cluster, ns_order)], by="cluster", all=T)
+      custom_selected_sites[, cluster:=as.factor(cluster)]
+    }
+    
+    if (max(data$perc_95)>1){
+      y_breaks <- seq(0, round(max(data$perc_95)), length.out=3)
+      y_labs <- c("0", as.character(round(max(data$perc_95)/2)), as.character(round(max(data$perc_95))))
+      y_lims <- c(0, round(max(data$perc_95)))
+    }else{
+      y_breaks <- c(0,0.5,1)
+      y_labs <- c("0", "0.5", "1")
+      y_lims <- c(0,1)
+    }
+
+    line_plot <- ggplot(data, aes(x=as.integer(variable_val), y=median, color=cluster, fill=cluster)) +
+                  facet_grid(ns_order~.) +
+                  geom_ribbon(aes(ymin=perc_25, ymax=perc_75), alpha=0.5, color=NA) +
+                  geom_line(size=0.5) +
+                  geom_line(aes(y=perc_05), size=0.25, linetype=2) +
+                  geom_line(aes(y=perc_95), size=0.25, linetype=2) +
+                  geom_line(data=selected_sites, aes(y=cov_val), color="black", size=0.5) +
+                  scale_color_manual(values = these_colors) +
+                  scale_fill_manual(values = these_colors) + 
+                  scale_x_continuous(breaks=seq(2,12,2), labels=c("F","A","J","A","O","D"), minor_breaks=seq(1,12,2)) +
+                  scale_y_continuous(breaks=y_breaks, labels=y_labs, limits=y_lims) +
+                  theme_minimal(base_size=8) +
+                  theme(legend.position="none",
+                        # plot.title = element_text(size=8),
+                        strip.background = element_blank(),
+                        strip.text.y = element_blank()) +
+                  labs(title=cov_value,
+                       x="",
+                       y="")
+    
+    if (custom_sites){
+      line_plot <- line_plot + 
+        geom_line(data=custom_selected_sites, aes(y=cov_val),  color="black", size=0.75, linetype="dashed") #
+    }
+    
+    return(line_plot)
+    
   })
   
   plotlist <- append(plotlist, lines)
   
   
   #plot vector mix
-  vector_props <- all_vals[variable_name=="species" & id %in% site_ids$id]
-  vector_props <- merge(vector_props, site_ids[, list(id, cluster, ns_order)], by="id", all=T)
-  vector_props[, cluster:=as.factor(cluster)]
+  
+  if (custom_sites){
+    vector_props <- all_vals[variable_name=="species" & id %in% custom_site_ids$id]
+    vector_props <- merge(vector_props, custom_site_ids[, list(id, cluster, ns_order)], by="id", all=T)
+    vector_props[, cluster:=as.factor(cluster)]
+  }else{
+    vector_props <- all_vals[variable_name=="species" & id %in% site_ids$id]
+    vector_props <- merge(vector_props, site_ids[, list(id, cluster, ns_order)], by="id", all=T)
+    vector_props[, cluster:=as.factor(cluster)]
+  }
   
   vector_props[, fraction:=cov_val]
   vector_props[, ymax:=cumsum(fraction), by="cluster"] # Compute the cumulative percentages (top of each rectangle)
@@ -291,18 +358,27 @@ graphics.off()
 ### Example Intervention Packages and Maps -----------------------------------------------------------------------------------------------------------------------
 
 ints_to_use <- c(1, 33, 101, 134)
+
 impact_for_plot <- smooth_impact[int_id %in% ints_to_use]
-impact_for_plot[, cluster:= as.integer(Site_Name)]
-impact_for_plot <- merge(impact_for_plot, model_archs_colormap, by="cluster", all.x=T)
+
+if ("Site_Name" %in% names(model_archs_colormap)){
+  impact_for_plot <- merge(impact_for_plot, model_archs_colormap, by="Site_Name", all.x=T)
+}else{
+  impact_for_plot[, cluster:= as.integer(Site_Name)]
+  impact_for_plot <- merge(impact_for_plot, model_archs_colormap, by="cluster", all.x=T)
+  
+}
+
+impact_for_plot <- impact_for_plot[cluster %in% sites_to_use]
 impact_for_plot[, cluster_label:= factor(ns_order, labels=model_archs_colormap$name)]
-impact_for_plot <- impact_for_plot[Site_Name %in% 2:10]
+
 
 lines <- ggplot(impact_for_plot, aes(x=mean_initial, y=mean_final)) +
                 geom_abline(size=0.75, alpha=0.25)+
                 geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=label), alpha=0.25) +
                 geom_line(aes(color=Site_Name, linetype=label), size=0.75) +
-                scale_color_manual(values=these_colors[2:10], name="Site") +
-                scale_fill_manual(values=these_colors[2:10], name="Site") +
+                scale_color_manual(values=these_colors[sites_to_use], name="Site") +
+                scale_fill_manual(values=these_colors[sites_to_use], name="Site") +
                 scale_linetype_manual(values=c( "dotdash", "dotted", "solid","dashed")) + 
                 guides(linetype=guide_legend("Intervention"), color = "nonee", fill="none") + 
                 xlim(0,0.8) +
@@ -350,10 +426,12 @@ maps <- ggplot() +
         #strip.text = element_blank()
         )
 
+lines_height <- ifelse(results_type=="arch", 0.5, 0.4)
+
 
 pdf(file.path(out_dir, "int_packages.pdf"), width = (8), height = (11))
 
-  lines_vp <- viewport(width = 0.95, height = 0.5, x = 0.45, y = 0.75)
+  lines_vp <- viewport(width = 0.95, height = lines_height, x = 0.45, y = 0.75)
   maps_vp <- viewport(width = 0.95, height = 0.5, x = 0.5, y = 0.25)
   key_vp <- viewport(width = 0.2, height = 0.2, x = 0.85, y = 0.75)
   
@@ -502,7 +580,7 @@ var_explained <- lapply(cluster_counts, function(nclust){
 all_var <- data.table(k=cluster_counts, var=unlist(var_explained))
 pdf(file=file.path(out_dir, "elbow_plot.pdf"))
 elbow_plot<- ggplot(all_var, aes(x=k, y=var)) +
-  geom_vline(xintercept = 10, color="blue") + 
+  geom_vline(xintercept = final_nclust, color="blue") + 
   geom_line(size=1) +
   geom_point(shape=1, size=4) +
   theme_minimal(base_size = 8)+
@@ -519,14 +597,18 @@ graphics.off()
 
 # takes FOREVER with ggplot framework, only run if necessary
 
-plot_all <- F
+plot_all <- T
 
 if (plot_all){
   n_perpage <- 4
   start_idx <- 1
   max_int_id <-  max(smooth_impact$int_id)
   
-  
+  if ("Site_Name" %in% names(model_archs_colormap)){
+    smooth_impact <- merge(smooth_impact, model_archs_colormap, by="Site_Name", all.x=T)
+    smooth_impact <- smooth_impact[cluster %in% sites_to_use]
+    smooth_impact[, Site_Name:=factor(cluster)]
+  }  
   
   while(start_idx < max_int_id){
     end_idx <- start_idx + n_perpage-1
@@ -534,7 +616,7 @@ if (plot_all){
     
     print(paste(start_idx, end_idx))
     
-    this_impact <- smooth_impact[!Site_Name %in% c(1, 11, 12) & int_id %in% start_idx:end_idx]
+    this_impact <- smooth_impact[Site_Name %in% sites_to_use & int_id %in% start_idx:end_idx]
     
     lines <- ggplot(this_impact, aes(x=mean_initial, y=mean_final)) +
       geom_abline(size=1.5, alpha=0.5)+

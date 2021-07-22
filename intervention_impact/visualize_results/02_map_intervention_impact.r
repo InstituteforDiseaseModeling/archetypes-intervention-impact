@@ -16,7 +16,7 @@ setwd(func_dir)
 source("pr_to_r0.r")
 source("map_ii_functions.r")
 
-analysis_subdir <- "20191009_mega_era5_new_arch"
+analysis_subdir <- "20191008_replicate_megatrends"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 cluster_raster_dir <- file.path(base_dir, "../archetypes/results")
@@ -26,9 +26,10 @@ out_dir <- file.path(main_dir,"results", "rasters")
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/general/shapefiles/Africa.shp"
-raster_input_dir <- file.path(base_dir, "map_rasters/pfpr_gbd2020")
+raster_input_dir <- file.path(base_dir, "map_rasters/megatrends_project")
 
 ### Input variables  -----------------------------------------------------
+plot_results <- F
 
 calculate_par <- F
 pop_fname <- file.path(raster_input_dir, "ssp5_total_2050_MG_5K.tif")
@@ -45,12 +46,12 @@ interventions <- "all"
 
 # what rasters do you want to use as baselines? You'll get a new set of results for each
 baseline_raster_fnames <- list( # "True PfPR 2017"="PfPR_rmean_Global_admin0_2017.tif",
-  "MAP PfPR 2000"="pr_2000_rmean_Africa.tif"
-  # "Megatrends Base 2016"="actual_ssp2_base2016_2050.tif"
+ #  "MAP PfPR 2000"="pr_2000_rmean_Africa.tif"
+  "Megatrends Base 2016"="actual_ssp2_base2016_2050.tif"
 )
 
 # What raster do you want to use as a maximum value on all results?
-bounding_fname <- file.path(raster_input_dir, "pr_2020_rmean_Africa.tif")
+bounding_fname <- file.path(raster_input_dir, "MODEL43.2015.PR.ALL.rmean.tif")
 
 # Are there additional rasters you want to visualize, but not apply a lookup table to?
 comparison_fnames <- c()
@@ -123,7 +124,8 @@ if (length(comparison_fnames)>0){
 for (baseline_label in names(baseline_raster_fnames)){
   print(baseline_label)
   baseline_pr <- raster(file.path(raster_input_dir, baseline_raster_fnames[[baseline_label]]))
-  baseline_pr <- crop(baseline_pr, cluster_map)
+  baseline_pr <- crop(baseline_pr, bounding_pr)
+  baseline_pr <- extend(baseline_pr, bounding_pr)
   baseline_pr <- raster::mask(baseline_pr, cluster_map)
   names(baseline_pr) <- baseline_label
   
