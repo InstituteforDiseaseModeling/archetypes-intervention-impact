@@ -27,7 +27,7 @@ palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "
 
 main_dir <- "~/Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/"
 
-results_type <- "arch"
+results_type <- "mega"
 plot_sens <- T
 
 if (results_type=="arch"){
@@ -446,6 +446,61 @@ pdf(file.path(out_dir, "int_packages.pdf"), width = (8), height = (11))
   
 graphics.off()
 
+
+### Megatrends Maps -----------------------------------------------------------------------------------------------------------------------
+
+
+map_ints_to_use <- c(1, # No interventions
+                   105, # 80/80 itn/al_cm
+                   125:128, # 80/80/80 + nothing/mAb/pev/tbv
+                   132, # 80/80/80 with dp cp
+                   134, # 3% atsb + 0/% itn/irs/al_cm
+                   152 # 80/80/80 +  25% atsb
+        
+)
+
+pretty_int_labels <- c("No Intervention", 
+                       "80% ITN/AL CM",
+                       "80% ITN/AL CM/IRS",
+                       "80% ITN/AL CM/IRS + 40% mAB",
+                       "80% ITN/AL CM/IRS + 40% TBV",
+                       "80% ITN/AL CM/IRS + 40% PEV",
+                       "80% ITN/DP CM/IRS",
+                       "ATSB 3% Kill Rate",
+                       "80% ITN/AL CM/IRS + ATSB 25%"
+)
+
+map_impact_dt <- data.table(rasterToPoints(impact_brick[[map_ints_to_use + 1]]))
+map_impact_dt <- melt(map_impact_dt, id.vars = c("x", "y"))
+setnames(map_impact_dt, c("x", "y"), c("long", "lat"))
+map_impact_dt[, variable:= factor(variable, labels=pretty_int_labels)]
+
+
+color_vals <- generate_full_pal()
+prev_cols <- c(color_vals$pal[1:10], rev(brewer.pal(11, "RdYlBu")))
+prev_breaks <- c(color_vals$breaks[1:9], seq(0.005, 1, length.out = 12))
+
+maps <- ggplot() +
+  geom_raster(data = map_impact_dt, aes(fill = value, y = lat, x = long)) +
+  geom_path(data = africa_dt, aes(x = long, y = lat, group = group), color = "black", size = 0.3) + 
+  scale_fill_gradientn(colors=prev_cols, values=prev_breaks) + 
+  facet_wrap(. ~ variable) +  
+  coord_equal(xlim = c(-18, 52), ylim = c(-35, 38)) +
+  labs(x = NULL, y = NULL, title = NULL) +
+  theme_classic(base_size = 12) +
+  theme(axis.line = element_blank(),            
+        axis.text = element_blank(), 
+        axis.ticks = element_blank(),
+        plot.margin = unit(c(0, 0, 0, 0), "in"), 
+        legend.title=element_blank(),
+        # strip.background = element_blank(),
+        # strip.text = element_blank()
+  )
+
+
+pdf(file.path(out_dir, "mega_int_packages.pdf"), width = (8), height = (11))
+  print(maps)
+graphics.off()
 
 ### Sensistivity Analysis Figure -----------------------------------------------------------------------------------------------------------------------
 
