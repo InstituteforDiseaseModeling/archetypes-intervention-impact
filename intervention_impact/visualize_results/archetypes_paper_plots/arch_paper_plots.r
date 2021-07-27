@@ -132,8 +132,9 @@ for (nclust in 3:14){
   if (file.exists(custom_site_id_fname)){
     custom_sites <- T
     custom_site_ids <- fread(custom_site_id_fname)
-    custom_site_ids <- custom_site_ids[order(-latitude)]
-    custom_site_ids[, ns_order:= as.integer(row.names(custom_site_ids))]
+    custom_site_ids <- merge(custom_site_ids, model_archs_colormap[, list(cluster, ns_order)], by="cluster", all.x=T)
+    # custom_site_ids <- custom_site_ids[order(-latitude)]
+    # custom_site_ids[, ns_order:= as.integer(row.names(custom_site_ids))]
     custom_site_ids$id <- cellFromXY(cluster_raster, as.matrix(custom_site_ids[, list(longitude, latitude)]))
   }else{
     custom_sites <- F
@@ -224,9 +225,15 @@ for (nclust in 3:14){
     
     if(custom_sites){
       custom_selected_sites <- all_vals[id %in% custom_site_ids$id & cov==cov_value & variable_name=="month"]
-      custom_selected_sites <- merge(custom_selected_sites, custom_site_ids[, list(id, cluster)], by="id", all=T)
-      custom_selected_sites <- merge(custom_selected_sites, site_ids[, list(cluster, ns_order)], by="cluster", all=T)
+      custom_selected_sites <- merge(custom_selected_sites, custom_site_ids[, list(id, cluster, ns_order)], by="id", all=T)
       custom_selected_sites[, cluster:=as.factor(cluster)]
+      
+      selected_sites[, ns_order:=NULL]
+      selected_sites <- merge(selected_sites, unique(custom_selected_sites[, list(cluster, ns_order)]), by="cluster", all=T)
+      
+      data[, ns_order:=NULL]
+      data <- merge(data, unique(custom_selected_sites[, list(cluster, ns_order)]), by="cluster", all=T)
+      
     }
     
     if (max(data$perc_95)>1){
@@ -377,13 +384,13 @@ if ("Site_Name" %in% names(model_archs_colormap)){
 impact_for_plot[, cluster_label:= factor(ns_order, labels=model_archs_colormap$name)]
 impact_for_plot <- impact_for_plot[cluster %in% sites_to_use]
 
-lineplot_colors <- palette[1:final_nclust]
+lineplot_colors <- model_archs_colormap[cluster %in% sites_to_use]$color
 lines <- ggplot(impact_for_plot, aes(x=mean_initial, y=mean_final)) +
                 geom_abline(size=0.75, alpha=0.25)+
-                geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=Site_Name, group=label), alpha=0.25) +
-                geom_line(aes(color=Site_Name, linetype=label), size=0.75) +
-                scale_color_manual(values=lineplot_colors[sites_to_use], name="Site") +
-                scale_fill_manual(values=lineplot_colors[sites_to_use], name="Site") +
+                geom_ribbon(aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label, group=label), alpha=0.25) +
+                geom_line(aes(color=cluster_label, linetype=label), size=0.75) +
+                scale_color_manual(values=lineplot_colors, name="Site") +
+                scale_fill_manual(values=lineplot_colors, name="Site") +
                 scale_linetype_manual(values=c( "dotdash", "dotted", "solid","dashed")) + 
                 guides(linetype=guide_legend("Intervention"), color = "nonee", fill="none") + 
                 xlim(0,0.8) +
@@ -609,6 +616,8 @@ init_variance <- svd_out$d^2/sum(svd_out$d^2)
 variance <- data.table(vector=1:length(init_variance), 
                        variance_explained=init_variance)
 
+svd_var_three <- sum(variance[vector<4]$variance_explained)
+
 pdf(file=file.path(out_dir, "svd_variance_explained.pdf"))
 varplot <- ggplot(variance[vector<=5], aes(x=vector, y=variance_explained)) +
   geom_line(size=1) +
@@ -646,7 +655,7 @@ elbow_plot<- ggplot(all_var, aes(x=k, y=var)) +
   theme_minimal(base_size = 8)+
   labs(title= "", 
        x="Cluster Count",
-       y="Variance Explained")
+       y="Variance Captured")
 print(elbow_plot)
 graphics.off()
 

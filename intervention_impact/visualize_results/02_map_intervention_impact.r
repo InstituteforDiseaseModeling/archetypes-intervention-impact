@@ -31,7 +31,7 @@ raster_input_dir <- file.path(base_dir, "map_rasters/megatrends_project")
 ### Input variables  -----------------------------------------------------
 plot_results <- F
 
-calculate_par <- F
+calculate_par <- T
 pop_fname <- file.path(raster_input_dir, "ssp5_total_2050_MG_5K.tif")
 
 calculate_repro_number <- F
@@ -47,7 +47,7 @@ interventions <- "all"
 # what rasters do you want to use as baselines? You'll get a new set of results for each
 baseline_raster_fnames <- list( # "True PfPR 2017"="PfPR_rmean_Global_admin0_2017.tif",
  #  "MAP PfPR 2000"="pr_2000_rmean_Africa.tif"
-  "Megatrends Base 2016"="actual_ssp2_base2016_2050.tif"
+  "Megatrends Base 2016"="actual_ssp2_base2000_2050.tif"
 )
 
 # What raster do you want to use as a maximum value on all results?
@@ -140,6 +140,7 @@ for (baseline_label in names(baseline_raster_fnames)){
 }
 
 stacked_pr <- stack(pr_list)
+rm(pr_list); gc();
 
 # maybe: calculate all interventions as usual, and then stitch them together later!!!
 
