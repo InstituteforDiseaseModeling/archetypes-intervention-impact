@@ -27,7 +27,7 @@ palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "
 
 main_dir <- "~/Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/"
 
-results_type <- "mega"
+results_type <- "arch"
 plot_sens <- T
 
 if (results_type=="arch"){
@@ -36,6 +36,8 @@ if (results_type=="arch"){
   impact_raster_fname <- file.path(ii_dir, "results/rasters/pfpr_Africa.tif")
   final_nclust <- 10 # number of clusters in actual analysis
   sites_to_use <- 2:10
+  orig_cov_names <- c("air_temp_era5", "precip_era5", "relative_vector_abundance")
+  pretty_cov_names <- c("Air Temperature", "Precipitation", "Rel. Vector\nAbundance")
   out_dir <- file.path(main_dir, "writing_and_presentations/ii_paper/figures/raw_figs")
 }else if (results_type=="mega"){
   plot_sens <- F
@@ -44,6 +46,8 @@ if (results_type=="arch"){
   impact_raster_fname <- file.path(ii_dir, "results/rasters/pfpr_Africa.tif")
   final_nclust <- 6 # no clusters in actual analysis
   sites_to_use <- 1:6
+  orig_cov_names <- c("tsi", "rainfall_chirps", "relative_vector_abundance")
+  pretty_cov_names <- c("TSI", "Rainfall", "Rel. Vector\nAbundance")
   out_dir <- file.path(main_dir, "writing_and_presentations/megatrends/malj_paper/figures/raw_figs")
 }
 dir.create(out_dir, showWarnings = F)
@@ -51,6 +55,7 @@ dir.create(out_dir, showWarnings = F)
 sensitivity_dir <- file.path(main_dir, "intervention_impact/20191218_site_sensitivity")
 
 africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/general/shapefiles/Africa.shp"
+cov_dir <- file.path(main_dir, "archetypes/covariates/with_transmission_limits/africa")
 source("~/repos/malaria-atlas-project/intervention_impact/visualize_results/map_ii_functions.r")
 
 
@@ -147,22 +152,12 @@ for (nclust in 3:14){
   rm(svd_wide_datatable); gc()
   
   # rename covariates
-  
-  if (results_type=="arch"){
-    old_cov_names <- c("air_temp_era5", "precip_era5", "relative_vector_abundance")
-    new_cov_names <- c("Air Temperature", "Precipitation", "Rel. Vector\nAbundance")
-  }else if (results_type=="mega"){
-    old_cov_names <- c("tsi", "rainfall_chirps", "relative_vector_abundance")
-    new_cov_names <- c("TSI", "Rainfall", "Rel. Vector\nAbundance")
-  }
-  
-  
   summary_vals[, cov:=factor(cov,
-                             levels=old_cov_names,
-                             labels=new_cov_names)]
+                             levels=orig_cov_names,
+                             labels=pretty_cov_names)]
   all_vals[, cov:=factor(cov,
-                         levels=old_cov_names,
-                         labels=new_cov_names)]
+                         levels=orig_cov_names,
+                         labels=pretty_cov_names)]
   
   
   # plot big plot
@@ -660,6 +655,62 @@ print(elbow_plot)
 graphics.off()
 
 ### Supplement: Covariate Normalization -----------------------------------------------------------------------------------------------------------------------
+
+covariates_final <- melt(svd_wide_datatable, id.vars = c("cov", "variable_name", "variable_val"), variable.name = "id")
+
+covariates_final[, cov:=factor(cov,
+                       levels=orig_cov_names,
+                       labels=pretty_cov_names)]
+
+cov_type <- ifelse(results_type=="arch", "Rescaled ", "")
+
+pdf(file=file.path(out_dir, "covariate_distributions.pdf"))
+  final_covs <- ggplot(covariates_final, aes(x=value)) + 
+                geom_density(aes(color=cov, fill=cov), alpha=0.5) +
+                facet_grid(cov~., scales="free") +
+                theme_minimal() + 
+                theme(legend.position = "none") + 
+                labs(title= paste0(cov_type, "Distribution of Covariates for SVD"),
+                     x= paste0(cov_type,  "Covariate Value"),
+                     y="Density") 
+  print(final_covs)
+graphics.off()
+
+if (results_type=="arch"){
+  all_vals <- lapply(orig_cov_names, function(cov_name){
+    vals <- fread(file.path(cov_dir, cov_name, paste0(cov_name, "_vals.csv")))
+    return(vals)
+  })
+  
+  # keep only those pixels with values for all covariates
+  non_null_ids <- lapply(all_vals, function(df){
+    return(unique(df$id))
+  })
+  shared_ids <- Reduce(intersect, non_null_ids)
+  all_vals <- rbindlist(all_vals, fill = T)
+  all_vals <- all_vals[id %in% shared_ids]
+  
+  all_vals[variable_name=="month", variable_val:= str_pad(variable_val, 2, side="left", pad="0")]
+  all_vals <- all_vals[order(cov, variable_name, variable_val)]
+  
+  all_vals[, cov:=factor(cov,
+                                 levels=orig_cov_names,
+                                 labels=pretty_cov_names)]
+
+  
+  pdf(file=file.path(out_dir, "unscaled_covariate_distributions.pdf"))
+    orig_covs <- ggplot(all_vals, aes(x=value)) + 
+      geom_density(aes(color=cov, fill=cov), alpha=0.5) +
+      facet_grid(cov~., scales="free") +
+      theme_minimal() + 
+      theme(legend.position = "none") + 
+      labs(title="Unscaled Distribution of Covariates for SVD",
+           x="Covariate Value",
+           y="Density") 
+    print(orig_covs)
+  graphics.off()
+  
+}
 
 
 ### Supplement: All package plots and maps -----------------------------------------------------------------------------------------------------------------------

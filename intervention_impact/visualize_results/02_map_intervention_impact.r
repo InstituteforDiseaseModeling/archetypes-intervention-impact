@@ -16,13 +16,13 @@ setwd(func_dir)
 source("pr_to_r0.r")
 source("map_ii_functions.r")
 
-analysis_subdir <- "20191008_replicate_megatrends"
+analysis_subdir <- "20191009_mega_era5_new_arch"
 base_dir <- file.path(Sys.getenv("HOME"), 
                       "Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/intervention_impact")
 cluster_raster_dir <- file.path(base_dir, "../archetypes/results")
 main_dir <- file.path(base_dir, analysis_subdir)
 suffix <- ""
-out_dir <- file.path(main_dir,"results", "rasters")
+out_dir <- file.path(main_dir,"results", "megatrend_ii_rasters")
 dir.create(out_dir, recursive = T, showWarnings = F)
 
 africa_shp_dir <- "/Volumes/GoogleDrive/My Drive/itn_cube/input_data/general/shapefiles/Africa.shp"
@@ -31,10 +31,11 @@ raster_input_dir <- file.path(base_dir, "map_rasters/megatrends_project")
 ### Input variables  -----------------------------------------------------
 plot_results <- F
 
+save_pfpr <- T
 calculate_par <- T
 pop_fname <- file.path(raster_input_dir, "ssp5_total_2050_MG_5K.tif")
 
-calculate_repro_number <- F
+calculate_repro_number <- T
 
 region <- "Africa" # geography for which you want to predict. currently responds only to "Africa" 
 
@@ -140,7 +141,7 @@ for (baseline_label in names(baseline_raster_fnames)){
 }
 
 stacked_pr <- stack(pr_list)
-rm(pr_list); gc();
+rm(pr_list, africa_shp, bounding_pr, cluster_map, baseline_pr); gc();
 
 # maybe: calculate all interventions as usual, and then stitch them together later!!!
 
@@ -167,8 +168,9 @@ if (plot_results){
   graphics.off()
 }
 
-writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, suffix, ".tif")), overwrite=T)
-
+if (save_pfpr){
+  writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, suffix, ".tif")), overwrite=T)
+}
 
 ### Convert to populations-at-risk  #####----------------------------------------------------------------------------------------------------------------------------------
 if (calculate_par==T){
@@ -179,7 +181,7 @@ if (calculate_par==T){
   pop <- crop(pop, stacked_pr)
   
   has_transmission <- lapply(1:nlayers(stacked_pr), function(idx){
-    this_layer <- copy(stacked_pr[[idx]])
+    this_layer <-stacked_pr[[idx]]
     this_layer[this_layer<0.01] <- 0
     this_layer[this_layer>0] <- 1
     return(this_layer)
@@ -213,6 +215,8 @@ if (calculate_par==T){
   
 }
 
+rm(par, has_transmission); gc()
+
 ### Convert to reproductive number  #####----------------------------------------------------------------------------------------------------------------------------------
 
 if (calculate_repro_number){
@@ -220,7 +224,7 @@ if (calculate_repro_number){
   repro_spline <- R2spline()
   
   repro_numbers <- lapply(1:nlayers(stacked_pr), function(idx){
-    this_layer <- copy(stacked_pr[[idx]])
+    this_layer <- stacked_pr[[idx]]
     this_repro <- apply_spline_to_raster(repro_spline, this_layer, return_r0 = T)
     return(this_repro)
   })

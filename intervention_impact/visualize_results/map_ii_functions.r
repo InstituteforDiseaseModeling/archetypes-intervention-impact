@@ -46,7 +46,7 @@ apply_lookup <- function(intervention, baseline_pr, lut, cluster_map, bounding_p
     pr_masked <- raster::mask(baseline_pr, this_mask, maskvalue=0)
     this_lut <- lut[cluster_id==this_cluster & int_id==intervention, list(mean_initial, mean_final)]
     if (length(unique(this_lut$mean_initial))==1 & unique(this_lut$mean_initial)[1]==0){
-      this_pr <- copy(pr_masked)
+      this_pr <- pr_masked[[1]]
       this_pr[this_pr>0] <- 0
     }else{
       this_spline <- get_splinefunction(this_lut$mean_initial,this_lut$mean_final)
