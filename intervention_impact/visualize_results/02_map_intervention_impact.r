@@ -57,6 +57,36 @@ bounding_fname <- file.path(raster_input_dir, "MODEL43.2015.PR.ALL.rmean.tif")
 # Are there additional rasters you want to visualize, but not apply a lookup table to?
 comparison_fnames <- c()
 
+
+### Raster saving function  -----------------------------------------------------
+
+save_rasters <- function(brickname, fname_brick, fname_layers){
+  tryCatch(
+    expr = {
+      message("Trying to save brick")
+      writeRaster(brickname, options="INTERLEAVE=BAND",  bylayer=F, suffix="names", filename=fname_brick, overwrite=T)
+      message("Successfully saved as brick.")
+    },
+    error = function(e){
+      message('Caught an error!')
+      print(e)
+      dir.create(file.path(fname_layers, ".."))
+      writeRaster(brickname, options="INTERLEAVE=BAND",  bylayer=T, suffix="names", filename=fname_layers, overwrite=T)
+      message("Successfully saved as individual layers.")
+      
+    },
+    warning = function(w){
+      message('Caught a warning!')
+      print(w)
+    },
+    finally = {
+      message('All done, quitting.')
+    }
+  )    
+  
+}
+
+
 ### Shapefile  -----------------------------------------------------
 africa_shp <- readOGR(africa_shp_dir)
 africa_shp <- gSimplify(africa_shp, tol=0.1, topologyPreserve=TRUE)
@@ -169,8 +199,15 @@ if (plot_results){
 }
 
 if (save_pfpr){
-  writeRaster(stacked_pr, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, suffix, ".tif")), overwrite=T)
+  brick_pfpr_fname <- file.path(out_dir, paste0("pfpr_",region, suffix, ".tif"))
+  layers_pfpr_fname <- file.path(out_dir, paste0("pfpr_",region, suffix), paste0("pfpr_",region, suffix, ".tif"))
+  save_rasters(stacked_pr, brick_pfpr_fname, layers_pfpr_fname)
+  
+  # writeRaster(stacked_pr, options="INTERLEAVE=BAND", progress="text", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("pfpr_",region, suffix, ".tif")), overwrite=T)
 }
+
+
+
 
 ### Convert to populations-at-risk  #####----------------------------------------------------------------------------------------------------------------------------------
 if (calculate_par==T){
@@ -192,6 +229,8 @@ if (calculate_par==T){
   names(par) <-  names(stacked_pr)
   par_millions <- cellStats(par, sum)/1000000
   
+  rm(has_transmission, pop); gc()
+  
   # Plot and save
   if (plot_results)
   {
@@ -211,11 +250,15 @@ if (calculate_par==T){
     
   }
   
-  writeRaster(par, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, suffix, ".tif")), overwrite=T)
+  brick_par_fname <- file.path(out_dir, paste0("par_",region, suffix, ".tif"))
+  layers_par_fname <- file.path(out_dir, paste0("par_",region, suffix), paste0("par_",region, suffix, ".tif"))
+  save_rasters(par, brick_par_fname, layers_par_fname)
+  
+  # writeRaster(par, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("par_",region, suffix, ".tif")), overwrite=T)
   
 }
-
-rm(par, has_transmission); gc()
+  
+rm(par); gc()
 
 ### Convert to reproductive number  #####----------------------------------------------------------------------------------------------------------------------------------
 
@@ -252,8 +295,11 @@ if (calculate_repro_number){
     
   }
   
+  brick_repro_fname <- file.path(out_dir, paste0("repro_number_",region, suffix, ".tif"))
+  layers_repro_fname <- file.path(out_dir, paste0("repro_number_",region, suffix), paste0("repro_number_",region, suffix, ".tif"))
+  save_rasters(repro_numbers, brick_repro_fname, layers_repro_fname)
   
-  writeRaster(repro_numbers, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("repro_number_",region, suffix, ".tif")), overwrite=T)
+  # writeRaster(repro_numbers, options="INTERLEAVE=BAND", bylayer=F, suffix="names", filename=file.path(out_dir, paste0("repro_number_",region, suffix, ".tif")), overwrite=T)
 }
 
 
