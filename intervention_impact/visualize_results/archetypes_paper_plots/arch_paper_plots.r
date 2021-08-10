@@ -26,8 +26,8 @@ palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "
 ### Setup -----------------------------------------------------------------------------------------------------------------------
 
 main_dir <- "~/Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/"
-
-results_type <- "arch"
+    
+results_type <- "mega"
 plot_sens <- T
 
 if (results_type=="arch"){
@@ -179,10 +179,17 @@ for (nclust in 3:14){
     geom_path(data = africa_dt, aes(x = long, y = lat, group = group), color = "black", size = 0.3) + 
     scale_fill_manual(values= these_colors) +
     coord_equal(xlim = c(-18, 52), ylim = c(-35, 38)) +
-    labs(x = NULL, y = NULL, title = NULL) +
+    labs(x = NULL,
+         y = NULL, 
+         title = paste(nclust, "Clusters")
+         ) +
     theme_classic(base_size = 12) +
-    theme(axis.line = element_blank(), axis.text = element_blank(), axis.ticks = element_blank(),
-          plot.margin = unit(c(0, 0, 0, 0), "in"), legend.position = "none")
+    theme(axis.line = element_blank(), 
+          axis.text = element_blank(),
+          axis.ticks = element_blank(),
+          plot.margin = unit(c(0, 0, 0, 0), "in"),
+          legend.position = "none",
+          plot.title = element_text(hjust = 0.5))
   
   # cluster_raster <- ratify(cluster_raster)
   # map_plot <- levelplot(cluster_raster, att="ID", col.regions=these_colors,
@@ -255,7 +262,7 @@ for (nclust in 3:14){
                   scale_y_continuous(breaks=y_breaks, labels=y_labs, limits=y_lims) +
                   theme_minimal(base_size=8) +
                   theme(legend.position="none",
-                        # plot.title = element_text(size=8),
+                        plot.title = element_text(hjust = 0.5),
                         strip.background = element_blank(),
                         strip.text.y = element_blank()) +
                   labs(title=cov_value,
@@ -295,8 +302,9 @@ for (nclust in 3:14){
     geom_rect(aes(fill=variable_val)) + 
     theme_void(base_size=8) +
     theme(legend.position="bottom",
+          legend.key.size = unit(0.25, "cm"),
           strip.background = element_blank(),
-          # plot.title = element_text(size=8),
+          plot.title = element_text(hjust = 0.5),
           strip.text = element_blank()) +
     scale_fill_manual(values=c("#ffd92f", "#a6d854", "#8da0cb"), name="")+ 
     facet_grid(ns_order ~ .) + 
@@ -312,7 +320,7 @@ for (nclust in 3:14){
   layout <- matrix(c(1, 1:(length(lines)+1), vector_idx), nrow=1)
   
   pdf(file.path(out_dir, paste0("archs_", nclust,".pdf")), width=8, height=4.5)
-  grid.arrange(grobs=plotlist, layout_matrix=layout)
+    grid.arrange(grobs=plotlist, layout_matrix=layout)
   graphics.off()
   
   raster_plotlist_idx <- raster_plotlist_idx +1
@@ -654,7 +662,7 @@ elbow_plot<- ggplot(all_var, aes(x=k, y=var)) +
 print(elbow_plot)
 graphics.off()
 
-### Supplement: Covariate Normalization -----------------------------------------------------------------------------------------------------------------------
+### Covariate Normalization -----------------------------------------------------------------------------------------------------------------------
 
 covariates_final <- melt(svd_wide_datatable, id.vars = c("cov", "variable_name", "variable_val"), variable.name = "id")
 
@@ -696,7 +704,7 @@ if (results_type=="arch"){
   all_vals[, cov:=factor(cov,
                                  levels=orig_cov_names,
                                  labels=pretty_cov_names)]
-
+ 
   
   pdf(file=file.path(out_dir, "unscaled_covariate_distributions.pdf"))
     orig_covs <- ggplot(all_vals, aes(x=value)) + 
