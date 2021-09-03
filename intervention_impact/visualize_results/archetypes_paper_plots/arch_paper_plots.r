@@ -27,7 +27,7 @@ palette <- c("#98B548", "#00A08A", "#8971B3", "#F2AD00", "#5392C2", "#D71B5A", "
 
 main_dir <- "~/Dropbox (IDM)/Malaria Team Folder/projects/map_intervention_impact/"
     
-results_type <- "mega"
+results_type <- "arch"
 plot_sens <- T
 
 if (results_type=="arch"){
@@ -181,7 +181,7 @@ for (nclust in 3:14){
     coord_equal(xlim = c(-18, 52), ylim = c(-35, 38)) +
     labs(x = NULL,
          y = NULL, 
-         title = paste(nclust, "Clusters")
+         title = NULL
          ) +
     theme_classic(base_size = 12) +
     theme(axis.line = element_blank(), 
@@ -203,7 +203,8 @@ for (nclust in 3:14){
   }
   
   cluster_plot <- cluster_plot + 
-    geom_point(data=data.table(site_id_spoints@coords), aes(x=x, y=y), color="black", shape=3, size=3)
+    geom_point(data=data.table(site_id_spoints@coords), aes(x=x, y=y), color="black", shape=3, size=3) +
+    labs(title=paste(nclust, "Clusters"))
   
   if (custom_sites){
     cluster_plot <- cluster_plot + 
@@ -547,7 +548,7 @@ if (plot_sens){
   sens_impact[, cluster_label:= factor(ns_order, labels=model_archs_colormap$name)]
   
   # example plots to show measures of center
-  ex_int_to_use <- 79 # 79 is irs: 0%, itn: 60%, al_cm: 60% 
+  ex_int_to_use <- 33 # 79 is irs: 20%, itn: 40%, al_cm: 20% 
   to_plot <- sens_impact[int_id==ex_int_to_use]
   ex_sens_center_plot <- ggplot(to_plot[type=="sensitivity"], aes(x=mean_initial, y=smooth_mean, group=site_id)) +
     geom_abline() + 
@@ -559,10 +560,11 @@ if (plot_sens){
     scale_fill_manual(values=ns_palette) + 
     facet_wrap(~cluster_label) + 
     theme_minimal(base_size = 8) + 
-    theme(legend.position = "none") + 
+    theme(legend.position = "none",
+          plot.title = element_text(hjust = 0.5),) + 
     labs(x="Initial PfPR",
          y="Final PfPR",
-         title="")
+         title="Sensitivity analysis for intervention 33: 40% ITN, 20% IRS, 20% AL CM")
   
   key_vp <- viewport(width = 0.3, height = 0.3, x = 0.75, y = 0.2)
   
@@ -574,11 +576,9 @@ if (plot_sens){
   
   
   # for supplement: full plots to show measures of center
-  plot_all_sens <- F
+  plot_all_sens <- T
   
   if (plot_all_sens){
-    pdf(file.path(out_dir, paste0("supp_sensitivity_center_all.pdf")), width=8.5, height=11)
-    
     for (this_id in unique(sens_impact$int_id)){
       print(this_id)
       to_plot <- sens_impact[int_id==this_id]
@@ -589,19 +589,21 @@ if (plot_sens){
         geom_line(alpha=0.8) +
         geom_ribbon(data=to_plot[type=="centroid"], aes(ymin=smooth_min, ymax=smooth_max, fill=cluster_label), alpha=0.75, color=NA) + 
         geom_line(data=to_plot[type=="centroid"], aes(color=cluster_label)) +
-        scale_color_manual(values=sens_palette) + 
-        scale_fill_manual(values=sens_palette) + 
+        scale_color_manual(values=ns_palette) + 
+        scale_fill_manual(values=ns_palette) + 
         facet_wrap(~cluster_label) + 
         theme_minimal(base_size = 8) + 
-        theme(legend.position = "none") + 
+        theme(legend.position = "none",
+              plot.title = element_text(hjust = 0.5),) + 
         labs(x="Initial PfPR",
              y="Final PfPR",
-             title=unique(to_plot$label))
-      print (this_plot)
-      print(cluster_plot_for_key, vp=key_vp)
+             title= paste0("Sensitivity analysis for intervention ", unique(to_plot$int_id), ": ",  unique(to_plot$label)))
+      
+      pdf(file.path(out_dir, "all_sens_plots", paste0("sensitivity_center_", this_id, ".pdf")), width=8.5, height=11)
+        print (this_plot)
+        print(cluster_plot_for_key, vp=key_vp)
+      graphics.off()
     }
-    
-    graphics.off()
     
   }
   
