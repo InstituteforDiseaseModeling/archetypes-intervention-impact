@@ -1,4 +1,4 @@
-# malaria-atlas-project
+# archetypes-intervention-impact
 
 Repo for the IDM-MAP collaboration led by Amelia Bertozzi-Villa. Directories:
 
